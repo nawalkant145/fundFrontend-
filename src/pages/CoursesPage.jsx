@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import {
   HiAcademicCap,
   HiTrendingUp,
@@ -8,10 +9,14 @@ import {
   HiStar,
   HiCheckCircle,
   HiPlay,
+  HiMenu,
+  HiX,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
+import { AnimatePresence } from "framer-motion";
 
 function CoursesPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const courses = [
     {
       id: 1,
@@ -198,23 +203,25 @@ function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-dark-navy text-white">
-      {/* Navigation */}
+      {/* Navigation - Fixed at top */}
       <motion.nav
-        className="fixed top-0 left-0 right-0 z-50 bg-dark-navy/80 backdrop-blur-xl border-b border-gold/10"
+        className="fixed top-0 left-0 right-0 z-[100] bg-dark-navy/95 backdrop-blur-xl border-b border-gold/10 shadow-lg"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
           <Link to="/">
             <motion.img
               src="/Logobgremove.jpeg"
               alt="EXPGLO FUND"
-              className="h-16 w-auto drop-shadow-[0_0_10px_rgba(245,185,66,0.3)]"
+              className="h-12 sm:h-14 md:h-16 w-auto drop-shadow-[0_0_10px_rgba(245,185,66,0.3)]"
               whileHover={{ scale: 1.05 }}
             />
           </Link>
-          <div className="hidden md:flex items-center gap-10">
+
+          {/* Desktop Menu */}
+          <div className="hidden lg:flex items-center gap-6 xl:gap-10">
             <Link
               to="/"
               className="text-gray-300 text-sm font-semibold hover:text-gold transition-colors"
@@ -237,10 +244,12 @@ function CoursesPage() {
               Features
             </a>
           </div>
-          <div className="flex items-center gap-4">
+
+          {/* Desktop Auth Buttons */}
+          <div className="hidden sm:flex items-center gap-2 sm:gap-4">
             <Link to="/login">
               <motion.button
-                className="px-6 py-3 text-white text-sm font-bold border-2 border-gold/10 rounded-xl hover:border-gold transition-all"
+                className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-white text-xs sm:text-sm font-bold border-2 border-gold/10 rounded-lg md:rounded-xl hover:border-gold transition-all"
                 whileHover={{ scale: 1.05 }}
               >
                 Log In
@@ -248,18 +257,87 @@ function CoursesPage() {
             </Link>
             <Link to="/signup">
               <motion.button
-                className="px-6 py-3 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-sm font-bold rounded-xl shadow-lg"
+                className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-xs sm:text-sm font-bold rounded-lg md:rounded-xl shadow-lg"
                 whileHover={{ scale: 1.05 }}
               >
-                Sign Up Free
+                Sign Up
               </motion.button>
             </Link>
           </div>
+
+          {/* Mobile Hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden text-gold p-2"
+          >
+            {mobileMenuOpen ? (
+              <HiX className="w-6 h-6" />
+            ) : (
+              <HiMenu className="w-6 h-6" />
+            )}
+          </button>
         </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              className="lg:hidden bg-dark-navy/95 backdrop-blur-xl border-t border-gold/10"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="px-4 py-6 space-y-4">
+                <Link
+                  to="/"
+                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/courses"
+                  className="block text-gold text-base font-semibold py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Courses
+                </Link>
+                <a
+                  href="/#pitches"
+                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Live Pitches
+                </a>
+                <a
+                  href="/#features"
+                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Features
+                </a>
+
+                <div className="pt-4 border-t border-gold/10">
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <button className="w-full px-6 py-3 text-white text-sm font-bold border-2 border-gold/10 rounded-xl hover:border-gold transition-all mb-4">
+                      Log In
+                    </button>
+                  </Link>
+                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    <button className="w-full px-6 py-3 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-sm font-bold rounded-xl shadow-lg">
+                      Sign Up Free
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
       {/* Hero Section */}
-      <section className="min-h-[70vh] flex items-center justify-center px-8 pt-32 pb-24 bg-gradient-to-br from-primary-green/10 to-gold/10 border-b border-gold/10 relative overflow-hidden">
+      <section className="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 md:pb-24 bg-gradient-to-br from-primary-green/10 to-gold/10 border-b border-gold/10 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-5"
           style={{
@@ -327,7 +405,7 @@ function CoursesPage() {
       </section>
 
       {/* Why Section */}
-      <section className="py-24 px-8 bg-dark-bg">
+      <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-dark-bg">
         <motion.div
           className="max-w-7xl mx-auto"
           initial={{ opacity: 0, y: 30 }}
@@ -366,7 +444,7 @@ function CoursesPage() {
       </section>
 
       {/* Courses Grid */}
-      <section className="py-24 px-8 bg-dark-navy">
+      <section className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-dark-navy">
         <motion.div
           className="max-w-7xl mx-auto"
           initial={{ opacity: 0, y: 30 }}
@@ -501,7 +579,7 @@ function CoursesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 px-8 bg-gradient-to-br from-primary-green/10 to-gold/10 border-y border-gold/10">
+      <section className="py-20 sm:py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-green/10 to-gold/10 border-y border-gold/10">
         <motion.div
           className="max-w-4xl mx-auto text-center"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -526,10 +604,11 @@ function CoursesPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-dark-bg border-t border-gold/10 py-16 px-8">
+      <footer className="bg-dark-bg border-t border-gold/10 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 gap-8 mb-12">
+            {/* Logo */}
+            <div>
               <img
                 src="/Logobgremove.jpeg"
                 alt="EXPGLO FUND"
@@ -539,79 +618,88 @@ function CoursesPage() {
                 Where great ideas meet the capital to change the world.
               </p>
             </div>
-            <div>
-              <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
-                PLATFORM
-              </h5>
-              <div className="space-y-3">
-                <Link
-                  to="/"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  For Founders
-                </Link>
-                <Link
-                  to="/"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  For Investors
-                </Link>
-                <Link
-                  to="/courses"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  Courses
-                </Link>
+
+            {/* Links - 2 columns on mobile, 3 on desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-16">
+              {/* Platform */}
+              <div>
+                <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
+                  PLATFORM
+                </h5>
+                <div className="space-y-3">
+                  <a
+                    href="#founders"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    For Founders
+                  </a>
+                  <a
+                    href="#investors"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    For Investors
+                  </a>
+                  <Link
+                    to="/courses"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    Courses
+                  </Link>
+                </div>
               </div>
-            </div>
-            <div>
-              <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
-                COMPANY
-              </h5>
-              <div className="space-y-3">
-                <a
-                  href="#about"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  About
-                </a>
-                <a
-                  href="#blog"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  Blog
-                </a>
-                <a
-                  href="#careers"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  Careers
-                </a>
+
+              {/* Company */}
+              <div>
+                <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
+                  COMPANY
+                </h5>
+                <div className="space-y-3">
+                  <a
+                    href="#about"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    About
+                  </a>
+                  <a
+                    href="#blog"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    Blog
+                  </a>
+                  <a
+                    href="#careers"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    Careers
+                  </a>
+                </div>
               </div>
-            </div>
-            <div>
-              <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
-                LEGAL
-              </h5>
-              <div className="space-y-3">
-                <a
-                  href="#privacy"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  Privacy
-                </a>
-                <a
-                  href="#terms"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  Terms
-                </a>
-                <a
-                  href="#security"
-                  className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                >
-                  Security
-                </a>
+
+              {/* Legal */}
+              <div>
+                <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
+                  LEGAL
+                </h5>
+                <div className="space-y-3">
+                  <a
+                    href="#privacy"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    Privacy
+                  </a>
+                  <a
+                    href="#terms"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    Terms
+                  </a>
+                  <a
+                    href="#security"
+                    className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
+                  >
+                    Security
+                  </a>
+                </div>
               </div>
             </div>
           </div>
