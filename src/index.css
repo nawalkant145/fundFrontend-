@@ -2,22 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-      sans-serif;
-    color-scheme: dark;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  body {
-    @apply bg-dark-navy text-white min-h-screen antialiased;
-  }
+:root {
+  --primary-green: #1b5e3f;
+  --secondary-green: #2d7a4f;
+  --gold: #f5b942;
+  --bright-gold: #ffd166;
+  --dark-navy: #0a1628;
+  --dark-bg: #0f1b2d;
+  --card-bg: #1a2332;
+}
 
-  #root {
-    @apply w-full min-h-screen;
-  }
+body {
+  background-color: var(--dark-navy);
+  color: white;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
+  /* Smooth scrolling optimizations */
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Performance optimizations */
+* {
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  will-change: auto;
+}
+
+/* Utility classes for custom colors */
+.bg-primary-green {
+  background-color: var(--primary-green);
+}
+.bg-secondary-green {
+  background-color: var(--secondary-green);
+}
+.bg-gold {
+  background-color: var(--gold);
+}
+.bg-bright-gold {
+  background-color: var(--bright-gold);
+}
+.bg-dark-navy {
+  background-color: var(--dark-navy);
+}
+.bg-dark-bg {
+  background-color: var(--dark-bg);
+}
+.bg-card-bg {
+  background-color: var(--card-bg);
+}
+
+.text-primary-green {
+  color: var(--primary-green);
+}
+.text-secondary-green {
+  color: var(--secondary-green);
+}
+.text-gold {
+  color: var(--gold);
+}
+.text-bright-gold {
+  color: var(--bright-gold);
+}
+
+.border-gold {
+  border-color: var(--gold);
+}
+.border-primary-green {
+  border-color: var(--primary-green);
 }
 
 /* Custom scrollbar */
@@ -36,4 +111,76 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #ffd166;
+}
+
+/* Hardware acceleration for animations */
+.animate-gradient-shift,
+.animate-pattern-move,
+.animate-pulse-button {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Optimize video performance */
+video {
+  will-change: auto;
+  transform: translateZ(0);
+}
+
+/* Optimize images */
+img {
+  will-change: auto;
+  transform: translateZ(0);
+}
+
+@keyframes gradientShift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate3d(-5%, -5%, 0) rotate(120deg);
+  }
+  66% {
+    transform: translate3d(5%, 5%, 0) rotate(240deg);
+  }
+}
+
+@keyframes patternMove {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(50px, 50px, 0);
+  }
+}
+
+@keyframes pulseButton {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 185, 66, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(245, 185, 66, 0);
+  }
+}
+
+.animate-gradient-shift {
+  animation: gradientShift 20s ease infinite;
+}
+
+.animate-pattern-move {
+  animation: patternMove 30s linear infinite;
+}
+
+.animate-pulse-button {
+  animation: pulseButton 3s ease-in-out infinite;
+}
+
+.bg-gradient-radial {
+  background-image: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+.perspective-1000 {
+  perspective: 1000px;
 }
