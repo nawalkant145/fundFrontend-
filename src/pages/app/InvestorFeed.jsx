@@ -250,15 +250,12 @@ export default function InvestorFeed() {
 
   return (
     <FeedShell>
-      <div className="flex items-center justify-center gap-3 sm:gap-4 h-full py-4">
-        {/* Video container — fills available height, proper 9:16 */}
+      {/* Outer wrapper fills the entire main area absolutely. */}
+      <div className="absolute inset-0 flex items-stretch md:items-center justify-center md:gap-3 lg:gap-4 md:py-4">
+        {/* Video stage */}
         <div
           id="shorts-feed-container"
-          className="relative bg-black rounded-2xl overflow-hidden border-2 border-gold/15 shadow-2xl shadow-black/40 h-full"
-          style={{
-            aspectRatio: "9 / 16",
-            maxHeight: "100%",
-          }}
+          className="shorts-feed-stage relative bg-black overflow-hidden border-gold/15 shadow-2xl shadow-black/40"
         >
           <FeedHint />
 
@@ -308,13 +305,13 @@ export default function InvestorFeed() {
 
               {/* Top bar — only the industry tag now */}
               <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
-                <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy text-[10px] font-black rounded-full uppercase pointer-events-auto">
+                <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy feed-fluid-text-xs font-black rounded-full uppercase pointer-events-auto">
                   {pitch.industry}
                 </span>
               </div>
 
-              {/* Bottom info */}
-              <div className="absolute bottom-0 left-0 right-0 p-3.5 z-10 pointer-events-none">
+              {/* Bottom info — padded right on mobile to clear the action rail */}
+              <div className="absolute bottom-0 left-0 right-0 feed-fluid-pad-sm pr-16 md:pr-3.5 z-10 pointer-events-none">
                 <div className="flex items-center gap-2 mb-2 pointer-events-auto">
                   <button
                     onClick={() => setActiveModal("profile")}
@@ -326,13 +323,13 @@ export default function InvestorFeed() {
                       className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
                     />
                     <div className="text-left min-w-0">
-                      <p className="font-bold text-sm flex items-center gap-1 truncate leading-tight">
+                      <p className="font-bold feed-fluid-text-sm flex items-center gap-1 truncate leading-tight">
                         {pitch.founderId.name}
                         {pitch.founderId.isVerified && (
                           <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
                         )}
                       </p>
-                      <p className="text-[11px] text-gray-300 truncate leading-tight">
+                      <p className="feed-fluid-text-xs text-gray-300 truncate leading-tight">
                         {pitch.founderId.companyName}
                       </p>
                     </div>
@@ -343,13 +340,13 @@ export default function InvestorFeed() {
                   />
                 </div>
 
-                <h3 className="font-black text-sm mb-0.5 pointer-events-auto leading-snug">
+                <h3 className="font-black feed-fluid-text-base mb-0.5 pointer-events-auto">
                   {pitch.title}
                 </h3>
 
                 <div className="pointer-events-auto">
                   <p
-                    className={`text-xs text-gray-200 leading-snug ${
+                    className={`feed-fluid-text-sm text-gray-200 leading-snug ${
                       expanded ? "" : "line-clamp-1"
                     }`}
                   >
@@ -358,7 +355,7 @@ export default function InvestorFeed() {
                   {pitch.description.length > 50 && (
                     <button
                       onClick={() => setExpanded((v) => !v)}
-                      className="text-[11px] text-gray-300 hover:text-gold font-semibold mt-0.5"
+                      className="feed-fluid-text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
                     >
                       {expanded ? "less" : "more"}
                     </button>
@@ -368,12 +365,12 @@ export default function InvestorFeed() {
                 <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
                   <button
                     onClick={() => setActiveModal("invest")}
-                    className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full text-[11px] font-bold text-gold flex items-center gap-1 transition-all"
+                    className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
                   >
                     <HiCurrencyDollar className="w-3.5 h-3.5" />
                     {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
                   </button>
-                  <span className="text-[11px] text-gray-300 capitalize">
+                  <span className="feed-fluid-text-xs text-gray-300 capitalize">
                     {pitch.fundingStage}
                   </span>
 
@@ -395,8 +392,11 @@ export default function InvestorFeed() {
           </AnimatePresence>
         </div>
 
-        {/* RIGHT ACTION RAIL — outside the video */}
-        <div className="flex flex-col gap-3 self-end pb-4">
+        {/* ACTION RAIL — overlays video on mobile, sits beside it on desktop */}
+        <div
+          className="absolute right-2 bottom-32 z-20 flex flex-col gap-2.5 items-center
+                     md:static md:self-end md:pb-4 md:gap-3 md:right-auto md:bottom-auto"
+        >
           <RailButton
             icon={HiHeart}
             label={pitch.likes.length + (liked[pitch._id] ? 1 : 0)}
@@ -432,8 +432,8 @@ export default function InvestorFeed() {
           <DropdownMenu
             items={moreMenu}
             placement="top"
-            trigger={<HiDotsVertical className="w-6 h-6" />}
-            triggerClass="w-12 h-12 rounded-full bg-card-bg/80 border-2 border-gold/15 flex items-center justify-center hover:border-gold/40 hover:bg-card-bg transition-all"
+            trigger={<HiDotsVertical className="w-5 h-5 md:w-6 md:h-6" />}
+            triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-card-bg/80 md:border-2 md:border-gold/15 backdrop-blur-md flex items-center justify-center hover:border-gold/40 hover:bg-card-bg transition-all"
           />
         </div>
       </div>
@@ -506,13 +506,15 @@ function RailButton({
       title={title}
       whileTap={{ scale: 0.85 }}
       whileHover={{ scale: 1.06 }}
-      className="flex flex-col items-center gap-1 transition-opacity"
+      className="flex flex-col items-center gap-0.5 md:gap-1 transition-opacity"
     >
-      <div className="w-12 h-12 rounded-full bg-card-bg/80 border-2 border-gold/15 hover:border-gold/40 hover:bg-card-bg flex items-center justify-center transition-all">
-        <Icon className={`w-6 h-6 ${active ? activeClass : "text-white"}`} />
+      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-card-bg/80 md:border-2 md:border-gold/15 hover:border-gold/40 hover:bg-card-bg flex items-center justify-center transition-all backdrop-blur-md">
+        <Icon
+          className={`w-5 h-5 md:w-6 md:h-6 ${active ? activeClass : "text-white"}`}
+        />
       </div>
       {label !== undefined && (
-        <span className="text-[10px] font-bold text-gray-300">
+        <span className="text-[10px] font-bold text-white md:text-gray-300 drop-shadow">
           {label > 999 ? `${(label / 1000).toFixed(1)}k` : label}
         </span>
       )}

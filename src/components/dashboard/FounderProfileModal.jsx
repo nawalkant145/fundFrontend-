@@ -36,7 +36,12 @@ export default function FounderProfileModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={null} maxWidth="max-w-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={null}
+      maxWidth="max-w-md sm:max-w-2xl"
+    >
       <div>
         {/* Header */}
         <div className="flex items-start gap-4 mb-5">

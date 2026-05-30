@@ -227,3 +227,78 @@ img {
     font-size: 2.25rem !important; /* 36px */
   }
 }
+
+/* ─── Shorts feed sizing ───
+   Bulletproof approach: on mobile, fill the parent (which is absolute-positioned).
+   On desktop, lock to a fixed-height portrait card.                      */
+
+/* Mobile (< 768): fill parent */
+.shorts-feed-stage {
+  position: relative;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border-width: 0;
+  background: #000;
+}
+
+/* Desktop (>= 768): portrait card driven by viewport height.
+   Width derives from aspect-ratio so the video stays a perfect 9:16
+   shape at any zoom level or window size. */
+@media (min-width: 768px) {
+  .shorts-feed-stage {
+    flex: 0 0 auto;
+    align-self: center;
+    width: auto;
+    height: calc(100vh - 6rem);
+    height: calc(100dvh - 6rem);
+    max-height: 900px;
+    aspect-ratio: 9 / 16;
+    border-radius: 1rem;
+    border-width: 2px;
+  }
+}
+
+/* Short laptop screens */
+@media (max-height: 700px) and (min-width: 768px) {
+  .shorts-feed-stage {
+    height: calc(100vh - 5rem);
+    height: calc(100dvh - 5rem);
+  }
+}
+
+/* ─── Fluid sizing for the feed overlay ───
+   Instagram uses clamp() so text and spacing scale smoothly with the
+   container, not a fixed pixel size. This makes zoom-in/zoom-out feel
+   natural and keeps the layout intact at any viewport size.            */
+
+.feed-fluid-text-xs {
+  font-size: clamp(0.65rem, 0.55rem + 0.3vw, 0.8rem);
+}
+.feed-fluid-text-sm {
+  font-size: clamp(0.78rem, 0.7rem + 0.4vw, 0.95rem);
+}
+.feed-fluid-text-base {
+  font-size: clamp(0.9rem, 0.8rem + 0.5vw, 1.15rem);
+  line-height: 1.3;
+}
+.feed-fluid-text-lg {
+  font-size: clamp(1rem, 0.9rem + 0.6vw, 1.35rem);
+  line-height: 1.25;
+}
+
+.feed-fluid-pad-sm {
+  padding: clamp(0.5rem, 0.35rem + 0.6vw, 1rem);
+}
+
+/* Action rail buttons scale with viewport too */
+.feed-rail-btn {
+  width: clamp(2.5rem, 2.2rem + 1.4vw, 3rem);
+  height: clamp(2.5rem, 2.2rem + 1.4vw, 3rem);
+}
+.feed-rail-icon {
+  width: clamp(1.1rem, 0.95rem + 0.8vw, 1.5rem);
+  height: clamp(1.1rem, 0.95rem + 0.8vw, 1.5rem);
+}
