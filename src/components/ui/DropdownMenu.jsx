@@ -1,0 +1,129 @@
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { HiDotsVertical } from "react-icons/hi";
+
+/**
+ * Premium dropdown menu (the "three dots" UI).
+ *
+ * Props:
+ *   items     [{ label, icon, onClick, danger, disabled }] | { divider: true }
+ *   trigger   custom element to render instead of the dots icon
+ *   align     "left" | "right"   horizontal alignment of the menu  (default "right")
+ *   placement "auto" | "top" | "bottom"  vertical direction (default "auto")
+ *   triggerClass  override the trigger button class
+ */
+export default function DropdownMenu({
+  items = [],
+  trigger,
+  align = "right",
+  placement = "auto",
+  triggerClass = "",
+}) {
+  const [open, setOpen] = useState(false);
+  const [actualPlacement, setActualPlacement] = useState("bottom");
+  const ref = useRef(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Auto-detect best placement when opening
+  useEffect(() => {
+    if (!open) return;
+    if (placement === "top" || placement === "bottom") {
+      setActualPlacement(placement);
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    // Estimate menu height roughly based on item count
+    const estHeight = Math.min(items.length * 44 + 16, 320);
+    if (spaceBelow < estHeight && spaceAbove > spaceBelow) {
+      setActualPlacement("top");
+    } else {
+      setActualPlacement("bottom");
+    }
+  }, [open, placement, items.length]);
+
+  const positionClass =
+    actualPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2";
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className={
+          triggerClass ||
+          "p-2 rounded-lg hover:bg-dark-bg/60 text-gray-400 hover:text-white transition-colors"
+        }
+      >
+        {trigger || <HiDotsVertical className="w-5 h-5" />}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: actualPlacement === "top" ? 8 : -8,
+              scale: 0.96,
+            }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              y: actualPlacement === "top" ? 8 : -8,
+              scale: 0.96,
+            }}
+            transition={{ duration: 0.15 }}
+            className={`absolute z-50 min-w-[200px] bg-card-bg border-2 border-gold/20 rounded-xl shadow-2xl overflow-hidden ${positionClass} ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
+          >
+            {items.map((item, i) =>
+              item.divider ? (
+                <div key={i} className="h-px bg-gold/10 my-1" />
+              ) : (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                    item.onClick?.();
+                  }}
+                  disabled={item.disabled}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-left transition-colors disabled:opacity-50 ${
+                    item.danger
+                      ? "text-red-400 hover:bg-red-500/10"
+                      : "text-gray-200 hover:bg-dark-bg/60 hover:text-white"
+                  }`}
+                >
+                  {item.icon && (
+                    <item.icon
+                      className={`w-4 h-4 flex-shrink-0 ${
+                        item.danger ? "text-red-400" : "text-gray-400"
+                      }`}
+                    />
+                  )}
+                  <span>{item.label}</span>
+                </button>
+              ),
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

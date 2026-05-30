@@ -1,435 +1,607 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  HiUser,
+  HiAtSymbol,
   HiMail,
   HiLockClosed,
-  HiEye,
-  HiEyeOff,
-  HiUser,
   HiTrendingUp,
   HiCheckCircle,
+  HiOfficeBuilding,
+  HiCash,
+  HiGlobe,
+  HiArrowLeft,
+  HiArrowRight,
 } from "react-icons/hi";
 import { IoRocketSharp } from "react-icons/io5";
+import { FaLinkedin } from "react-icons/fa";
+
+import AuthShell from "../components/auth/AuthShell";
+import {
+  FormField,
+  PasswordStrength,
+  Checkbox,
+  MultiSelectChips,
+  PhoneInput,
+} from "../components/auth/FormField";
+import Select from "../components/auth/Select";
+import Stepper from "../components/auth/Stepper";
+import { setAuth } from "../lib/auth";
+import {
+  INDUSTRIES,
+  FUNDING_STAGES,
+  INVESTOR_TYPES,
+  INVESTMENT_RANGES,
+  COUNTRIES,
+} from "../constants/options";
+
+const STEPS = ["Role", "Account", "Profile"];
 
 function SignupPage() {
-  const [userType, setUserType] = useState(""); // 'founder' or 'investor'
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [userType, setUserType] = useState("");
+  const [data, setData] = useState({
+    // Step 2 — Account basics
     fullName: "",
+    username: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
+    country: "",
     agreeToTerms: false,
+    // Founder
+    companyName: "",
+    industry: "",
+    fundingStage: "",
+    website: "",
+    linkedIn: "",
+    // Investor
+    investorType: "",
+    investmentRange: "",
+    preferredIndustries: [],
+    preferredStages: [],
+    investmentThesis: "",
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
-      return;
-    }
-    console.log("Sign up as:", userType, formData);
-    // Add your signup logic here
-  };
+  const update = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
 
   const handleChange = (e) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setFormData({
-      ...formData,
-      [e.target.name]: value,
-    });
+    update(e.target.name, value);
+  };
+
+  // ─── Validation ────────────────────────────
+  const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+  const passwordValid = data.password.length >= 8;
+  const passwordsMatch =
+    data.password === data.confirmPassword && data.confirmPassword.length > 0;
+  const phoneValid = /^\+\d{1,4}\d{6,14}$/.test(data.phone);
+
+  const accountStepValid =
+    data.fullName.trim().length >= 2 &&
+    usernameValid &&
+    emailValid &&
+    phoneValid &&
+    passwordValid &&
+    passwordsMatch &&
+    data.agreeToTerms;
+
+  const profileStepValid =
+    userType === "founder"
+      ? data.companyName.trim().length >= 2 &&
+        data.industry &&
+        data.fundingStage
+      : data.investorType &&
+        data.investmentRange &&
+        data.preferredIndustries.length > 0 &&
+        data.preferredStages.length > 0;
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (!profileStepValid) return;
+    // Static — would POST to /api/auth/register
+    setAuth({ role: userType, identifier: data.email });
+    navigate("/verify", { state: { email: data.email, phone: data.phone } });
   };
 
   return (
-    <div className="min-h-screen bg-dark-navy text-white flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Background */}
-      <div className="fixed inset-0 z-0">
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: "url('/background.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        ></div>
-        <div className="absolute inset-0 bg-dark-navy/80"></div>
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute w-[200%] h-[200%] animate-gradient-shift opacity-10">
-            <div className="absolute inset-0 bg-gradient-radial from-primary-green/30 via-transparent to-transparent"></div>
-            <div
-              className="absolute inset-0 bg-gradient-radial from-gold/20 via-transparent to-transparent"
-              style={{ left: "60%", top: "60%" }}
-            ></div>
-          </div>
-        </div>
+    <AuthShell maxWidth="max-w-3xl">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-2">
+          Join{" "}
+          <span className="bg-gradient-to-r from-gold to-bright-gold bg-clip-text text-transparent">
+            EXPGLO FUND
+          </span>
+        </h1>
+        <p className="text-gray-300 text-base sm:text-lg">
+          Start your fundraising journey today
+        </p>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-5xl">
-        {/* Logo */}
-        <Link to="/">
-          <motion.img
-            src="/Logobgremove.jpeg"
-            alt="EXPGLO FUND"
-            className="h-16 w-auto mx-auto mb-8 drop-shadow-[0_0_10px_rgba(245,185,66,0.3)]"
-            whileHover={{ scale: 1.05 }}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          />
-        </Link>
+      {step > 0 && <Stepper steps={STEPS} current={step} />}
 
-        <motion.div
-          className="bg-card-bg/50 backdrop-blur-xl border-2 border-gold/20 rounded-3xl p-8 md:p-12 shadow-2xl"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-black mb-3">
-              Join{" "}
-              <span className="bg-gradient-to-r from-gold to-bright-gold bg-clip-text text-transparent">
-                EXPGLO FUND
-              </span>
-            </h1>
-            <p className="text-gray-300 text-lg">
-              Start your fundraising journey today
-            </p>
-          </div>
-
-          {/* User Type Selection */}
-          {!userType ? (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-center mb-6">I am a...</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Founder Option */}
-                <motion.button
-                  onClick={() => setUserType("founder")}
-                  className="group relative p-8 bg-gradient-to-br from-gold/10 to-bright-gold/5 border-2 border-gold/30 rounded-2xl hover:border-gold transition-all text-left overflow-hidden"
-                  whileHover={{ scale: 1.02, y: -5 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-3xl group-hover:bg-gold/20 transition-all"></div>
-                  <IoRocketSharp className="w-12 h-12 text-gold mb-4 relative z-10" />
-                  <h3 className="text-2xl font-bold mb-2 relative z-10">
-                    Founder
-                  </h3>
-                  <p className="text-gray-300 text-sm mb-4 relative z-10">
-                    Pitch your startup and connect with investors who believe in
-                    your vision
-                  </p>
-                  <div className="space-y-2 relative z-10">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <HiCheckCircle className="text-gold" />
-                      Upload 60-second pitch videos
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <HiCheckCircle className="text-gold" />
-                      Connect with 850+ investors
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <HiCheckCircle className="text-gold" />
-                      Access fundraising courses
-                    </div>
-                  </div>
-                  <motion.div
-                    className="mt-4 text-gold font-semibold flex items-center gap-2"
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    Sign up as Founder →
-                  </motion.div>
-                </motion.button>
-
-                {/* Investor Option */}
-                <motion.button
-                  onClick={() => setUserType("investor")}
-                  className="group relative p-8 bg-gradient-to-br from-primary-green/10 to-secondary-green/5 border-2 border-primary-green/30 rounded-2xl hover:border-primary-green transition-all text-left overflow-hidden"
-                  whileHover={{ scale: 1.02, y: -5 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary-green/10 rounded-full blur-3xl group-hover:bg-primary-green/20 transition-all"></div>
-                  <HiTrendingUp className="w-12 h-12 text-primary-green mb-4 relative z-10" />
-                  <h3 className="text-2xl font-bold mb-2 relative z-10">
-                    Investor
-                  </h3>
-                  <p className="text-gray-300 text-sm mb-4 relative z-10">
-                    Discover promising startups and invest in the next big thing
-                  </p>
-                  <div className="space-y-2 relative z-10">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <HiCheckCircle className="text-primary-green" />
-                      Browse 2,400+ startup pitches
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <HiCheckCircle className="text-primary-green" />
-                      AI-powered matching
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
-                      <HiCheckCircle className="text-primary-green" />
-                      Direct founder communication
-                    </div>
-                  </div>
-                  <motion.div
-                    className="mt-4 text-primary-green font-semibold flex items-center gap-2"
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                  >
-                    Sign up as Investor →
-                  </motion.div>
-                </motion.button>
-              </div>
+      <AnimatePresence mode="wait">
+        {/* ─── STEP 1: ROLE ──────────────────────── */}
+        {step === 0 && (
+          <motion.div
+            key="step-role"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.25 }}
+          >
+            <h2 className="text-xl sm:text-2xl font-bold text-center mb-6">
+              I am a...
+            </h2>
+            <div className="grid md:grid-cols-2 gap-5">
+              <RoleCard
+                title="Founder"
+                icon={<IoRocketSharp className="w-12 h-12 text-gold" />}
+                description="Pitch your startup and connect with investors who believe in your vision."
+                accent="gold"
+                bullets={[
+                  "Upload 60-second pitch videos",
+                  "Connect with 850+ investors",
+                  "Access fundraising courses",
+                ]}
+                active={userType === "founder"}
+                onClick={() => {
+                  setUserType("founder");
+                  setStep(1);
+                }}
+              />
+              <RoleCard
+                title="Investor"
+                icon={<HiTrendingUp className="w-12 h-12 text-primary-green" />}
+                description="Discover promising startups and back the next big thing."
+                accent="green"
+                bullets={[
+                  "Browse 2,400+ startup pitches",
+                  "AI-powered matching",
+                  "Direct founder communication",
+                ]}
+                active={userType === "investor"}
+                onClick={() => {
+                  setUserType("investor");
+                  setStep(1);
+                }}
+              />
             </div>
-          ) : (
-            /* Signup Form */
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              {/* Selected User Type Badge */}
-              <div className="flex items-center justify-center gap-3 mb-8">
-                <div
-                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 ${
-                    userType === "founder"
-                      ? "bg-gold/10 border-gold/30 text-gold"
-                      : "bg-primary-green/10 border-primary-green/30 text-primary-green"
-                  }`}
-                >
-                  {userType === "founder" ? (
-                    <IoRocketSharp className="w-5 h-5" />
-                  ) : (
-                    <HiTrendingUp className="w-5 h-5" />
-                  )}
-                  <span className="font-bold">
-                    Signing up as{" "}
-                    {userType === "founder" ? "Founder" : "Investor"}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setUserType("")}
-                  className="text-sm text-gray-400 hover:text-gold transition-colors underline"
-                >
-                  Change
-                </button>
+          </motion.div>
+        )}
+
+        {/* ─── STEP 2: ACCOUNT BASICS ─────────────── */}
+        {step === 1 && (
+          <motion.form
+            key="step-account"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25 }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (accountStepValid) setStep(2);
+            }}
+            className="space-y-5"
+          >
+            <RoleBadge userType={userType} onChange={() => setStep(0)} />
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
+                label="Full name"
+                name="fullName"
+                icon={HiUser}
+                value={data.fullName}
+                onChange={handleChange}
+                placeholder="John Doe"
+                autoComplete="name"
+                required
+              />
+              <FormField
+                label="Username"
+                name="username"
+                icon={HiAtSymbol}
+                value={data.username}
+                onChange={handleChange}
+                placeholder="john_startup"
+                autoComplete="username"
+                helper={
+                  data.username && !usernameValid
+                    ? null
+                    : "3-20 characters, letters, numbers, underscore"
+                }
+                error={
+                  data.username && !usernameValid
+                    ? "Invalid username format"
+                    : null
+                }
+                success={data.username && usernameValid ? "Looks good" : null}
+                required
+              />
+            </div>
+
+            <FormField
+              label="Email address"
+              name="email"
+              icon={HiMail}
+              type="email"
+              value={data.email}
+              onChange={handleChange}
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              error={data.email && !emailValid ? "Invalid email" : null}
+            />
+
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-gray-300">
+                Phone number<span className="text-gold ml-1">*</span>
+              </label>
+              <PhoneInput value={data.phone} onChange={handleChange} required />
+              <p className="text-xs text-gray-400 mt-1.5">
+                We'll send a verification code to this number.
+              </p>
+            </div>
+
+            <Select
+              label="Country"
+              name="country"
+              value={data.country}
+              onChange={handleChange}
+              options={COUNTRIES}
+              placeholder="Select your country"
+            />
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <FormField
+                  label="Password"
+                  name="password"
+                  icon={HiLockClosed}
+                  type="password"
+                  value={data.password}
+                  onChange={handleChange}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  required
+                />
+                <PasswordStrength password={data.password} />
               </div>
+              <FormField
+                label="Confirm password"
+                name="confirmPassword"
+                icon={HiLockClosed}
+                type="password"
+                value={data.confirmPassword}
+                onChange={handleChange}
+                placeholder="Repeat password"
+                autoComplete="new-password"
+                error={
+                  data.confirmPassword && !passwordsMatch
+                    ? "Passwords do not match"
+                    : null
+                }
+                success={passwordsMatch ? "Passwords match" : null}
+                required
+              />
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Full Name Field */}
+            <Checkbox
+              name="agreeToTerms"
+              checked={data.agreeToTerms}
+              onChange={handleChange}
+              required
+            >
+              I agree to the{" "}
+              <Link to="#" className="text-gold hover:text-bright-gold">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="#" className="text-gold hover:text-bright-gold">
+                Privacy Policy
+              </Link>
+            </Checkbox>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <BackButton onClick={() => setStep(0)} />
+              <NextButton
+                disabled={!accountStepValid}
+                accent={userType === "founder" ? "gold" : "green"}
+              >
+                Continue
+              </NextButton>
+            </div>
+          </motion.form>
+        )}
+
+        {/* ─── STEP 3: ROLE-SPECIFIC PROFILE ──────── */}
+        {step === 2 && (
+          <motion.form
+            key="step-profile"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25 }}
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
+            <RoleBadge userType={userType} onChange={() => setStep(0)} />
+
+            {userType === "founder" ? (
+              <>
+                <FormField
+                  label="Company / startup name"
+                  name="companyName"
+                  icon={HiOfficeBuilding}
+                  value={data.companyName}
+                  onChange={handleChange}
+                  placeholder="Acme Inc."
+                  required
+                />
+                <Select
+                  label="Industry"
+                  name="industry"
+                  value={data.industry}
+                  onChange={handleChange}
+                  options={INDUSTRIES}
+                  placeholder="Pick your sector"
+                  required
+                />
+                <Select
+                  label="Funding stage"
+                  name="fundingStage"
+                  value={data.fundingStage}
+                  onChange={handleChange}
+                  options={FUNDING_STAGES}
+                  placeholder="Where are you?"
+                  required
+                />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    label="Website (optional)"
+                    name="website"
+                    icon={HiGlobe}
+                    value={data.website}
+                    onChange={handleChange}
+                    placeholder="https://yourcompany.com"
+                  />
+                  <FormField
+                    label="LinkedIn (optional)"
+                    name="linkedIn"
+                    icon={FaLinkedin}
+                    value={data.linkedIn}
+                    onChange={handleChange}
+                    placeholder="linkedin.com/in/you"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <Select
+                  label="Investor type"
+                  name="investorType"
+                  value={data.investorType}
+                  onChange={handleChange}
+                  options={INVESTOR_TYPES}
+                  placeholder="What kind of investor are you?"
+                  required
+                />
+                <Select
+                  label="Typical investment range"
+                  name="investmentRange"
+                  value={data.investmentRange}
+                  onChange={handleChange}
+                  options={INVESTMENT_RANGES}
+                  placeholder="Select a range"
+                  required
+                />
+
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-300">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <HiUser className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      placeholder="John Doe"
-                      required
-                      className="w-full pl-12 pr-4 py-4 bg-dark-bg/50 border-2 border-gold/20 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Email Field */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-300">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <HiMail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="you@example.com"
-                      required
-                      className="w-full pl-12 pr-4 py-4 bg-dark-bg/50 border-2 border-gold/20 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-300">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <HiLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="••••••••"
-                      required
-                      minLength={8}
-                      className="w-full pl-12 pr-12 py-4 bg-dark-bg/50 border-2 border-gold/20 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold transition-colors"
-                    >
-                      {showPassword ? (
-                        <HiEyeOff className="w-5 h-5" />
-                      ) : (
-                        <HiEye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Must be at least 8 characters
-                  </p>
-                </div>
-
-                {/* Confirm Password Field */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-300">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <HiLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="••••••••"
-                      required
-                      className="w-full pl-12 pr-12 py-4 bg-dark-bg/50 border-2 border-gold/20 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold transition-colors"
-                    >
-                      {showConfirmPassword ? (
-                        <HiEyeOff className="w-5 h-5" />
-                      ) : (
-                        <HiEye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Terms & Conditions */}
-                <div>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="agreeToTerms"
-                      checked={formData.agreeToTerms}
-                      onChange={handleChange}
-                      required
-                      className="w-5 h-5 mt-0.5 rounded border-gold/30 bg-dark-bg/50 text-gold focus:ring-gold focus:ring-offset-0"
-                    />
-                    <span className="text-sm text-gray-300">
-                      I agree to the{" "}
-                      <a
-                        href="#terms"
-                        className="text-gold hover:text-bright-gold transition-colors"
-                      >
-                        Terms of Service
-                      </a>{" "}
-                      and{" "}
-                      <a
-                        href="#privacy"
-                        className="text-gold hover:text-bright-gold transition-colors"
-                      >
-                        Privacy Policy
-                      </a>
+                    Preferred industries
+                    <span className="text-gold ml-1">*</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      pick at least 1
                     </span>
                   </label>
+                  <MultiSelectChips
+                    options={INDUSTRIES}
+                    value={data.preferredIndustries}
+                    onChange={(v) => update("preferredIndustries", v)}
+                  />
                 </div>
 
-                {/* Submit Button */}
-                <motion.button
-                  type="submit"
-                  className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${
-                    userType === "founder"
-                      ? "bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-gold/30 hover:shadow-gold/50"
-                      : "bg-gradient-to-r from-primary-green to-secondary-green text-white shadow-primary-green/30 hover:shadow-primary-green/50"
-                  }`}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Create Account
-                </motion.button>
-              </form>
-
-              {/* Divider */}
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gold/20"></div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-300">
+                    Preferred funding stages
+                    <span className="text-gold ml-1">*</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      pick at least 1
+                    </span>
+                  </label>
+                  <MultiSelectChips
+                    options={FUNDING_STAGES.map((s) => s.label)}
+                    value={data.preferredStages}
+                    onChange={(v) => update("preferredStages", v)}
+                  />
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-card-bg/50 text-gray-400">
-                    Or sign up with
-                  </span>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-300">
+                    Investment thesis (optional)
+                    <span className="text-xs text-gray-500 ml-2">
+                      what excites you
+                    </span>
+                  </label>
+                  <textarea
+                    name="investmentThesis"
+                    value={data.investmentThesis}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="e.g. I back early-stage founders solving climate problems with hardware…"
+                    className="w-full px-4 py-4 bg-dark-bg/60 border-2 border-gold/20 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none transition-all resize-none"
+                  />
                 </div>
-              </div>
 
-              {/* Social Signup */}
-              <div className="grid grid-cols-2 gap-4">
-                <motion.button
-                  className="py-3 px-4 bg-dark-bg/50 border-2 border-gold/20 rounded-xl hover:border-gold transition-all font-semibold"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Google
-                </motion.button>
-                <motion.button
-                  className="py-3 px-4 bg-dark-bg/50 border-2 border-gold/20 rounded-xl hover:border-gold transition-all font-semibold"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  LinkedIn
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
+                <FormField
+                  label="LinkedIn (optional)"
+                  name="linkedIn"
+                  icon={FaLinkedin}
+                  value={data.linkedIn}
+                  onChange={handleChange}
+                  placeholder="linkedin.com/in/you"
+                />
+              </>
+            )}
 
-          {/* Login Link */}
-          <div className="text-center mt-8 pt-6 border-t border-gold/10">
-            <p className="text-gray-300">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="text-gold hover:text-bright-gold font-semibold transition-colors"
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <BackButton onClick={() => setStep(1)} />
+              <NextButton
+                type="submit"
+                disabled={!profileStepValid}
+                accent={userType === "founder" ? "gold" : "green"}
               >
-                Log in
-              </Link>
-            </p>
-          </div>
-        </motion.div>
+                Create account
+              </NextButton>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
-        {/* Back to Home */}
-        <Link to="/">
-          <motion.p
-            className="text-center mt-6 text-gray-400 hover:text-gold transition-colors"
-            whileHover={{ scale: 1.05 }}
+      <div className="text-center mt-8 pt-6 border-t border-gold/10">
+        <p className="text-gray-300 text-sm sm:text-base">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-gold hover:text-bright-gold font-semibold transition-colors"
           >
-            ← Back to Home
-          </motion.p>
-        </Link>
+            Log in
+          </Link>
+        </p>
       </div>
+    </AuthShell>
+  );
+}
+
+// ─── Sub-components ──────────────────────────
+
+function RoleCard({ title, icon, description, bullets, accent, onClick }) {
+  const accents =
+    accent === "gold"
+      ? "from-gold/10 to-bright-gold/5 border-gold/30 hover:border-gold"
+      : "from-primary-green/10 to-secondary-green/5 border-primary-green/30 hover:border-primary-green";
+  const bulletColor = accent === "gold" ? "text-gold" : "text-primary-green";
+  const arrowColor = accent === "gold" ? "text-gold" : "text-primary-green";
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      className={`group relative p-6 sm:p-8 bg-gradient-to-br ${accents} border-2 rounded-2xl transition-all text-left overflow-hidden`}
+      whileHover={{ scale: 1.02, y: -5 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <div
+        className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl ${
+          accent === "gold" ? "bg-gold/10" : "bg-primary-green/10"
+        } group-hover:opacity-30 transition-all`}
+      />
+      <div className="relative z-10">
+        {icon}
+        <h3 className="text-xl sm:text-2xl font-bold mb-2 mt-3 text-white">
+          {title}
+        </h3>
+        <p className="text-gray-300 text-sm mb-4">{description}</p>
+        <div className="space-y-2">
+          {bullets.map((b) => (
+            <div
+              key={b}
+              className="flex items-center gap-2 text-sm text-gray-300"
+            >
+              <HiCheckCircle className={`flex-shrink-0 ${bulletColor}`} />
+              <span>{b}</span>
+            </div>
+          ))}
+        </div>
+        <motion.div
+          className={`mt-5 font-semibold flex items-center gap-2 ${arrowColor}`}
+          animate={{ x: [0, 5, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          Continue as {title} →
+        </motion.div>
+      </div>
+    </motion.button>
+  );
+}
+
+function RoleBadge({ userType, onChange }) {
+  return (
+    <div className="flex items-center justify-center gap-3 mb-4 flex-wrap">
+      <div
+        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border-2 ${
+          userType === "founder"
+            ? "bg-gold/10 border-gold/30 text-gold"
+            : "bg-primary-green/10 border-primary-green/30 text-primary-green"
+        }`}
+      >
+        {userType === "founder" ? (
+          <IoRocketSharp className="w-5 h-5" />
+        ) : (
+          <HiTrendingUp className="w-5 h-5" />
+        )}
+        <span className="font-bold text-sm">
+          Signing up as {userType === "founder" ? "Founder" : "Investor"}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onChange}
+        className="text-xs text-gray-400 hover:text-gold transition-colors underline"
+      >
+        Change
+      </button>
     </div>
+  );
+}
+
+function BackButton({ onClick }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      className="px-5 py-3 text-gray-300 font-semibold rounded-xl border-2 border-gold/15 hover:border-gold/40 hover:text-white flex items-center gap-2 transition-all"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <HiArrowLeft className="w-5 h-5" />
+      Back
+    </motion.button>
+  );
+}
+
+function NextButton({ children, disabled, accent = "gold", type = "submit" }) {
+  const cls =
+    accent === "gold"
+      ? "bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-gold/30 hover:shadow-gold/50"
+      : "bg-gradient-to-r from-primary-green to-secondary-green text-white shadow-primary-green/30 hover:shadow-primary-green/50";
+  return (
+    <motion.button
+      type={type}
+      disabled={disabled}
+      className={`px-7 py-3.5 rounded-xl font-bold text-base shadow-lg transition-all flex items-center gap-2 ${cls} ${
+        disabled ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+      whileHover={disabled ? {} : { scale: 1.02, y: -2 }}
+      whileTap={disabled ? {} : { scale: 0.98 }}
+    >
+      {children}
+      <HiArrowRight className="w-5 h-5" />
+    </motion.button>
   );
 }
 
