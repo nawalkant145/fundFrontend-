@@ -78,7 +78,7 @@ export default function FounderDashboard() {
             <img
               src={myPitch.thumbnailUrl}
               alt={myPitch.title}
-              className="w-full sm:w-48 h-48 object-cover rounded-xl border border-gold/15"
+              className="w-full sm:w-48 h-32 sm:h-48 object-cover rounded-xl border border-gold/15"
             />
             <div className="flex-1 min-w-0">
               <h4 className="text-xl font-bold mb-1">{myPitch.title}</h4>

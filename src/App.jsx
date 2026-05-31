@@ -25,7 +25,6 @@ import DiscoverPage from "./pages/app/DiscoverPage";
 import SavedPitchesPage from "./pages/app/SavedPitchesPage";
 import InvestmentsPage from "./pages/app/InvestmentsPage";
 import MessagesPage from "./pages/app/MessagesPage";
-import ChatWindow from "./pages/app/ChatWindow";
 import CallScreen from "./pages/app/CallScreen";
 import NotificationsPage from "./pages/app/NotificationsPage";
 import ProfilePage from "./pages/app/ProfilePage";
@@ -73,7 +72,7 @@ function App() {
 
       {/* Shared */}
       <Route path="/app/messages" element={<MessagesPage />} />
-      <Route path="/app/messages/:chatId" element={<ChatWindow />} />
+      <Route path="/app/messages/:chatId" element={<MessagesPage />} />
       <Route path="/app/call/:kind/:chatId" element={<CallScreen />} />
       <Route path="/app/notifications" element={<NotificationsPage />} />
       <Route path="/app/profile" element={<ProfilePage />} />

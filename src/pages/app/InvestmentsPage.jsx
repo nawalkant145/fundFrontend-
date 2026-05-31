@@ -45,22 +45,35 @@ export default function InvestmentsPage() {
         {MOCK_DEALS.map((d) => (
           <motion.div
             key={d._id}
-            className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-5 flex items-center gap-4 flex-wrap"
+            className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4"
             whileHover={{ y: -2 }}
           >
-            <div className="w-14 h-14 rounded-xl bg-gold/10 flex items-center justify-center font-black text-gold text-lg">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gold/10 flex items-center justify-center font-black text-gold text-base sm:text-lg flex-shrink-0">
               {d.founderId.companyName?.[0] || "C"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold">{d.founderId.companyName}</p>
-              <p className="text-sm text-gray-400">{d.founderId.name}</p>
+              <p className="font-bold text-sm sm:text-base truncate">
+                {d.founderId.companyName}
+              </p>
+              <p className="text-xs sm:text-sm text-gray-400 truncate">
+                {d.founderId.name}
+              </p>
+              <span
+                className={`mt-1 inline-block sm:hidden px-2 py-0.5 text-[10px] uppercase font-bold rounded-full border ${stageColor[d.stage]}`}
+              >
+                {d.stage}
+              </span>
             </div>
-            <div className="text-right">
-              <p className="font-bold text-gold">{formatINR(d.amount)}</p>
-              <p className="text-xs text-gray-400">{d.equity}% equity</p>
+            <div className="text-right flex-shrink-0">
+              <p className="font-bold text-gold text-sm sm:text-base">
+                {formatINR(d.amount)}
+              </p>
+              <p className="text-[11px] sm:text-xs text-gray-400">
+                {d.equity}% equity
+              </p>
             </div>
             <span
-              className={`px-3 py-1 text-[10px] uppercase font-bold rounded-full border ${stageColor[d.stage]}`}
+              className={`hidden sm:inline-block px-3 py-1 text-[10px] uppercase font-bold rounded-full border flex-shrink-0 ${stageColor[d.stage]}`}
             >
               {d.stage}
             </span>

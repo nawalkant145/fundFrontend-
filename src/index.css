@@ -31,6 +31,15 @@ body {
   /* Smooth scrolling optimizations */
   scroll-behavior: smooth;
   overflow-x: hidden;
+
+  /* Disable pull-to-refresh + rubber-band overscroll on mobile.
+     Reels/TikTok/Shorts all do this. */
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+html {
+  overscroll-behavior-y: none;
 }
 
 /* Performance optimizations - only apply to specific elements, NOT globally */
@@ -242,6 +251,10 @@ img {
   border-radius: 0;
   border-width: 0;
   background: #000;
+  /* Disable pull-to-refresh + bounce on mobile (Instagram does this) */
+  overscroll-behavior: none;
+  /* Block native vertical scrolling so swipes are pure gestures we handle */
+  touch-action: pan-x;
 }
 
 /* Desktop (>= 768): portrait card driven by viewport height.
@@ -252,20 +265,22 @@ img {
     flex: 0 0 auto;
     align-self: center;
     width: auto;
-    height: calc(100vh - 6rem);
-    height: calc(100dvh - 6rem);
-    max-height: 900px;
+    /* Fill the full viewport height — Instagram parity */
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
     aspect-ratio: 9 / 16;
-    border-radius: 1rem;
-    border-width: 2px;
+    border-radius: 0;
+    border-width: 0;
   }
 }
 
-/* Short laptop screens */
+/* Short laptop screens — same fill behavior */
 @media (max-height: 700px) and (min-width: 768px) {
   .shorts-feed-stage {
-    height: calc(100vh - 5rem);
-    height: calc(100dvh - 5rem);
+    height: 100vh;
+    height: 100dvh;
   }
 }
 
@@ -301,4 +316,23 @@ img {
 .feed-rail-icon {
   width: clamp(1.1rem, 0.95rem + 0.8vw, 1.5rem);
   height: clamp(1.1rem, 0.95rem + 0.8vw, 1.5rem);
+}
+
+/* Bottom bar height — used by FeedShell to leave space on mobile only */
+:root {
+  --bottombar-h: 56px;
+}
+@media (min-width: 768px) {
+  :root {
+    --bottombar-h: 0px;
+  }
+}
+
+/* Hide scrollbar inside sidebar nav (Insta does this) */
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+.sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }

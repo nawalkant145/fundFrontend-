@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiHeart,
@@ -21,6 +21,7 @@ import FeedShell from "../../components/dashboard/FeedShell";
 import ShortsPlayer from "../../components/dashboard/ShortsPlayer";
 import FeedHint from "../../components/dashboard/FeedHint";
 import FounderProfileModal from "../../components/dashboard/FounderProfileModal";
+import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import Modal from "../../components/ui/Modal";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
@@ -28,8 +29,17 @@ import { MOCK_PITCHES, formatINR } from "../../constants/mockData";
 
 export default function InvestorFeed() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
-  const [idx, setIdx] = useState(0);
+  const [idx, setIdx] = useState(() => {
+    // If URL has ?pitch=<id>, start on that pitch
+    const param = new URLSearchParams(window.location.search).get("pitch");
+    if (param) {
+      const found = MOCK_PITCHES.findIndex((p) => p._id === param);
+      if (found >= 0) return found;
+    }
+    return 0;
+  });
   // Remember user's mute choice across sessions — Instagram does this too.
   // First-time users still start muted (browser autoplay policy requires it),
   // but a returning user who unmuted previously gets sound right away.
@@ -51,6 +61,23 @@ export default function InvestorFeed() {
   const [activeModal, setActiveModal] = useState(null);
 
   const [direction, setDirection] = useState("down"); // 'up' | 'down' for slide animation
+
+  // React to URL ?pitch=<id> changes (e.g. navigating from Discover/Saved)
+  useEffect(() => {
+    const param = searchParams.get("pitch");
+    if (!param) return;
+    const found = MOCK_PITCHES.findIndex((p) => p._id === param);
+    if (found >= 0 && found !== idx) {
+      setDirection(found > idx ? "down" : "up");
+      setIdx(found);
+      setExpanded(false);
+    }
+    // Strip the param so it doesn't keep affecting state
+    const next = new URLSearchParams(searchParams);
+    next.delete("pitch");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line
+  }, [searchParams]);
 
   const pitch = MOCK_PITCHES[idx];
 
@@ -164,7 +191,7 @@ export default function InvestorFeed() {
     // eslint-disable-next-line
   }, [idx, activeModal]);
 
-  // Touch swipe navigation (mobile)
+  // Touch swipe navigation (mobile) — also prevents pull-to-refresh
   useEffect(() => {
     const el = document.getElementById("shorts-feed-container");
     if (!el) return;
@@ -172,6 +199,11 @@ export default function InvestorFeed() {
     let lock = false;
     const onTouchStart = (e) => {
       startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e) => {
+      // Block native vertical scroll so the browser never triggers
+      // pull-to-refresh or rubber-band bounce on this surface.
+      e.preventDefault();
     };
     const onTouchEnd = (e) => {
       if (lock || activeModal) return;
@@ -183,9 +215,11 @@ export default function InvestorFeed() {
       setTimeout(() => (lock = false), 600);
     };
     el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
     // eslint-disable-next-line
@@ -251,7 +285,7 @@ export default function InvestorFeed() {
   return (
     <FeedShell>
       {/* Outer wrapper fills the entire main area absolutely. */}
-      <div className="absolute inset-0 flex items-stretch md:items-center justify-center md:gap-3 lg:gap-4 md:py-4">
+      <div className="absolute inset-0 flex items-stretch md:items-end md:justify-center md:gap-3 lg:gap-4">
         {/* Video stage */}
         <div
           id="shorts-feed-container"
@@ -392,10 +426,10 @@ export default function InvestorFeed() {
           </AnimatePresence>
         </div>
 
-        {/* ACTION RAIL — overlays video on mobile, sits beside it on desktop */}
+        {/* ACTION RAIL — overlays video on mobile, sits in flex row next to it on desktop */}
         <div
           className="absolute right-2 bottom-32 z-20 flex flex-col gap-2.5 items-center
-                     md:static md:self-end md:pb-4 md:gap-3 md:right-auto md:bottom-auto"
+                     md:static md:mb-6 md:gap-3 md:right-auto md:bottom-auto"
         >
           <RailButton
             icon={HiHeart}
@@ -448,7 +482,7 @@ export default function InvestorFeed() {
         onPickPitch={jumpToPitch}
       />
 
-      <CommentsModal
+      <CommentsPanel
         open={activeModal === "comments"}
         onClose={() => setActiveModal(null)}
         comments={comments[pitch._id] || []}
@@ -540,79 +574,6 @@ function FollowButton({ active, onClick }) {
 }
 
 // ─── Modals ────────────────────────────────
-
-function CommentsModal({ open, onClose, comments, onAdd }) {
-  const [text, setText] = useState("");
-  const submit = (e) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    onAdd({
-      _id: `c_${Date.now()}`,
-      author: "You",
-      text: text.trim(),
-      time: "now",
-    });
-    setText("");
-  };
-  const fakeSeed = [
-    {
-      _id: "f1",
-      author: "Vikram Patel",
-      text: "Strong traction, would love to see CAC numbers.",
-      time: "2h",
-    },
-    {
-      _id: "f2",
-      author: "Meera Kapoor",
-      text: "Brilliant pitch — what's the regulatory roadmap?",
-      time: "5h",
-    },
-  ];
-  const all = [...fakeSeed, ...comments];
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={`Comments (${all.length})`}
-      maxWidth="max-w-md"
-    >
-      <div className="space-y-3 max-h-[40vh] overflow-y-auto mb-3">
-        {all.map((c) => (
-          <div key={c._id} className="flex gap-3">
-            <div className="w-9 h-9 rounded-full bg-gold/20 text-gold flex items-center justify-center font-bold text-sm flex-shrink-0">
-              {c.author[0]}
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-sm">{c.author}</p>
-              <p className="text-sm text-gray-300">{c.text}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{c.time}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      <form onSubmit={submit} className="flex gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Add a comment…"
-          className="flex-1 px-4 py-2.5 bg-dark-bg/60 border border-gold/15 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none text-sm"
-        />
-        <button
-          type="submit"
-          disabled={!text.trim()}
-          className={`px-4 py-2.5 rounded-xl font-bold text-sm ${
-            text.trim()
-              ? "bg-gold text-dark-navy"
-              : "bg-dark-bg/60 text-gray-500 cursor-not-allowed"
-          }`}
-        >
-          Post
-        </button>
-      </form>
-    </Modal>
-  );
-}
 
 function ShareModal({ open, onClose, pitch }) {
   const toast = useToast();

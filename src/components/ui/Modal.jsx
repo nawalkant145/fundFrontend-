@@ -36,10 +36,10 @@ export default function Modal({
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 30, scale: 0.96, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className={`w-full ${maxWidth} bg-card-bg border-2 border-gold/20 rounded-3xl shadow-2xl overflow-hidden`}
+            className={`w-full ${maxWidth} bg-card-bg border-2 border-gold/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
           >
             {(title || !hideClose) && (
-              <div className="flex items-center justify-between p-5 border-b border-gold/10">
+              <div className="flex items-center justify-between p-5 border-b border-gold/10 flex-shrink-0">
                 {title && <h2 className="text-lg font-bold">{title}</h2>}
                 {!hideClose && (
                   <button
@@ -51,7 +51,7 @@ export default function Modal({
                 )}
               </div>
             )}
-            <div className="p-5">{children}</div>
+            <div className="p-5 overflow-y-auto">{children}</div>
           </motion.div>
         </motion.div>
       )}

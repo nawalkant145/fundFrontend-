@@ -1,27 +1,20 @@
-import { useState } from "react";
 import Sidebar from "./Sidebar";
-import TopBar from "./TopBar";
+import BottomBar from "./BottomBar";
 import { CURRENT_USER } from "../../constants/mockData";
 
 /**
- * Layout wrapper for the immersive shorts feed.
- *
- * Strategy: skip flex-chain height propagation entirely. The body and root
- * already have explicit heights from index.css. We use a single relative
- * parent with absolute children so heights are always concrete.
+ * Layout for the immersive shorts feed.
+ *   - Desktop: collapsed sidebar (icons only, expands on hover)
+ *   - Mobile: video fills the screen, bottom tab bar
+ *   - No top navbar — Instagram parity
  */
 export default function FeedShell({ children, mode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const resolvedMode = mode || CURRENT_USER.role;
 
   return (
     <div
       className="overflow-hidden bg-dark-navy text-white relative"
-      style={{
-        height: "100dvh",
-        // Fallback for browsers without dvh
-        minHeight: "100vh",
-      }}
+      style={{ height: "100dvh", minHeight: "100vh" }}
     >
       {/* Background ambient */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -29,20 +22,21 @@ export default function FeedShell({ children, mode }) {
         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-primary-green/5 rounded-full blur-[180px]" />
       </div>
 
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        mode={resolvedMode}
-      />
+      <Sidebar mode={resolvedMode} />
+      <BottomBar mode={resolvedMode} />
 
-      {/* Main content area — uses absolute positioning so children always have
-          a concrete sizing context */}
-      <div className="absolute inset-0 lg:pl-72 z-10 flex flex-col">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} />
-
-        {/* The main slot is a relatively-positioned box that fills the rest.
-            Children use the .feed-stage-anchor class to fill it edge-to-edge. */}
-        <main className="relative flex-1 overflow-hidden">{children}</main>
+      {/* Main: starts at left=72px on desktop (sidebar width), fills to right edge.
+          On mobile, leaves 56px at bottom for the tab bar. */}
+      <div
+        className="absolute inset-0 md:left-[72px] z-10"
+        style={{
+          // Reserve space for mobile bottom bar
+          bottom: "var(--bottombar-h, 56px)",
+        }}
+      >
+        <main className="relative w-full h-full overflow-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );

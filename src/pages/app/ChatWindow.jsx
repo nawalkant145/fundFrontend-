@@ -122,13 +122,13 @@ export default function ChatWindow() {
 
   return (
     <DashboardShell title={null}>
-      <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-160px)] min-h-[600px]">
+      <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden flex flex-col h-[calc(100dvh-7rem)] md:h-[calc(100vh-160px)] md:min-h-[600px]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gold/10">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               to="/app/messages"
-              className="p-2 hover:bg-dark-bg/60 rounded-lg lg:hidden flex-shrink-0"
+              className="p-2 hover:bg-dark-bg/60 rounded-lg md:hidden flex-shrink-0"
             >
               <HiArrowLeft className="w-5 h-5" />
             </Link>

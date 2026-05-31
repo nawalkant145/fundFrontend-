@@ -18,19 +18,19 @@ export default function ProfilePage() {
     <DashboardShell title="My profile">
       {/* Cover + avatar */}
       <div className="relative bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden mb-6">
-        <div className="h-40 bg-gradient-to-br from-gold/30 via-primary-green/30 to-dark-navy" />
-        <div className="px-5 pb-5 -mt-12">
+        <div className="h-28 sm:h-40 bg-gradient-to-br from-gold/30 via-primary-green/30 to-dark-navy" />
+        <div className="px-4 sm:px-5 pb-5 -mt-10 sm:-mt-12">
           <img
             src={CURRENT_USER.avatar}
             alt={CURRENT_USER.name}
-            className="w-24 h-24 rounded-full border-4 border-card-bg object-cover"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-card-bg object-cover"
           />
           <div className="flex items-end justify-between flex-wrap gap-3 mt-3">
             <div>
-              <h2 className="text-2xl font-black flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-black flex items-center gap-2">
                 {CURRENT_USER.name}
                 {CURRENT_USER.isVerified && (
-                  <MdVerified className="w-6 h-6 text-gold" />
+                  <MdVerified className="w-5 h-5 sm:w-6 sm:h-6 text-gold" />
                 )}
               </h2>
               <p className="text-sm text-gray-400">@{CURRENT_USER.username}</p>
@@ -99,8 +99,8 @@ export default function ProfilePage() {
       </div>
 
       {/* Pitches */}
-      <h3 className="text-lg font-bold mb-3">My pitches</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
+      <h3 className="text-base sm:text-lg font-bold mb-3">My pitches</h3>
+      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
         {MOCK_PITCHES.slice(0, 2).map((p) => (
           <div
             key={p._id}
@@ -109,9 +109,9 @@ export default function ProfilePage() {
             <img
               src={p.thumbnailUrl}
               alt={p.title}
-              className="w-32 h-32 object-cover flex-shrink-0"
+              className="w-24 sm:w-32 h-24 sm:h-32 object-cover flex-shrink-0"
             />
-            <div className="p-3 min-w-0">
+            <div className="p-3 min-w-0 flex-1">
               <p className="font-bold text-sm line-clamp-1">{p.title}</p>
               <p className="text-xs text-gray-400 line-clamp-2 mt-1">
                 {p.description}
@@ -129,9 +129,11 @@ export default function ProfilePage() {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-5 text-center">
-      <p className="text-3xl font-black">{value}</p>
-      <p className="text-xs text-gray-400 mt-1 font-semibold">{label}</p>
+    <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-3 sm:p-5 text-center">
+      <p className="text-xl sm:text-3xl font-black">{value}</p>
+      <p className="text-[10px] sm:text-xs text-gray-400 mt-1 font-semibold">
+        {label}
+      </p>
     </div>
   );
 }

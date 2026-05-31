@@ -172,18 +172,20 @@ function DealRow({ deal, onView, onUpdateStage }) {
 
   return (
     <motion.div
-      className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-5 hover:border-gold/40 transition-all"
+      className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-5 hover:border-gold/40 transition-all"
       whileHover={{ y: -2 }}
     >
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-wrap">
         <img
           src={deal.investorId.avatar}
           alt={deal.investorId.name}
-          className="w-14 h-14 rounded-full object-cover border-2 border-gold/30"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-gold/30 flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <p className="font-bold">{deal.investorId.name}</p>
+            <p className="font-bold text-sm sm:text-base">
+              {deal.investorId.name}
+            </p>
             <span
               className={`px-2.5 py-0.5 text-[10px] uppercase font-bold rounded-full border ${stageColor[deal.stage]}`}
             >
@@ -195,26 +197,26 @@ function DealRow({ deal, onView, onUpdateStage }) {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-400">
-            {formatINR(deal.amount)} for {deal.equity}% equity · Updated{" "}
+          <p className="text-xs sm:text-sm text-gray-400">
+            {formatINR(deal.amount)} for {deal.equity}% equity ·{" "}
             {deal.updatedAt}
           </p>
         </div>
-        <div className="flex gap-2 items-center">
-          <Link to="/app/messages">
-            <button className="px-3 py-2 border-2 border-gold/20 hover:border-gold rounded-lg text-xs font-bold flex items-center gap-1.5">
+        <div className="flex gap-2 items-center w-full sm:w-auto sm:justify-end overflow-x-auto">
+          <Link to="/app/messages" className="flex-shrink-0">
+            <button className="px-3 py-2 border-2 border-gold/20 hover:border-gold rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap">
               <HiChatAlt2 className="w-4 h-4" /> Chat
             </button>
           </Link>
           {deal.stage === "agreed" && deal.status === "pending" && (
-            <button className="px-3 py-2 bg-gold/20 text-gold rounded-lg text-xs font-bold flex items-center gap-1.5">
-              <HiExclamationCircle className="w-4 h-4" /> Awaiting payment
+            <button className="px-3 py-2 bg-gold/20 text-gold rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
+              <HiExclamationCircle className="w-4 h-4" /> Pay
             </button>
           )}
           {deal.stage !== "completed" && (
             <button
               onClick={onUpdateStage}
-              className="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1.5"
+              className="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
             >
               <HiCurrencyDollar className="w-4 h-4" /> Stage
             </button>

@@ -46,18 +46,18 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Views over time chart */}
-      <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6 mb-8">
+      <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-6 mb-8">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
           <div>
-            <h3 className="text-lg font-bold">Views over time</h3>
+            <h3 className="text-base sm:text-lg font-bold">Views over time</h3>
             <p className="text-xs text-gray-400">Last 7 days</p>
           </div>
-          <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold">
+          <div className="flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-bold">
             <HiArrowUp className="w-4 h-4" />
             +24% vs prior week
           </div>
         </div>
-        <div className="flex items-end gap-3 h-48">
+        <div className="flex items-end gap-2 sm:gap-3 h-36 sm:h-48">
           {views.map((v, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-2">
               <div className="w-full flex-1 flex items-end">
@@ -80,10 +80,12 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Watch retention */}
-        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6">
-          <h3 className="text-lg font-bold mb-1">Watch retention</h3>
+        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-bold mb-1">
+            Watch retention
+          </h3>
           <p className="text-xs text-gray-400 mb-5">
             % of investors still watching at each second
           </p>
@@ -97,8 +99,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Audience breakdown */}
-        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6">
-          <h3 className="text-lg font-bold mb-1">Top investor industries</h3>
+        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-bold mb-1">
+            Top investor industries
+          </h3>
           <p className="text-xs text-gray-400 mb-5">
             Where your viewers focus their investments
           </p>
