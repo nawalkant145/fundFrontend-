@@ -1809,3 +1809,419 @@ Redis profile TTL   → 15 minutes
 
 _Last updated: May 2026_
 _Stack: React.js + React Native + Node.js + Express + MongoDB + Socket.io + WebRTC + Cloudinary + Redis + Firebase + Razorpay_
+
+---
+
+## 25. v2 — Posts, Follow, Subscription & Boost
+
+> Added after v1 launch planning. These features turn EXPGLO FUND from a one-shot
+> fundraising tool into a sticky social platform that earns revenue continuously.
+
+### 25.1 Goals
+
+| Goal                          | Why                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| Add **posts** (image + text)  | Keep founders active between pitches — Instagram/LinkedIn parity                       |
+| Founders can **use the feed** | They scroll, follow, comment, message — like investors do (but no "Invest" action)     |
+| **Follow** (no mutual match)  | Cleaner UX. Spam blocked by paid subscription, not by manual approval                  |
+| **Subscription paywall**      | 2nd revenue stream — locks new DMs and audio/video calls behind ₹499/month             |
+| **Boost a pitch**             | 3rd revenue stream — pay-per-boost to push a pitch to top of matching investors' feeds |
+
+### 25.2 Three Revenue Streams
+
+| #   | Stream                      | Status                        |
+| --- | --------------------------- | ----------------------------- |
+| 1   | **Course sales**            | already in plan, no change    |
+| 2   | **EXPGLO Pro subscription** | NEW — ₹499/month              |
+| 3   | **Boost-a-pitch**           | NEW — pay-per-boost (3 tiers) |
+
+---
+
+### 25.3 Posts (new content type)
+
+```
+type: image-carousel (1–10 images) + caption + optional link + hashtags
+      OR plain-text-only post
+who:  founders only (v1) — investors might be enabled later
+expiry: never (only owner can delete)
+limit: 10 posts/day per user
+```
+
+#### Post schema
+
+```javascript
+{
+  _id,
+  authorId: ObjectId,                  // ref: Users
+  type: { type: String, enum: ['images','text'], default: 'images' },
+  images: [String],                    // Cloudinary URLs, max 10
+  caption: String,                     // max 2200 chars (Instagram parity)
+  link: String,                        // optional external URL
+  hashtags: [String],
+  likes: [ObjectId],                   // userIds
+  saves: [ObjectId],                   // userIds (any role can save)
+  commentCount: { type: Number, default: 0 },
+  isDeleted: { type: Boolean, default: false },
+  createdAt
+}
+```
+
+#### Post API routes
+
+```
+POST   /api/post                       # founder only — create
+GET    /api/post/feed                  # mixed into video feed
+GET    /api/post/:id
+DELETE /api/post/:id                   # owner only
+PUT    /api/post/:id                   # owner only — edit caption/link
+POST   /api/post/:id/like
+POST   /api/post/:id/save
+POST   /api/post/:id/report
+GET    /api/post/user/:userId          # all posts by a user (for profile grid)
+GET    /api/post/saved                 # current user's saved posts
+```
+
+---
+
+### 25.4 Follow (replaces mutual-match)
+
+```javascript
+// Follow schema
+{
+  _id,
+  followerId: ObjectId,                // ref: Users — who clicked Follow
+  followingId: ObjectId,               // ref: Users — who is being followed
+  createdAt
+}
+// Unique compound index: { followerId: 1, followingId: 1 }
+// Indexes both ways: { followerId: 1, createdAt: -1 } and { followingId: 1, createdAt: -1 }
+```
+
+```
+POST   /api/follow/:userId             # follow a user
+DELETE /api/follow/:userId             # unfollow
+GET    /api/follow/followers/:userId   # paginated list
+GET    /api/follow/following/:userId   # paginated list
+GET    /api/follow/status/:userId      # { isFollowing, isFollowedBy }
+```
+
+#### User schema additions for follow
+
+```javascript
+{
+  ...existing,
+  followersCount: { type: Number, default: 0 },
+  followingCount: { type: Number, default: 0 },
+  postsCount: { type: Number, default: 0 }
+}
+```
+
+---
+
+### 25.5 Subscription (EXPGLO Pro — ₹499/month)
+
+#### What free vs Pro gets
+
+| Feature                           | Free            | Pro (₹499/mo)                             |
+| --------------------------------- | --------------- | ----------------------------------------- |
+| Browse feed (pitches + posts)     | ✅              | ✅                                        |
+| Like / save / comment             | ✅              | ✅                                        |
+| Follow anyone                     | ✅              | ✅                                        |
+| Upload pitches & posts            | ✅              | ✅                                        |
+| Receive DMs (incoming)            | ✅              | ✅                                        |
+| **Start NEW DMs**                 | 1 free / month  | ✅ unlimited                              |
+| **Audio + video calls**           | ❌ blocked      | ✅ unlimited                              |
+| Boost a pitch                     | pay-per-boost   | 1 free Mini boost / month + pay-per-boost |
+| Investment expression (investors) | ✅              | ✅                                        |
+| Profile views (who viewed me)     | last 3 only     | full list                                 |
+| Advanced filters in Discover      | basic           | full                                      |
+| Course access                     | sold separately | sold separately                           |
+
+#### Subscription schema
+
+```javascript
+{
+  _id,
+  userId: ObjectId,
+  plan: { type: String, enum: ['pro'], default: 'pro' },
+  status: { type: String, enum: ['active','expired','cancelled','pending'] },
+  startedAt: Date,
+  expiresAt: Date,                     // renewed monthly
+  razorpaySubscriptionId: String,
+  razorpayCustomerId: String,
+  razorpayPlanId: String,
+
+  // Free-tier counters reset every month
+  freeChatsUsedThisMonth: { type: Number, default: 0 },
+  freeBoostsUsedThisMonth: { type: Number, default: 0 },
+  countersResetAt: Date,
+
+  // Audit
+  history: [{
+    event: String,                     // 'subscribed','renewed','cancelled','expired'
+    amount: Number,
+    razorpayPaymentId: String,
+    at: Date
+  }]
+}
+```
+
+#### Subscription API routes
+
+```
+POST   /api/subscription/create-order  # creates Razorpay subscription
+POST   /api/subscription/verify        # verify webhook + activate
+POST   /api/subscription/cancel
+GET    /api/subscription/me            # current user's status
+POST   /api/subscription/use-free-chat # increment freeChatsUsedThisMonth
+```
+
+#### Free-chat gate (server-side)
+
+```javascript
+// Pseudo-code in chat.service.js
+async function startNewChat(senderId, receiverId) {
+  // Check existing chat
+  const existing = await Chat.findOne({
+    participants: { $all: [senderId, receiverId] },
+  });
+  if (existing) return existing; // legacy chat — always allowed
+
+  const sub = await Subscription.findOne({
+    userId: senderId,
+    status: "active",
+  });
+  if (sub) return Chat.create({ participants: [senderId, receiverId] });
+
+  // Free user — check monthly counter
+  const sub2 = await Subscription.findOne({ userId: senderId }); // even if expired
+  const freeUsed = sub2?.freeChatsUsedThisMonth ?? 0;
+  if (freeUsed >= 1) {
+    throw new ApiError(
+      402,
+      "Subscribe to EXPGLO Pro to start more conversations",
+    );
+  }
+
+  // Allow + increment counter
+  await Subscription.updateOne(
+    { userId: senderId },
+    { $inc: { freeChatsUsedThisMonth: 1 } },
+    { upsert: true },
+  );
+  return Chat.create({ participants: [senderId, receiverId] });
+}
+```
+
+#### Call gate (server-side + socket-side)
+
+```javascript
+// In call.service.js + call.socket.js
+async function ensureCanCall(callerId, receiverId) {
+  const sub = await Subscription.findOne({
+    userId: callerId,
+    status: "active",
+  });
+  if (!sub) {
+    throw new ApiError(402, "Audio and video calls are a Pro feature");
+  }
+  // Existing checks: chat exists, both verified, neither in active call
+}
+```
+
+#### Mock subscription on frontend
+
+While backend isn't wired yet:
+
+```javascript
+// src/lib/auth.js — adds setSubscription / getSubscription helpers
+// Stored in localStorage as { plan, status, expiresAt, freeChatsUsedThisMonth }
+// Pricing page mock-pay flow flips status to 'active' instantly
+// All gates (chat-start, call-start) read this state
+```
+
+---
+
+### 25.6 Boost a Pitch (pay-per-boost — 3rd revenue stream)
+
+#### Targeting
+
+```
+1. Each investor selects their favourite industries on signup
+   (multi-select, e.g. ["Fintech", "HealthTech"])
+2. When founder boosts a pitch tagged "Fintech", that pitch
+   is pinned at the TOP of the feed for investors with "Fintech"
+   in their preferred industries.
+3. Each boosted pitch shows ONCE per investor — when they swipe
+   past it, the pitch.boostShownTo[] array tracks the investor's
+   ID so they don't see the boost slot for it again.
+4. The pitch still appears in normal feed rotation later.
+5. Founders also see boosted pitches (so peers/collaborators
+   can engage too).
+```
+
+#### Boost tiers
+
+| Tier | Price (placeholder) | Duration | Reach                                          |
+| ---- | ------------------- | -------- | ---------------------------------------------- |
+| Mini | ₹499                | 24 hours | Top of feed for matching-industry investors    |
+| Pro  | ₹1,499              | 7 days   | Top of feed for matching-industry investors    |
+| Mega | ₹4,999              | 30 days  | Top of feed for ALL investors + Featured badge |
+
+#### Boost schema
+
+```javascript
+{
+  _id,
+  pitchId: ObjectId,                   // ref: Videos
+  founderId: ObjectId,
+  tier: { type: String, enum: ['mini','pro','mega'] },
+  amountPaid: Number,                  // INR, gross
+  durationHours: Number,
+  startedAt: Date,
+  expiresAt: Date,
+  shownTo: [ObjectId],                 // investorIds who already saw the boost slot
+  status: { type: String, enum: ['active','expired','refunded'] },
+  razorpayOrderId: String,
+  razorpayPaymentId: String,
+  createdAt
+}
+// Index: { status: 1, expiresAt: 1 } for active-boost lookups
+// Index: { pitchId: 1 } for "is this pitch boosted?"
+```
+
+#### Boost API routes
+
+```
+POST   /api/boost/create-order         # creates Razorpay order for tier
+POST   /api/boost/verify               # webhook → activate boost
+GET    /api/boost/my-boosts            # founder's history
+POST   /api/boost/:id/track-shown      # called by feed query when shown to an investor
+GET    /api/boost/active               # admin — see all active boosts
+```
+
+#### Boost target logic (in feed query)
+
+```javascript
+// video.service.js — getFeed()
+async function getFeed(investorId, cursor, limit) {
+  const investor = await User.findById(investorId).lean();
+  const prefs = investor.preferredIndustries || [];
+
+  // Step 1 — pull active boosts the investor hasn't seen yet
+  const boostedSlot = await Boost.findOne({
+    status: "active",
+    expiresAt: { $gt: new Date() },
+    shownTo: { $ne: investorId },
+  })
+    .populate({
+      path: "pitchId",
+      match: prefs.length ? { industry: { $in: prefs } } : {}, // mega tier matches everything
+    })
+    .sort("-tier"); // mega first
+
+  let videos = [];
+  if (boostedSlot && boostedSlot.pitchId) {
+    videos.push(boostedSlot.pitchId);
+    await Boost.updateOne(
+      { _id: boostedSlot._id },
+      { $addToSet: { shownTo: investorId } },
+    );
+  }
+
+  // Step 2 — fill remaining slots with normal feed query
+  const remaining = limit - videos.length;
+  const normal = await Video.find({
+    status: "active",
+    _id: { $nin: [...videos.map((v) => v._id), ...investor.notInterested] },
+    ...(cursor ? { _id: { $lt: cursor } } : {}),
+  })
+    .sort("-createdAt")
+    .limit(remaining);
+
+  return { videos: [...videos, ...normal] };
+}
+```
+
+---
+
+### 25.7 Updated user schema (consolidated additions)
+
+```javascript
+{
+  ...existing,
+  followersCount: Number,
+  followingCount: Number,
+  postsCount: Number,
+  hasActiveSubscription: Boolean,      // denormalized for fast feed checks
+  preferredIndustries: [String]        // already exists for investors,
+                                       // also collected from founders so
+                                       // boost can match peer-discovery
+}
+```
+
+---
+
+### 25.8 Updated chat schema (drops mutual-match requirement)
+
+```javascript
+{
+  _id,
+  participants: [ObjectId],
+  // founderId / investorId — no longer required (any pair can chat now)
+  isLegacy: { type: Boolean, default: false },   // chats from before subscription launch
+  startedBy: ObjectId,                          // who initiated
+  startedWasFreeChat: Boolean,                   // did the starter use their monthly free chat?
+  ...rest unchanged
+}
+```
+
+#### Removed business rule
+
+```diff
+- Investor likes pitch → founder approves → chat unlocks
++ Anyone follows anyone (one click) → can start a chat
++ Free user: 1 new chat per month, then paywall
++ Pro user: unlimited new chats
+```
+
+---
+
+### 25.9 Frontend — what changes
+
+| Page / Component                | Change                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Sidebar (founder)               | "My Pitches" replaced by **"My Studio"** (sub-tabs: Pitches \| Posts)          |
+| Sidebar (investor)              | "Saved" renamed to **"Saved Studio"** (sub-tabs: Saved Pitches \| Saved Posts) |
+| New page: UploadPostPage        | Drag-drop carousel + caption + link + hashtags + 10/day counter                |
+| New component: PostDetailModal  | Instagram-style modal with arrow-key/swipe between user's posts                |
+| New component: FollowButton     | One-click follow/unfollow with optimistic UI                                   |
+| InvestorFeed (now used by both) | Founder mode: hide Invest, show Follow + DM. Skip viewer's own content         |
+| PitchCard                       | Add "Boosted" gold ribbon when pitch.boost.status === 'active'                 |
+| New page: SubscriptionPage      | 3 cards (Free, Pro, course-bundle), mock-pay flow, comparison table            |
+| New component: ChatStartPaywall | Modal that appears when free user hits limit — "Subscribe for unlimited"       |
+| New component: CallPaywall      | Same as above, blocks call initiation if free                                  |
+| New component: BoostModal       | Modal with 3 tier cards, mock-pay flow, applied to a specific pitch            |
+| MyStudioPage                    | Founder profile page replacement — bio + tabs + boost CTAs on each pitch       |
+| FounderProfileModal             | Add Follow + DM + (investor only) Invest. Drop "approve mutual" UI             |
+
+---
+
+### 25.10 Mock vs real backend
+
+```
+v1 (now) — backend already built without these features:
+  → Mock the new pieces in localStorage on the frontend
+  → src/lib/auth.js gains: getSubscription(), setSubscription(),
+    getFollowing(), follow(), unfollow(), incrementFreeChat()
+  → mockData.js gains: MOCK_POSTS, MOCK_FOLLOWS, MOCK_BOOSTS
+
+v2 (later) — wire to real backend:
+  → Backend gets: post module, follow module, subscription module, boost module
+  → Frontend swaps localStorage helpers for axios calls
+```
+
+---
+
+_Last updated: June 2026_
+_v2 features locked in: Posts, Follow, Subscription paywall, Boost-a-pitch_

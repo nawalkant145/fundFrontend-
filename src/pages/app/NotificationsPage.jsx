@@ -20,7 +20,8 @@ import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
 
 const ICONS = {
   like: { icon: HiHeart, cls: "bg-red-500/15 text-red-400" },
-  save: { icon: HiBookmark, cls: "bg-blue-500/15 text-blue-400" },
+  save: { icon: HiBookmark, cls: "bg-secondary-green/15 text-secondary-green" },
+  comment: { icon: HiChatAlt2, cls: "bg-primary-green/15 text-primary-green" },
   message: { icon: HiChatAlt2, cls: "bg-gold/15 text-gold" },
   call: { icon: HiUsers, cls: "bg-primary-green/15 text-primary-green" },
   investment: {
@@ -28,7 +29,10 @@ const ICONS = {
     cls: "bg-emerald-500/15 text-emerald-400",
   },
   match: { icon: HiUsers, cls: "bg-pink-500/15 text-pink-400" },
-  pitch_views: { icon: HiEye, cls: "bg-blue-500/15 text-blue-400" },
+  pitch_views: {
+    icon: HiEye,
+    cls: "bg-secondary-green/15 text-secondary-green",
+  },
   system: { icon: MdVerified, cls: "bg-gold/15 text-gold" },
   verification: {
     icon: HiCheckCircle,

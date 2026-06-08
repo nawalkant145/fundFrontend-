@@ -16,7 +16,11 @@ import KycPage from "./pages/KycPage";
 import AppHome from "./pages/app/AppHome";
 import FounderDashboard from "./pages/app/FounderDashboard";
 import UploadPitchPage from "./pages/app/UploadPitchPage";
+import UploadPostPage from "./pages/app/UploadPostPage";
 import MyPitchesPage from "./pages/app/MyPitchesPage";
+import MyStudioPage from "./pages/app/MyStudioPage";
+import PostDetailPage from "./pages/app/PostDetailPage";
+import SubscriptionPage from "./pages/app/SubscriptionPage";
 import AnalyticsPage from "./pages/app/AnalyticsPage";
 import DealsPage from "./pages/app/DealsPage";
 import DeckRequestsPage from "./pages/app/DeckRequestsPage";
@@ -59,18 +63,23 @@ function App() {
       {/* Founder */}
       <Route path="/app/dashboard" element={<FounderDashboard />} />
       <Route path="/app/upload" element={<UploadPitchPage />} />
-      <Route path="/app/my-pitches" element={<MyPitchesPage />} />
+      <Route path="/app/post/new" element={<UploadPostPage />} />
+      <Route path="/app/post/:postId" element={<PostDetailPage />} />
+      <Route path="/app/studio" element={<MyStudioPage />} />
+      <Route path="/app/my-pitches" element={<MyStudioPage />} />
       <Route path="/app/analytics" element={<AnalyticsPage />} />
       <Route path="/app/deals" element={<DealsPage />} />
       <Route path="/app/deck-requests" element={<DeckRequestsPage />} />
 
       {/* Investor */}
       <Route path="/app/feed" element={<InvestorFeed />} />
+      <Route path="/app/pitch" element={<InvestorFeed />} />
       <Route path="/app/discover" element={<DiscoverPage />} />
       <Route path="/app/saved" element={<SavedPitchesPage />} />
       <Route path="/app/investments" element={<InvestmentsPage />} />
 
       {/* Shared */}
+      <Route path="/app/subscription" element={<SubscriptionPage />} />
       <Route path="/app/messages" element={<MessagesPage />} />
       <Route path="/app/messages/:chatId" element={<MessagesPage />} />
       <Route path="/app/call/:kind/:chatId" element={<CallScreen />} />

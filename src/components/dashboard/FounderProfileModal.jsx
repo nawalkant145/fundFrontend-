@@ -71,7 +71,7 @@ export default function FounderProfileModal({
                 href={profile.website}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-blue-400 hover:underline flex items-center gap-1 truncate"
+                className="text-xs text-gold hover:underline flex items-center gap-1 truncate"
               >
                 <HiGlobe className="w-3.5 h-3.5" />
                 {profile.website.replace(/^https?:\/\//, "")}

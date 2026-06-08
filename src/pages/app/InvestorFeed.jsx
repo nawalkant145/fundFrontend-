@@ -25,7 +25,16 @@ import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import Modal from "../../components/ui/Modal";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
-import { MOCK_PITCHES, formatINR } from "../../constants/mockData";
+import {
+  MOCK_PITCHES,
+  CURRENT_USER,
+  formatINR,
+} from "../../constants/mockData";
+import {
+  isFollowing,
+  follow as followUser,
+  unfollow as unfollowUser,
+} from "../../lib/auth";
 
 export default function InvestorFeed() {
   const navigate = useNavigate();
@@ -232,6 +241,15 @@ export default function InvestorFeed() {
     if (!wasLiked) toast.success("Liked");
   };
 
+  // Double-tap on the video — Instagram only LIKES (never unlikes) on double-tap
+  const doubleTapLike = () => {
+    const id = pitch._id;
+    if (!liked[id]) {
+      setLiked((p) => ({ ...p, [id]: true }));
+      toast.success("Liked");
+    }
+  };
+
   const toggleSave = () => {
     const id = pitch._id;
     const wasSaved = saved[id];
@@ -241,7 +259,9 @@ export default function InvestorFeed() {
 
   const toggleFollow = () => {
     const id = pitch.founderId._id;
-    const wasFollowing = following[id];
+    const wasFollowing = following[id] ?? isFollowing(id);
+    if (wasFollowing) unfollowUser(id);
+    else followUser(id);
     setFollowing((p) => ({ ...p, [id]: !wasFollowing }));
     toast.success(
       wasFollowing
@@ -332,10 +352,11 @@ export default function InvestorFeed() {
                 poster={pitch.coverUrl || pitch.thumbnailUrl}
                 muted={muted}
                 active={true}
+                onDoubleTap={doubleTapLike}
               />
 
               {/* Bottom gradient — only behind text area */}
-              <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-dark-navy via-dark-navy/70 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
               {/* Top bar — only the industry tag now */}
               <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
@@ -345,8 +366,8 @@ export default function InvestorFeed() {
               </div>
 
               {/* Bottom info — padded right on mobile to clear the action rail */}
-              <div className="absolute bottom-0 left-0 right-0 feed-fluid-pad-sm pr-16 md:pr-3.5 z-10 pointer-events-none">
-                <div className="flex items-center gap-2 mb-2 pointer-events-auto">
+              <div className="absolute bottom-0 left-0 right-0 feed-fluid-pad-sm pr-16 md:pr-3.5 pb-3 z-10 pointer-events-none">
+                <div className="flex items-center gap-2 mb-2.5 pointer-events-auto">
                   <button
                     onClick={() => setActiveModal("profile")}
                     className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
@@ -397,13 +418,20 @@ export default function InvestorFeed() {
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
-                  <button
-                    onClick={() => setActiveModal("invest")}
-                    className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
-                  >
-                    <HiCurrencyDollar className="w-3.5 h-3.5" />
-                    {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
-                  </button>
+                  {CURRENT_USER.role === "investor" ? (
+                    <button
+                      onClick={() => setActiveModal("invest")}
+                      className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
+                    >
+                      <HiCurrencyDollar className="w-3.5 h-3.5" />
+                      {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+                    </button>
+                  ) : (
+                    <span className="px-2.5 py-1 bg-white/15 border border-white/30 rounded-full feed-fluid-text-xs font-bold text-white flex items-center gap-1">
+                      <HiCurrencyDollar className="w-3.5 h-3.5" />
+                      {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+                    </span>
+                  )}
                   <span className="feed-fluid-text-xs text-gray-300 capitalize">
                     {pitch.fundingStage}
                   </span>
@@ -453,11 +481,13 @@ export default function InvestorFeed() {
             onClick={toggleSave}
             title="Save"
           />
-          <RailButton
-            icon={HiCurrencyDollar}
-            onClick={() => setActiveModal("invest")}
-            title="Express investment interest"
-          />
+          {CURRENT_USER.role === "investor" && (
+            <RailButton
+              icon={HiCurrencyDollar}
+              onClick={() => setActiveModal("invest")}
+              title="Express investment interest"
+            />
+          )}
           <RailButton
             icon={HiShare}
             onClick={() => setActiveModal("share")}
@@ -466,8 +496,10 @@ export default function InvestorFeed() {
           <DropdownMenu
             items={moreMenu}
             placement="top"
-            trigger={<HiDotsVertical className="w-5 h-5 md:w-6 md:h-6" />}
-            triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-card-bg/80 md:border-2 md:border-gold/15 backdrop-blur-md flex items-center justify-center hover:border-gold/40 hover:bg-card-bg transition-all"
+            trigger={
+              <HiDotsVertical className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            }
+            triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
           />
         </div>
       </div>
@@ -542,7 +574,7 @@ function RailButton({
       whileHover={{ scale: 1.06 }}
       className="flex flex-col items-center gap-0.5 md:gap-1 transition-opacity"
     >
-      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-card-bg/80 md:border-2 md:border-gold/15 hover:border-gold/40 hover:bg-card-bg flex items-center justify-center transition-all backdrop-blur-md">
+      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center transition-all backdrop-blur-md">
         <Icon
           className={`w-5 h-5 md:w-6 md:h-6 ${active ? activeClass : "text-white"}`}
         />

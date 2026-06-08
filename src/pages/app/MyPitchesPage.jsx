@@ -362,7 +362,7 @@ function StatusPill({ status }) {
     active: "bg-emerald-500/15 text-emerald-400",
     paused: "bg-yellow-500/15 text-yellow-400",
     expired: "bg-red-500/15 text-red-400",
-    processing: "bg-blue-500/15 text-blue-400",
+    processing: "bg-secondary-green/15 text-secondary-green",
     rejected: "bg-red-500/15 text-red-400",
   };
   return (

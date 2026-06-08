@@ -21,7 +21,7 @@ const ICONS = {
   },
   info: {
     icon: HiInformationCircle,
-    cls: "text-blue-400 bg-blue-500/15 border-blue-500/30",
+    cls: "text-secondary-green bg-secondary-green/15 border-secondary-green/30",
   },
   warn: {
     icon: HiExclamationCircle,

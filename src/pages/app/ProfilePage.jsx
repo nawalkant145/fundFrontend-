@@ -98,31 +98,35 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Pitches */}
-      <h3 className="text-base sm:text-lg font-bold mb-3">My pitches</h3>
-      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-        {MOCK_PITCHES.slice(0, 2).map((p) => (
-          <div
-            key={p._id}
-            className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden flex"
-          >
-            <img
-              src={p.thumbnailUrl}
-              alt={p.title}
-              className="w-24 sm:w-32 h-24 sm:h-32 object-cover flex-shrink-0"
-            />
-            <div className="p-3 min-w-0 flex-1">
-              <p className="font-bold text-sm line-clamp-1">{p.title}</p>
-              <p className="text-xs text-gray-400 line-clamp-2 mt-1">
-                {p.description}
-              </p>
-              <p className="text-xs text-gold font-bold mt-2">
-                {p.views.toLocaleString()} views · {p.likes.length} likes
-              </p>
-            </div>
+      {/* Pitches — only for founders */}
+      {CURRENT_USER.role === "founder" && (
+        <>
+          <h3 className="text-base sm:text-lg font-bold mb-3">My pitches</h3>
+          <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+            {MOCK_PITCHES.slice(0, 2).map((p) => (
+              <div
+                key={p._id}
+                className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden flex"
+              >
+                <img
+                  src={p.thumbnailUrl}
+                  alt={p.title}
+                  className="w-24 sm:w-32 h-24 sm:h-32 object-cover flex-shrink-0"
+                />
+                <div className="p-3 min-w-0 flex-1">
+                  <p className="font-bold text-sm line-clamp-1">{p.title}</p>
+                  <p className="text-xs text-gray-400 line-clamp-2 mt-1">
+                    {p.description}
+                  </p>
+                  <p className="text-xs text-gold font-bold mt-2">
+                    {p.views.toLocaleString()} views · {p.likes.length} likes
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </DashboardShell>
   );
 }

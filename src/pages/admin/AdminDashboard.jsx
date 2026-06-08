@@ -145,7 +145,7 @@ function Bar({ label, value, max, accent = "gold" }) {
     gold: "from-gold to-bright-gold",
     green: "from-primary-green to-secondary-green",
     red: "from-red-500 to-red-400",
-    blue: "from-blue-500 to-blue-400",
+    blue: "from-secondary-green to-primary-green",
   };
   const pct = (value / max) * 100;
   return (
@@ -172,7 +172,7 @@ function MiniLive({ icon: Icon, label, value, accent }) {
       gold: "border-gold/20 text-gold",
       green: "border-primary-green/20 text-primary-green",
       red: "border-red-500/20 text-red-400",
-      blue: "border-blue-500/20 text-blue-400",
+      blue: "border-secondary-green/30 text-secondary-green",
     }[accent] || "border-gold/20 text-gold";
   return (
     <motion.div

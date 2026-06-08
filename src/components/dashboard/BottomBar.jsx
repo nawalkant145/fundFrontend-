@@ -14,25 +14,27 @@ import {
   HiShieldCheck,
   HiFlag,
   HiClipboardList,
+  HiCollection,
+  HiPlay,
+  HiBookmark,
 } from "react-icons/hi";
 import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
 
 /**
- * Instagram-style mobile bottom tab bar.
- * Fixed at the bottom, 5 most-used items + avatar.
+ * Instagram-style mobile bottom tab bar — light theme.
  */
 const FOUNDER_TABS = [
-  { to: "/app", label: "Home", icon: HiHome, end: true },
+  { to: "/app", label: "Feed", icon: HiHome, end: true },
+  { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/upload", label: "Upload", icon: HiUpload },
-  { to: "/app/my-pitches", label: "Pitches", icon: HiVideoCamera },
-  { to: "/app/messages", label: "Chats", icon: HiChatAlt2 },
+  { to: "/app/studio", label: "Studio", icon: HiCollection },
 ];
 
 const INVESTOR_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
+  { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/discover", label: "Discover", icon: HiSearch },
-  { to: "/app/saved", label: "Saved", icon: HiHeart },
-  { to: "/app/messages", label: "Chats", icon: HiChatAlt2 },
+  { to: "/app/saved", label: "Saved", icon: HiBookmark },
 ];
 
 const ADMIN_TABS = [
@@ -62,7 +64,7 @@ export default function BottomBar({ mode }) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-dark-bg/95 backdrop-blur-xl border-t border-gold/10"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-[#1B5E3F]/12 shadow-[0_-4px_24px_rgba(15,74,46,0.06)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
     >
       <div className="flex items-center justify-around h-14">
@@ -86,10 +88,10 @@ export default function BottomBar({ mode }) {
           <img
             src={CURRENT_USER.avatar}
             alt="Profile"
-            className={`w-7 h-7 rounded-full object-cover border-2 transition-all ${
+            className={`w-7 h-7 rounded-full object-cover ring-2 transition-all ${
               location.pathname === "/app/profile"
-                ? "border-gold scale-110"
-                : "border-transparent"
+                ? "ring-[#1B5E3F] scale-110"
+                : "ring-transparent"
             }`}
           />
         </Link>
@@ -107,13 +109,11 @@ function TabButton({ to, icon: Icon, active, badge }) {
       <motion.div whileTap={{ scale: 0.85 }} className="relative">
         <Icon
           className={`w-7 h-7 transition-all ${
-            active
-              ? "text-gold drop-shadow-[0_0_8px_rgba(245,185,66,0.5)]"
-              : "text-white"
+            active ? "text-[#1B5E3F]" : "text-[#0A1F14]/55"
           }`}
         />
         {badge > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center">
             {badge}
           </span>
         )}

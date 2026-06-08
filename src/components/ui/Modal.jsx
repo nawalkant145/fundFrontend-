@@ -36,15 +36,18 @@ export default function Modal({
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 30, scale: 0.96, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className={`w-full ${maxWidth} bg-card-bg border-2 border-gold/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
+            data-light-app="true"
+            className={`w-full ${maxWidth} bg-white border border-[#1B5E3F]/15 rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[90vh]`}
           >
             {(title || !hideClose) && (
-              <div className="flex items-center justify-between p-5 border-b border-gold/10 flex-shrink-0">
-                {title && <h2 className="text-lg font-bold">{title}</h2>}
+              <div className="flex items-center justify-between p-5 border-b border-[#1B5E3F]/10 flex-shrink-0">
+                {title && (
+                  <h2 className="text-lg font-bold text-[#0A1F14]">{title}</h2>
+                )}
                 {!hideClose && (
                   <button
                     onClick={onClose}
-                    className="ml-auto p-2 -mr-2 hover:bg-dark-bg/60 rounded-lg text-gray-400 hover:text-white"
+                    className="ml-auto p-2 -mr-2 hover:bg-[#FAFAF7] rounded-lg text-[#0A1F14]/55 hover:text-[#0F4A2E]"
                   >
                     <HiX className="w-5 h-5" />
                   </button>

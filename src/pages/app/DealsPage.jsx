@@ -18,7 +18,7 @@ import { MOCK_DEALS, formatINR } from "../../constants/mockData";
 
 const stages = ["interested", "negotiating", "agreed", "completed"];
 const stageColor = {
-  interested: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  interested: "bg-primary-green/15 text-primary-green border-primary-green/30",
   negotiating: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
   agreed: "bg-gold/15 text-gold border-gold/40",
   completed: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",

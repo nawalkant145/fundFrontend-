@@ -13,14 +13,17 @@
   --secondary-green: #2d7a4f;
   --gold: #f5b942;
   --bright-gold: #ffd166;
-  --dark-navy: #0a1628;
-  --dark-bg: #0f1b2d;
-  --card-bg: #1a2332;
+  /* Light theme — neutral white surfaces (replaces old dark tokens
+     so any leftover bg-card-bg / bg-dark-bg / bg-dark-navy classes
+     automatically render light without touching every file). */
+  --dark-navy: #ffffff;
+  --dark-bg: #fafaf7;
+  --card-bg: #ffffff;
 }
 
 body {
-  background-color: var(--dark-navy);
-  color: white;
+  background-color: #ffffff;
+  color: #0a1f14;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -70,6 +73,47 @@ html {
 .bg-dark-bg {
   background-color: var(--dark-bg);
 }
+
+/* ───────────────────────────────────────────────────────────
+   Light-theme remapping for in-app dashboard pages.
+   Many existing pages still use `text-white`, `text-gray-300`,
+   `text-gray-400`, `text-gray-500` etc. — these were designed
+   against a dark background. We remap them ONLY inside elements
+   marked with `data-light-app="true"` (DashboardShell + Modal),
+   so the InvestorFeed video overlay (black background) keeps its
+   white text intact.
+   ─────────────────────────────────────────────────────────── */
+[data-light-app="true"] .text-white {
+  color: #0a1f14;
+}
+[data-light-app="true"] .text-gray-300 {
+  color: rgba(10, 31, 20, 0.78);
+}
+[data-light-app="true"] .text-gray-400 {
+  color: rgba(10, 31, 20, 0.6);
+}
+[data-light-app="true"] .text-gray-500 {
+  color: rgba(10, 31, 20, 0.5);
+}
+[data-light-app="true"] .placeholder-gray-500::placeholder {
+  color: rgba(10, 31, 20, 0.4);
+}
+[data-light-app="true"] .placeholder-gray-400::placeholder {
+  color: rgba(10, 31, 20, 0.45);
+}
+
+/* Card overlays inside the app — promote semi-transparent dark
+   surfaces to a clean cream, scoped to dashboard markup. */
+[data-light-app="true"] .bg-card-bg\/60,
+[data-light-app="true"] .bg-card-bg\/50,
+[data-light-app="true"] .bg-card-bg\/40,
+[data-light-app="true"] .bg-card-bg\/80,
+[data-light-app="true"] .bg-dark-bg\/40,
+[data-light-app="true"] .bg-dark-bg\/50,
+[data-light-app="true"] .bg-dark-bg\/60,
+[data-light-app="true"] .bg-dark-bg\/80 {
+  background-color: #fafaf7 !important;
+}
 .bg-card-bg {
   background-color: var(--card-bg);
 }
@@ -94,22 +138,23 @@ html {
   border-color: var(--primary-green);
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — light theme */
 ::-webkit-scrollbar {
   width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a1628;
+  background: #fafaf7;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #f5b942;
+  background: #1b5e3f;
   border-radius: 5px;
+  opacity: 0.4;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ffd166;
+  background: #0f4a2e;
 }
 
 /* Hardware acceleration for animations */

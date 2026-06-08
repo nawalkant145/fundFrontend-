@@ -1,9 +1,5 @@
 import { HiChevronDown } from "react-icons/hi";
 
-/**
- * Premium select dropdown matching the auth field style.
- * options: array of strings OR array of { value, label }.
- */
 export default function Select({
   label,
   name,
@@ -21,18 +17,18 @@ export default function Select({
   );
 
   const borderClass = error
-    ? "border-red-500/60 focus:border-red-500"
-    : "border-gold/20 focus:border-gold";
+    ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+    : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15";
 
   return (
     <div>
       {label && (
-        <label className="flex items-center justify-between text-sm font-semibold mb-2 text-gray-300">
+        <label className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
           <span>
             {label}
-            {required && <span className="text-gold ml-1">*</span>}
+            {required && <span className="text-[#1B5E3F] ml-1">*</span>}
           </span>
-          {hint && <span className="text-xs text-gray-500">{hint}</span>}
+          {hint && <span className="text-xs text-[#0A1F14]/45">{hint}</span>}
         </label>
       )}
       <div className="relative">
@@ -41,23 +37,23 @@ export default function Select({
           value={value ?? ""}
           onChange={onChange}
           required={required}
-          className={`w-full appearance-none pl-4 pr-12 py-4 bg-dark-bg/60 border-2 ${borderClass} rounded-xl text-white focus:outline-none transition-all`}
+          className={`w-full appearance-none pl-4 pr-12 py-3.5 bg-white border ${borderClass} rounded-xl text-[#0A1F14] focus:outline-none focus:ring-4 transition-all text-base`}
         >
-          <option value="" disabled className="bg-dark-bg">
+          <option value="" disabled>
             {placeholder}
           </option>
           {normalized.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-dark-bg">
+            <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}
         </select>
-        <HiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        <HiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0A1F14]/40 pointer-events-none" />
       </div>
       {error ? (
-        <p className="text-xs text-red-400 mt-1.5">{error}</p>
+        <p className="text-xs text-red-500 mt-1.5">{error}</p>
       ) : helper ? (
-        <p className="text-xs text-gray-400 mt-1.5">{helper}</p>
+        <p className="text-xs text-[#0A1F14]/55 mt-1.5">{helper}</p>
       ) : null}
     </div>
   );

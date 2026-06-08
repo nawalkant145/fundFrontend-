@@ -2,8 +2,8 @@ import { useState } from "react";
 import { HiEye, HiEyeOff, HiCheck, HiX } from "react-icons/hi";
 
 /**
- * Premium form field with label, icon prefix, optional password toggle,
- * inline validation state, and helper / error text.
+ * Premium form field — light theme: white background, soft borders,
+ * deep-green accents, gold selection ring on focus.
  */
 export function FormField({
   label,
@@ -27,25 +27,25 @@ export function FormField({
   const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
   const borderClass = error
-    ? "border-red-500/60 focus:border-red-500"
+    ? "border-red-300 focus:border-red-400 focus:ring-red-100"
     : success
-      ? "border-emerald-500/60 focus:border-emerald-500"
-      : "border-gold/20 focus:border-gold";
+      ? "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-100"
+      : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15";
 
   return (
     <div>
       {label && (
-        <label className="flex items-center justify-between text-sm font-semibold mb-2 text-gray-300">
+        <label className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
           <span>
             {label}
-            {required && <span className="text-gold ml-1">*</span>}
+            {required && <span className="text-[#1B5E3F] ml-1">*</span>}
           </span>
-          {hint && <span className="text-xs text-gray-500">{hint}</span>}
+          {hint && <span className="text-xs text-[#0A1F14]/45">{hint}</span>}
         </label>
       )}
       <div className="relative">
         {Icon && (
-          <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0A1F14]/40 pointer-events-none" />
         )}
         <input
           type={inputType}
@@ -57,7 +57,7 @@ export function FormField({
           autoComplete={autoComplete}
           className={`w-full ${Icon ? "pl-12" : "pl-4"} ${
             isPassword || rightSlot ? "pr-12" : "pr-4"
-          } py-4 bg-dark-bg/60 border-2 ${borderClass} rounded-xl text-white placeholder-gray-500 focus:outline-none transition-all`}
+          } py-3.5 bg-white border ${borderClass} rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:outline-none focus:ring-4 transition-all text-base`}
           {...rest}
         />
         {success && !isPassword && !rightSlot && (
@@ -70,7 +70,7 @@ export function FormField({
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#0A1F14]/40 hover:text-[#1B5E3F] transition-colors"
             tabIndex={-1}
           >
             {showPassword ? (
@@ -87,15 +87,15 @@ export function FormField({
         )}
       </div>
       {error ? (
-        <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
           <HiX className="w-3.5 h-3.5" /> {error}
         </p>
       ) : success ? (
-        <p className="text-xs text-emerald-400 mt-1.5 flex items-center gap-1">
+        <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
           <HiCheck className="w-3.5 h-3.5" /> {success}
         </p>
       ) : helper ? (
-        <p className="text-xs text-gray-400 mt-1.5">{helper}</p>
+        <p className="text-xs text-[#0A1F14]/55 mt-1.5">{helper}</p>
       ) : null}
     </div>
   );
@@ -110,11 +110,11 @@ export function PasswordStrength({ password = "" }) {
 
   const labels = ["Too weak", "Weak", "Okay", "Strong", "Excellent"];
   const colors = [
-    "bg-red-500",
-    "bg-orange-500",
-    "bg-yellow-500",
+    "bg-red-400",
+    "bg-orange-400",
+    "bg-yellow-400",
     "bg-emerald-500",
-    "bg-emerald-400",
+    "bg-emerald-500",
   ];
 
   if (!password) return null;
@@ -125,19 +125,19 @@ export function PasswordStrength({ password = "" }) {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              i < score ? colors[score] : "bg-dark-bg"
+            className={`h-1.5 flex-1 rounded-full transition-colors ${
+              i < score ? colors[score] : "bg-[#1B5E3F]/10"
             }`}
           />
         ))}
       </div>
       <p
-        className={`text-xs mt-1 ${
+        className={`text-xs mt-1.5 font-semibold ${
           score < 2
-            ? "text-red-400"
+            ? "text-red-500"
             : score < 3
-              ? "text-yellow-400"
-              : "text-emerald-400"
+              ? "text-yellow-600"
+              : "text-emerald-600"
         }`}
       >
         {labels[score]}
@@ -148,16 +148,18 @@ export function PasswordStrength({ password = "" }) {
 
 export function Checkbox({ name, checked, onChange, children, required }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer select-none">
+    <label className="flex items-start gap-3 cursor-pointer select-none group">
       <input
         type="checkbox"
         name={name}
         checked={checked}
         onChange={onChange}
         required={required}
-        className="w-5 h-5 mt-0.5 rounded border-gold/30 bg-dark-bg text-gold focus:ring-gold focus:ring-offset-0"
+        className="w-5 h-5 mt-0.5 rounded border-[#1B5E3F]/25 bg-white text-[#1B5E3F] focus:ring-[#1B5E3F]/30 focus:ring-2 focus:ring-offset-0 cursor-pointer accent-[#1B5E3F]"
       />
-      <span className="text-sm text-gray-300 leading-relaxed">{children}</span>
+      <span className="text-sm text-[#0A1F14]/75 leading-relaxed group-hover:text-[#0A1F14] transition-colors">
+        {children}
+      </span>
     </label>
   );
 }
@@ -179,10 +181,10 @@ export function MultiSelectChips({ options, value = [], onChange, max }) {
             type="button"
             key={opt}
             onClick={() => toggle(opt)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all ${
+            className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${
               active
-                ? "bg-gold text-dark-navy border-gold shadow-md shadow-gold/30"
-                : "bg-dark-bg/60 text-gray-300 border-gold/20 hover:border-gold/60"
+                ? "bg-[#1B5E3F] text-white border-[#1B5E3F] shadow-md shadow-[#1B5E3F]/25"
+                : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40 hover:text-[#0F4A2E]"
             }`}
           >
             {opt}
@@ -194,7 +196,6 @@ export function MultiSelectChips({ options, value = [], onChange, max }) {
 }
 
 export function PhoneInput({ value, onChange, name = "phone", required }) {
-  // Static for now — country list short, can expand later
   const codes = [
     { code: "+91", flag: "🇮🇳" },
     { code: "+1", flag: "🇺🇸" },
@@ -226,7 +227,7 @@ export function PhoneInput({ value, onChange, name = "phone", required }) {
       <select
         value={code}
         onChange={handleCodeChange}
-        className="px-3 py-4 bg-dark-bg/60 border-2 border-gold/20 rounded-xl text-white focus:border-gold focus:outline-none w-28"
+        className="px-3 py-3.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-[#0A1F14] focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none w-28 text-base font-semibold"
       >
         {codes.map((c) => (
           <option key={c.code} value={c.code}>
@@ -242,7 +243,7 @@ export function PhoneInput({ value, onChange, name = "phone", required }) {
         onChange={handleNumberChange}
         placeholder="98765 43210"
         required={required}
-        className="flex-1 px-4 py-4 bg-dark-bg/60 border-2 border-gold/20 rounded-xl text-white placeholder-gray-500 focus:border-gold focus:outline-none"
+        className="flex-1 px-4 py-3.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none text-base"
       />
     </div>
   );

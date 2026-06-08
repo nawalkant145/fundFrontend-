@@ -16,29 +16,37 @@ import {
   HiLogout,
   HiSearch,
   HiDocumentText,
+  HiSparkles,
+  HiCollection,
+  HiPlay,
+  HiBookmark,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
-import { clearAuth } from "../../lib/auth";
+import { clearAuth, isPro } from "../../lib/auth";
 
 const founderNav = [
-  { to: "/app", label: "Dashboard", icon: HiHome, end: true },
+  { to: "/app", label: "Feed", icon: HiHome, end: true },
+  { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
-  { to: "/app/my-pitches", label: "My Pitches", icon: HiVideoCamera },
+  { to: "/app/studio", label: "My Studio", icon: HiCollection },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
   { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
   { to: "/app/deck-requests", label: "Deck Requests", icon: HiDocumentText },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
+  { to: "/app/subscription", label: "Studio Pro", icon: HiSparkles },
 ];
 
 const investorNav = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
+  { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/discover", label: "Discover", icon: HiSearch },
-  { to: "/app/saved", label: "Saved", icon: HiHeart },
+  { to: "/app/saved", label: "Saved", icon: HiBookmark },
   { to: "/app/investments", label: "Investments", icon: HiCurrencyDollar },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
+  { to: "/app/subscription", label: "Investor Pro", icon: HiSparkles },
 ];
 
 const adminNav = [
@@ -51,8 +59,7 @@ const adminNav = [
 ];
 
 /**
- * Instagram-style desktop sidebar:
- *   - Hidden on mobile (< md)
+ * Instagram-style desktop sidebar — light theme:
  *   - Collapsed (72px) by default, expands to 240px on hover
  *   - Labels fade in on expand
  *   - Sidebar OVERLAYS content during hover — main area doesn't shift
@@ -76,18 +83,18 @@ export default function Sidebar({ mode }) {
         location.pathname.startsWith(item.to + "/");
 
   return (
-    <aside className="hidden md:flex group fixed top-0 left-0 z-50 h-screen w-[72px] hover:w-60 transition-[width] duration-200 ease-out bg-dark-bg/95 backdrop-blur-xl border-r border-gold/10 flex-col overflow-hidden">
+    <aside className="hidden md:flex group fixed top-0 left-0 z-50 h-screen w-[72px] hover:w-60 transition-[width] duration-200 ease-out bg-white border-r border-[#1B5E3F]/12 flex-col overflow-hidden shadow-[2px_0_24px_rgba(15,74,46,0.04)]">
       {/* Logo */}
       <Link
         to="/"
-        className="flex items-center h-16 px-3 border-b border-gold/10 flex-shrink-0"
+        className="flex items-center h-16 px-3 border-b border-[#1B5E3F]/10 flex-shrink-0"
       >
         <img
           src="/Logobgremove.jpeg"
           alt="EXPGLO"
-          className="h-10 w-10 flex-shrink-0 object-contain drop-shadow-[0_0_8px_rgba(245,185,66,0.3)]"
+          className="h-10 w-10 flex-shrink-0 object-contain mix-blend-multiply"
         />
-        <span className="ml-3 font-black text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap bg-gradient-to-r from-gold to-bright-gold bg-clip-text text-transparent">
+        <span className="ml-3 font-black text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-[#0F4A2E]">
           EXPGLO FUND
         </span>
       </Link>
@@ -95,21 +102,30 @@ export default function Sidebar({ mode }) {
       {/* Profile chip */}
       <Link
         to="/app/profile"
-        className="flex items-center h-16 px-3 border-b border-gold/10 hover:bg-card-bg/40 transition-colors flex-shrink-0"
+        className="flex items-center h-16 px-3 border-b border-[#1B5E3F]/10 hover:bg-[#FAFAF7] transition-colors flex-shrink-0"
       >
         <div className="relative flex-shrink-0">
           <img
             src={CURRENT_USER.avatar}
             alt={CURRENT_USER.name}
-            className="w-10 h-10 rounded-full border-2 border-gold/40 object-cover"
+            className="w-10 h-10 rounded-full ring-2 ring-[#1B5E3F]/20 object-cover"
           />
           {CURRENT_USER.isVerified && (
-            <MdVerified className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-gold bg-dark-bg rounded-full" />
+            <MdVerified className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-[#F5B942] bg-white rounded-full" />
           )}
         </div>
         <div className="ml-3 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <p className="font-bold text-sm truncate">{CURRENT_USER.name}</p>
-          <p className="text-xs text-gray-400 capitalize truncate">{role}</p>
+          <p className="font-bold text-sm truncate text-[#0A1F14] inline-flex items-center gap-1.5">
+            {CURRENT_USER.name}
+            {isPro() && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-br from-[#F5B942] to-[#FFD166] text-[#0F4A2E] text-[8px] font-black uppercase tracking-wider rounded-full">
+                <HiSparkles className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-[#0A1F14]/55 capitalize truncate">
+            {role}
+          </p>
         </div>
       </Link>
 
@@ -128,7 +144,7 @@ export default function Sidebar({ mode }) {
       </nav>
 
       {/* Bottom — Settings + Logout */}
-      <div className="border-t border-gold/10 px-3 py-3 space-y-1 flex-shrink-0">
+      <div className="border-t border-[#1B5E3F]/10 px-3 py-3 space-y-1 flex-shrink-0">
         {role !== "admin" && (
           <NavLink
             to="/app/settings"
@@ -140,7 +156,7 @@ export default function Sidebar({ mode }) {
         <Link
           to="/login"
           onClick={() => clearAuth()}
-          className="flex items-center h-12 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          className="flex items-center h-12 rounded-xl text-[#0A1F14]/65 hover:bg-red-50 hover:text-red-500 transition-colors"
         >
           <HiLogout className="w-6 h-6 flex-shrink-0 mx-3" />
           <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-semibold">
@@ -158,14 +174,14 @@ function NavLink({ to, label, icon: Icon, active, badge }) {
       to={to}
       className={`flex items-center h-12 rounded-xl transition-colors relative ${
         active
-          ? "bg-gold/10 text-gold"
-          : "text-gray-300 hover:bg-card-bg hover:text-white"
+          ? "bg-[#1B5E3F]/10 text-[#0F4A2E]"
+          : "text-[#0A1F14]/70 hover:bg-[#FAFAF7] hover:text-[#0F4A2E]"
       }`}
     >
       <div className="relative mx-3 flex-shrink-0">
         <Icon className="w-6 h-6" />
         {badge > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-dark-navy text-[9px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center">
             {badge}
           </span>
         )}

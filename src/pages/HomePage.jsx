@@ -1,993 +1,1149 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
   HiVideoCamera,
-  HiLightningBolt,
   HiChatAlt2,
   HiPhone,
-  HiTrendingUp,
+  HiShieldCheck,
   HiCurrencyDollar,
   HiVolumeUp,
   HiVolumeOff,
-  HiChevronDown,
+  HiPlay,
+  HiArrowRight,
+  HiCheck,
+  HiStar,
+  HiSparkles,
+  HiHeart,
+  HiBookmark,
   HiEye,
-  HiMenu,
-  HiX,
+  HiTrendingUp,
+  HiGlobeAlt,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
-import { IoRocketSharp } from "react-icons/io5";
-import { BsGraphUpArrow } from "react-icons/bs";
+import { IoRocketSharp, IoSend } from "react-icons/io5";
+import PublicNav from "../components/public/PublicNav";
+import PublicFooter from "../components/public/PublicFooter";
 
-// Import background image
-const backgroundImage = "/background.png";
+/**
+ * EXPGLO FUND — premium social-fundraising landing page.
+ * Videos under /videos/ tell the story across the page.
+ *
+ * Brand palette:
+ *   green-deep:  #0F4A2E
+ *   green:       #1B5E3F
+ *   green-soft:  #2D7A4F
+ *   gold:        #F5B942
+ *   gold-bright: #FFD166
+ *   bg:          #FFFFFF
+ *   bg-soft:     #FAFAF7
+ *   ink:         #0A1F14
+ */
 
-// Animated Counter Component
-function AnimatedCounter({ value, suffix = "" }) {
-  const [count, setCount] = useState(0);
+// ─── Counter ────────────────────────────────
+function Counter({ end, suffix = "", prefix = "" }) {
+  const [n, setN] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-
+  const inView = useInView(ref, { once: true });
   useEffect(() => {
-    if (isInView) {
-      let start = 0;
-      const end = parseInt(value);
-      const duration = 2000;
-      const increment = end / (duration / 16);
-      const timer = setInterval(() => {
-        start += increment;
-        if (start >= end) {
-          setCount(end);
-          clearInterval(timer);
-        } else {
-          setCount(Math.floor(start));
-        }
-      }, 16);
-      return () => clearInterval(timer);
-    }
-  }, [isInView, value]);
-
+    if (!inView) return;
+    let v = 0;
+    const t = setInterval(() => {
+      v += end / 60;
+      if (v >= end) {
+        setN(end);
+        clearInterval(t);
+      } else setN(Math.floor(v));
+    }, 16);
+    return () => clearInterval(t);
+  }, [inView, end]);
   return (
     <span ref={ref}>
-      {count.toLocaleString()}
+      {prefix}
+      {n.toLocaleString()}
       {suffix}
     </span>
   );
 }
 
-// Simplified Floating Element Component - Less intensive
-function FloatingElement({ children, delay = 0 }) {
+// ─── Marquee ─────────────────────────────────
+function Marquee({ items }) {
+  return (
+    <div className="overflow-hidden py-2">
+      <motion.div
+        className="flex gap-3 whitespace-nowrap"
+        animate={{ x: [0, -1200] }}
+        transition={{ repeat: Infinity, duration: 40, ease: "linear" }}
+      >
+        {[...items, ...items, ...items].map((item, i) => (
+          <div
+            key={i}
+            className="px-5 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-full text-sm font-semibold text-[#0F4A2E] flex-shrink-0 shadow-sm"
+          >
+            {item}
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  const industries = [
+    "Fintech",
+    "HealthTech",
+    "Climate",
+    "AI / ML",
+    "EdTech",
+    "SaaS",
+    "DeepTech",
+    "AgriTech",
+    "E-commerce",
+    "Logistics",
+    "Web3",
+    "Consumer",
+  ];
+
+  return (
+    <div className="min-h-screen bg-white text-[#0A1F14] overflow-x-hidden">
+      {/* Soft brand glows */}
+      <div className="fixed inset-0 pointer-events-none -z-0">
+        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-[#1B5E3F]/[0.06] rounded-full blur-[160px]" />
+        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-[#F5B942]/[0.10] rounded-full blur-[180px]" />
+      </div>
+
+      <PublicNav />
+
+      <Hero />
+      <IndustriesBar industries={industries} />
+      <OldVsNewSection />
+      <BentoShowcase />
+      <DualValue />
+      <GlobalNetworkSection />
+      <StatsSection />
+      <TestimonialsSection />
+      <BigCTA />
+      <PublicFooter />
+    </div>
+  );
+}
+
+// ─── HERO — split layout with rotating video carousel ─
+const HERO_VIDEOS = [
+  {
+    src: "/videos/herostory.mp4",
+    badge: "✨ EXPGLO FUND · in 60 seconds",
+  },
+  {
+    src: "/pitchvideo.mp4",
+    badge: "🔥 OLD vs NEW · how fundraising works now",
+  },
+];
+
+function Hero() {
+  const containerRef = useRef(null);
+  const videoRefs = useRef([]);
+  const [muted, setMuted] = useState(true);
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  // Pause/resume based on tab visibility + scroll into view
+  useEffect(() => {
+    const onTabVis = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onTabVis);
+
+    const node = containerRef.current;
+    if (!node)
+      return () => document.removeEventListener("visibilitychange", onTabVis);
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        // 25% visible threshold
+        setVisible((prev) => (document.hidden ? false : e.isIntersecting));
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(node);
+    return () => {
+      document.removeEventListener("visibilitychange", onTabVis);
+      io.disconnect();
+    };
+  }, []);
+
+  // Sync each <video> element to whether it's the current slide AND visible.
+  useEffect(() => {
+    videoRefs.current.forEach((v, i) => {
+      if (!v) return;
+      v.muted = muted;
+      if (i === idx && visible) {
+        v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    });
+  }, [idx, visible, muted]);
+
+  // Advance to next slide as soon as current one ends — no gap, no reload
+  const handleEnded = () => {
+    setIdx((i) => (i + 1) % HERO_VIDEOS.length);
+  };
+
+  return (
+    <section
+      ref={containerRef}
+      className="pt-28 pb-12 sm:pt-36 sm:pb-20 px-4 sm:px-6 lg:px-8 relative"
+    >
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-14 items-center">
+        {/* LEFT — copy */}
+        <div className="text-center lg:text-left order-2 lg:order-1">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-[#1B5E3F]/15 rounded-full shadow-sm mb-6"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1B5E3F] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1B5E3F]" />
+            </span>
+            <span className="text-xs font-semibold text-[#0F4A2E]">
+              Live · 2,400+ founders · 850+ investors
+            </span>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-4xl sm:text-6xl lg:text-7xl xl:text-[80px] font-black tracking-tight leading-[1.04] mb-6"
+          >
+            Fundraising,
+            <br />
+            <span className="relative inline-block">
+              <span className="bg-gradient-to-r from-[#1B5E3F] via-[#2D7A4F] to-[#1B5E3F] bg-clip-text text-transparent">
+                in 60 seconds
+              </span>
+              <motion.svg
+                className="absolute -bottom-3 left-0 w-full"
+                viewBox="0 0 300 12"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.2, delay: 0.6 }}
+              >
+                <motion.path
+                  d="M 5 7 Q 150 -2 295 6"
+                  stroke="#F5B942"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  fill="none"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 1.2, delay: 0.6 }}
+                />
+              </motion.svg>
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-lg sm:text-xl text-[#0A1F14]/65 max-w-xl mx-auto lg:mx-0 mb-9 leading-relaxed"
+          >
+            Skip cold emails and 6-month meeting cycles. Upload a short pitch
+            video, get discovered by vetted investors, close rounds in days.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5"
+          >
+            <Link to="/signup">
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                className="group px-7 py-4 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-base font-bold rounded-full shadow-xl shadow-[#1B5E3F]/30 inline-flex items-center justify-center gap-2 w-full sm:w-auto transition-all"
+              >
+                Start pitching free
+                <HiArrowRight className="group-hover:translate-x-0.5 transition-transform" />
+              </motion.button>
+            </Link>
+            <Link to="/courses">
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                className="px-7 py-4 bg-white text-[#0F4A2E] text-base font-bold rounded-full border-2 border-[#1B5E3F]/15 hover:border-[#1B5E3F]/30 inline-flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm hover:shadow-md transition-all"
+              >
+                <HiPlay className="text-[#1B5E3F]" /> Watch a demo
+              </motion.button>
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex items-center justify-center lg:justify-start gap-3"
+          >
+            <div className="flex -space-x-2">
+              {[
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop",
+                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop",
+                "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop",
+                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop",
+              ].map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  className="w-9 h-9 rounded-full ring-2 ring-white object-cover"
+                />
+              ))}
+            </div>
+            <div>
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <HiStar key={s} className="w-4 h-4 text-[#F5B942]" />
+                ))}
+              </div>
+              <p className="text-xs font-semibold text-[#0A1F14]/65">
+                3,000+ founders & investors
+              </p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* RIGHT — video card with both videos preloaded for gapless swap */}
+        <div className="order-1 lg:order-2 relative flex justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="relative w-full max-w-[560px]"
+          >
+            {/* Glow */}
+            <div className="absolute -inset-6 bg-gradient-to-br from-[#1B5E3F]/25 via-[#F5B942]/25 to-[#1B5E3F]/15 rounded-[2.5rem] blur-3xl opacity-70" />
+
+            {/* Video card */}
+            <div className="relative aspect-video rounded-3xl overflow-hidden bg-[#0A1F14] shadow-2xl shadow-[#1B5E3F]/30 ring-1 ring-[#1B5E3F]/10">
+              {HERO_VIDEOS.map((v, i) => (
+                <video
+                  key={v.src}
+                  ref={(el) => (videoRefs.current[i] = el)}
+                  src={v.src}
+                  muted={muted}
+                  playsInline
+                  preload="auto"
+                  onEnded={handleEnded}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                    i === idx ? "opacity-100" : "opacity-0 pointer-events-none"
+                  }`}
+                />
+              ))}
+
+              {/* Top badge removed — clean video */}
+
+              {/* Mute */}
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-10"
+              >
+                {muted ? (
+                  <HiVolumeOff className="w-5 h-5 text-[#0F4A2E]" />
+                ) : (
+                  <HiVolumeUp className="w-5 h-5 text-[#0F4A2E]" />
+                )}
+              </button>
+
+              {/* Carousel dots */}
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+                {HERO_VIDEOS.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setIdx(i)}
+                    aria-label={`Show video ${i + 1}`}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === idx
+                        ? "w-7 bg-[#F5B942]"
+                        : "w-1.5 bg-white/50 hover:bg-white/80"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Industries marquee ─────────────────────
+function IndustriesBar({ industries }) {
+  return (
+    <section className="py-10 bg-[#FAFAF7] border-y border-[#1B5E3F]/8 relative z-10">
+      <p className="text-center text-xs uppercase tracking-[0.2em] text-[#0A1F14]/55 font-bold mb-4">
+        Founders pitching across
+      </p>
+      <Marquee items={industries} />
+    </section>
+  );
+}
+
+// ─── OLD vs NEW — uses oldvsnew.mp4 ────────
+function OldVsNewSection() {
+  const ref = useRef(null);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    ref.current?.play().catch(() => {});
+  }, []);
+
+  return (
+    <section
+      id="how-it-works"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative z-10"
+    >
+      <div className="max-w-6xl mx-auto">
+        <Eyebrow>HOW THINGS CHANGED</Eyebrow>
+        <h2 className="text-center text-3xl sm:text-5xl font-black mb-4 leading-tight">
+          The old way is{" "}
+          <span className="line-through text-[#0A1F14]/30">broken</span>.
+          <br />
+          <span className="text-[#1B5E3F]">Watch the new way.</span>
+        </h2>
+        <p className="text-center text-[#0A1F14]/65 text-lg max-w-2xl mx-auto mb-12">
+          Cold emails and slide decks took months. Now founders pitch on video,
+          investors swipe, deals close in days.
+        </p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative max-w-4xl mx-auto"
+        >
+          <div className="absolute -inset-4 bg-gradient-to-r from-[#1B5E3F]/15 via-[#F5B942]/20 to-[#1B5E3F]/15 rounded-[2rem] blur-2xl opacity-60" />
+          <div className="relative rounded-3xl overflow-hidden bg-[#0A1F14] shadow-2xl shadow-[#1B5E3F]/20 ring-1 ring-[#1B5E3F]/10 aspect-video">
+            <video
+              ref={ref}
+              src="/videos/oldvsnew.mp4"
+              muted={muted}
+              loop
+              playsInline
+              autoPlay
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute top-4 left-4 hidden" />
+            <button
+              onClick={() => {
+                if (ref.current) {
+                  ref.current.muted = !muted;
+                  setMuted(!muted);
+                }
+              }}
+              className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            >
+              {muted ? (
+                <HiVolumeOff className="w-5 h-5 text-[#0F4A2E]" />
+              ) : (
+                <HiVolumeUp className="w-5 h-5 text-[#0F4A2E]" />
+              )}
+            </button>
+          </div>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-3 gap-4 mt-12 max-w-4xl mx-auto">
+          <StepPill
+            num="01"
+            title="Upload pitch"
+            subtitle="60s vertical video"
+          />
+          <StepPill
+            num="02"
+            title="Get discovered"
+            subtitle="Investors swipe"
+          />
+          <StepPill num="03" title="Close deal" subtitle="Chat → call → wire" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StepPill({ num, title, subtitle }) {
   return (
     <motion.div
-      animate={{ y: [0, -10, 0] }}
-      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="flex items-center gap-3 bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 shadow-sm"
+    >
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-[#F5B942] font-black flex items-center justify-center text-sm">
+        {num}
+      </div>
+      <div>
+        <p className="font-bold text-sm">{title}</p>
+        <p className="text-xs text-[#0A1F14]/60">{subtitle}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── BENTO showcase — uses appshowcase.mp4 + investorpov.mp4 ──
+function BentoShowcase() {
+  return (
+    <section
+      id="features"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#FAFAF7] relative z-10"
+    >
+      <div className="max-w-6xl mx-auto">
+        <Eyebrow>WHAT'S INSIDE</Eyebrow>
+        <h2 className="text-center text-3xl sm:text-5xl font-black mb-4 leading-tight">
+          Everything to <span className="text-[#1B5E3F]">close the round</span>
+        </h2>
+        <p className="text-center text-[#0A1F14]/65 text-lg max-w-2xl mx-auto mb-14">
+          Built for the way deals actually happen now. Video, chat, calls,
+          analytics, payments — all in one app.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[minmax(220px,auto)]">
+          {/* 1. App showcase video — large feature */}
+          <BentoCard className="sm:col-span-2 lg:row-span-2 bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white p-6 sm:p-8 overflow-hidden">
+            <div className="flex flex-col h-full">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F5B942] flex items-center justify-center shadow-lg shadow-[#F5B942]/30">
+                  <HiVideoCamera className="w-5 h-5 text-[#0F4A2E]" />
+                </div>
+                <p className="text-xs uppercase tracking-wider font-bold text-[#F5B942]">
+                  The EXPGLO experience
+                </p>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-black mb-3 leading-tight">
+                Vertical video. Real founders. One swipe away.
+              </h3>
+              <p className="text-sm text-white/75 mb-5 max-w-sm">
+                Investors discover real founders in 60 seconds. Like, save,
+                comment, DM — instantly.
+              </p>
+              <div className="flex-1 relative rounded-2xl overflow-hidden bg-black/30 ring-1 ring-white/10 min-h-[260px]">
+                <video
+                  src="/videos/appshowcase.mp4"
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* 2. Chat */}
+          <BentoCard className="bg-white p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F]/15 to-[#1B5E3F]/5 border border-[#1B5E3F]/15 flex items-center justify-center">
+                <HiChatAlt2 className="w-5 h-5 text-[#1B5E3F]" />
+              </div>
+              <p className="text-xs uppercase tracking-wider font-bold text-[#1B5E3F]">
+                Direct chat
+              </p>
+            </div>
+            <h3 className="text-xl font-black mb-3">Skip the cold emails</h3>
+            <div className="space-y-2 mt-4">
+              <ChatBubble
+                side="left"
+                avatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop"
+                text="Loved the pitch. Free to chat?"
+              />
+              <ChatBubble side="right" text="Yes! Tomorrow 4 PM works 🚀" />
+              <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-[#FAFAF7] rounded-full border border-[#1B5E3F]/10">
+                <span className="text-xs text-[#0A1F14]/40 flex-1">
+                  Type a message…
+                </span>
+                <IoSend className="w-4 h-4 text-[#1B5E3F]" />
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* 3. Audio + Video calls */}
+          <BentoCard className="bg-gradient-to-br from-[#FFF6E0] to-[#FFE9BD] p-6 relative overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/40">
+                <HiPhone className="w-5 h-5 text-[#0F4A2E]" />
+              </div>
+              <p className="text-xs uppercase tracking-wider font-bold text-[#0F4A2E]/80">
+                Audio + video calls
+              </p>
+            </div>
+            <h3 className="text-xl font-black mb-3 text-[#0F4A2E]">
+              Built-in WebRTC
+            </h3>
+            <p className="text-sm text-[#0A1F14]/70 mb-4">
+              No external links. No scheduling chaos.
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                <img
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop"
+                  alt=""
+                  className="w-10 h-10 rounded-full ring-2 ring-white"
+                />
+                <img
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop"
+                  alt=""
+                  className="w-10 h-10 rounded-full ring-2 ring-white"
+                />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-[#0F4A2E]">
+                  In call · 12:34
+                </p>
+                <p className="text-[10px] text-[#0A1F14]/55">
+                  HD · end-to-end encrypted
+                </p>
+              </div>
+              <button className="w-9 h-9 rounded-full bg-[#FF3B3B] flex items-center justify-center shadow-md">
+                <HiPhone className="w-4 h-4 text-white rotate-[135deg]" />
+              </button>
+            </div>
+          </BentoCard>
+
+          {/* 4. KYC verified */}
+          <BentoCard className="bg-white p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F]/15 to-[#1B5E3F]/5 border border-[#1B5E3F]/15 flex items-center justify-center">
+                <HiShieldCheck className="w-5 h-5 text-[#1B5E3F]" />
+              </div>
+              <p className="text-xs uppercase tracking-wider font-bold text-[#1B5E3F]">
+                Verified
+              </p>
+            </div>
+            <h3 className="text-xl font-black mb-3">KYC for everyone</h3>
+            <p className="text-sm text-[#0A1F14]/65 mb-4">
+              No fake accounts. Real founders, real investors.
+            </p>
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-[#FAFAF7] rounded-xl border border-[#1B5E3F]/10">
+              <MdVerified className="w-5 h-5 text-[#1B5E3F]" />
+              <span className="text-sm font-bold flex-1">
+                Identity verified
+              </span>
+              <HiCheck className="w-4 h-4 text-[#1B5E3F]" />
+            </div>
+          </BentoCard>
+
+          {/* 5. Investor POV — uses investorpov.mp4 */}
+          <BentoCard className="sm:col-span-2 bg-[#0A1F14] text-white p-0 overflow-hidden relative min-h-[280px]">
+            <video
+              src="/videos/investorpov.mp4"
+              muted
+              loop
+              playsInline
+              autoPlay
+              className="absolute inset-0 w-full h-full object-cover opacity-65"
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#0F4A2E]/95 via-[#0F4A2E]/75 to-transparent" />
+            <div className="relative h-full p-6 sm:p-8 flex flex-col justify-end">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/30">
+                  <HiTrendingUp className="w-5 h-5 text-[#0F4A2E]" />
+                </div>
+                <p className="text-xs uppercase tracking-wider font-bold text-[#F5B942]">
+                  Investor experience
+                </p>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black mb-2">
+                See real founders, not slide decks
+              </h3>
+              <p className="text-sm text-white/70 max-w-md">
+                Swipe through curated pitches in your sectors. AI matches you
+                with founders that fit your thesis.
+              </p>
+            </div>
+          </BentoCard>
+
+          {/* 6. AI matching */}
+          <BentoCard className="bg-white p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F5B942] to-[#FFD166] flex items-center justify-center shadow-md shadow-[#F5B942]/30">
+                <HiSparkles className="w-5 h-5 text-[#0F4A2E]" />
+              </div>
+              <p className="text-xs uppercase tracking-wider font-bold text-[#1B5E3F]">
+                AI matching
+              </p>
+            </div>
+            <h3 className="text-xl font-black mb-2">Smart investor pairing</h3>
+            <p className="text-sm text-[#0A1F14]/65 mb-4">
+              Find the right investors for your stage and sector.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {["Fintech", "Series A", "$2M+", "India"].map((t) => (
+                <span
+                  key={t}
+                  className="px-2.5 py-1 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full text-xs font-semibold text-[#0F4A2E]"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </BentoCard>
+
+          {/* 7. Live analytics */}
+          <BentoCard className="bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/30">
+                <HiTrendingUp className="w-5 h-5 text-[#0F4A2E]" />
+              </div>
+              <p className="text-xs uppercase tracking-wider font-bold text-[#F5B942]">
+                Live analytics
+              </p>
+            </div>
+            <h3 className="text-xl font-black mb-4">Real-time signals</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <MiniStat icon={HiEye} label="Views" value="12.4k" />
+              <MiniStat icon={HiHeart} label="Likes" value="2.4k" />
+              <MiniStat icon={HiBookmark} label="Saves" value="488" />
+            </div>
+          </BentoCard>
+
+          {/* 8. In-app investments */}
+          <BentoCard className="bg-white p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F]/15 to-[#1B5E3F]/5 border border-[#1B5E3F]/15 flex items-center justify-center">
+                <HiCurrencyDollar className="w-5 h-5 text-[#1B5E3F]" />
+              </div>
+              <p className="text-xs uppercase tracking-wider font-bold text-[#1B5E3F]">
+                Invest in-app
+              </p>
+            </div>
+            <h3 className="text-xl font-black mb-3">
+              From DM to wire transfer
+            </h3>
+            <div className="bg-[#FAFAF7] rounded-xl p-3 border border-[#1B5E3F]/10">
+              <div className="flex justify-between text-xs text-[#0A1F14]/60 mb-1">
+                <span>Round progress</span>
+                <span className="font-bold text-[#0F4A2E]">$1.4M / $2M</span>
+              </div>
+              <div className="h-2 bg-white rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: "70%" }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1.2 }}
+                  className="h-full bg-gradient-to-r from-[#1B5E3F] to-[#F5B942] rounded-full"
+                />
+              </div>
+            </div>
+          </BentoCard>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BentoCard({ children, className = "" }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      whileHover={{ y: -4 }}
+      className={`rounded-3xl border border-[#1B5E3F]/10 shadow-sm hover:shadow-xl transition-all ${className}`}
     >
       {children}
     </motion.div>
   );
 }
 
-function HomePage() {
-  const [isMuted, setIsMuted] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const videoRef = useRef(null);
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current
-        .play()
-        .catch((err) => console.log("Autoplay prevented:", err));
-    }
-  }, []);
-
-  const pitches = [
-    {
-      id: 1,
-      company: "NovaMed AI",
-      founder: "Aisha Kamara",
-      category: "HealthTech",
-      funding: "$2.5M",
-      stage: "Seed",
-      description: "AI-powered diagnostics for underserved clinics",
-      views: "4.2k",
-      thumbnail:
-        "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=400&fit=crop",
-    },
-    {
-      id: 2,
-      company: "GreenChain",
-      founder: "Rahul Mehta",
-      category: "CleanTech",
-      funding: "$5M",
-      stage: "Series A",
-      description: "Blockchain-verified carbon credit marketplace",
-      views: "8.7k",
-      thumbnail:
-        "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=600&h=400&fit=crop",
-    },
-    {
-      id: 3,
-      company: "EduForge",
-      founder: "Sofia Chen",
-      category: "EdTech",
-      funding: "$1.8M",
-      stage: "Pre-Seed",
-      description: "Personalized learning paths powered by LLMs",
-      views: "3.1k",
-      thumbnail:
-        "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop",
-    },
-    {
-      id: 4,
-      company: "SupplySync",
-      founder: "Marcus Webb",
-      category: "Logistics",
-      funding: "$4M",
-      stage: "Seed",
-      description: "Real-time supply chain visibility for SMBs",
-      views: "6.3k",
-      thumbnail:
-        "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=400&fit=crop",
-    },
-  ];
-
-  const features = [
-    {
-      icon: <HiVideoCamera className="w-16 h-16" />,
-      title: "60-Second Pitches",
-      desc: "Quick, impactful video pitches that respect everyone's time",
-    },
-    {
-      icon: <BsGraphUpArrow className="w-16 h-16" />,
-      title: "Smart Matching",
-      desc: "AI-powered investor-founder matching based on interests",
-    },
-    {
-      icon: <HiChatAlt2 className="w-16 h-16" />,
-      title: "Direct Chat",
-      desc: "Connect instantly without cold emails or middlemen",
-    },
-    {
-      icon: <HiPhone className="w-16 h-16" />,
-      title: "Video Calls",
-      desc: "Built-in audio and video calling, fully recorded",
-    },
-    {
-      icon: <MdVerified className="w-16 h-16" />,
-      title: "Verified Profiles",
-      desc: "Every user is vetted for authenticity and credibility",
-    },
-    {
-      icon: <HiLightningBolt className="w-16 h-16" />,
-      title: "Fast Deals",
-      desc: "Close rounds in days, not months",
-    },
-  ];
-
-  const stats = [
-    { value: "2400", label: "Founders Pitching", suffix: "+" },
-    { value: "340", label: "Capital Raised", prefix: "$", suffix: "M+" },
-    { value: "850", label: "Active Investors", suffix: "+" },
-    { value: "12000", label: "Connections Made", suffix: "+" },
-  ];
-
-  return (
-    <div className="min-h-screen bg-dark-navy text-white overflow-x-hidden relative">
-      {/* Background Layer - Bottom */}
-      <div className="fixed inset-0 z-0 bg-dark-navy">
-        {/* Background Image */}
-        <img
-          src={backgroundImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{ zIndex: 0 }}
-        />
-
-        {/* Gradient overlay - darker on left for text readability (like reference) */}
-        <div
-          className="absolute inset-0"
-          style={{
-            zIndex: 1,
-            background:
-              "linear-gradient(to right, rgba(10,22,40,0.85) 0%, rgba(10,22,40,0.55) 50%, rgba(10,22,40,0.35) 100%)",
-          }}
-        ></div>
-      </div>
-      {/* Navigation - Fixed outside content layer */}
-      <motion.nav
-        className="fixed top-0 left-0 right-0 z-[100] bg-dark-navy/95 backdrop-blur-xl border-b border-gold/10 shadow-lg"
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
-          <Link to="/">
-            <motion.img
-              src="/Logobgremove.jpeg"
-              alt="EXPGLO FUND"
-              className="h-12 sm:h-14 md:h-16 w-auto drop-shadow-[0_0_10px_rgba(245,185,66,0.3)]"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            />
-          </Link>
-
-          {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center gap-6 xl:gap-10">
-            <motion.a
-              href="#how-it-works"
-              className="text-gray-300 text-sm font-semibold hover:text-gold transition-colors relative group"
-              whileHover={{ scale: 1.1 }}
-            >
-              How It Works
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold group-hover:w-full transition-all duration-300"></span>
-            </motion.a>
-            <Link to="/courses">
-              <motion.span
-                className="text-gray-300 text-sm font-semibold hover:text-gold transition-colors relative group"
-                whileHover={{ scale: 1.1 }}
-              >
-                Courses
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold group-hover:w-full transition-all duration-300"></span>
-              </motion.span>
-            </Link>
-            <motion.a
-              href="#pitches"
-              className="text-gray-300 text-sm font-semibold hover:text-gold transition-colors relative group"
-              whileHover={{ scale: 1.1 }}
-            >
-              Live Pitches
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold group-hover:w-full transition-all duration-300"></span>
-            </motion.a>
-            <motion.a
-              href="#features"
-              className="text-gray-300 text-sm font-semibold hover:text-gold transition-colors relative group"
-              whileHover={{ scale: 1.1 }}
-            >
-              Features
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold group-hover:w-full transition-all duration-300"></span>
-            </motion.a>
-          </div>
-
-          {/* Desktop Auth Buttons */}
-          <div className="hidden sm:flex items-center gap-2 sm:gap-4">
-            <Link to="/login">
-              <motion.button
-                className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-white text-xs sm:text-sm font-bold border-2 border-gold/10 rounded-lg md:rounded-xl hover:border-gold transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Log In
-              </motion.button>
-            </Link>
-            <Link to="/signup">
-              <motion.button
-                className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-xs sm:text-sm font-bold rounded-lg md:rounded-xl shadow-lg shadow-gold/30 hover:shadow-gold/50 transition-all"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Sign Up
-              </motion.button>
-            </Link>
-          </div>
-
-          {/* Mobile Hamburger */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden text-gold p-2"
-          >
-            {mobileMenuOpen ? (
-              <HiX className="w-6 h-6" />
-            ) : (
-              <HiMenu className="w-6 h-6" />
-            )}
-          </button>
+function ChatBubble({ side, avatar, text }) {
+  if (side === "left") {
+    return (
+      <div className="flex items-end gap-2">
+        <img src={avatar} alt="" className="w-7 h-7 rounded-full" />
+        <div className="px-3 py-2 bg-[#FAFAF7] rounded-2xl rounded-bl-md max-w-[70%]">
+          <p className="text-xs text-[#0A1F14]">{text}</p>
         </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              className="lg:hidden bg-dark-navy/95 backdrop-blur-xl border-t border-gold/10"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="px-4 py-6 space-y-4">
-                <a
-                  href="#how-it-works"
-                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  How It Works
-                </a>
-                <Link
-                  to="/courses"
-                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Courses
-                </Link>
-                <a
-                  href="#pitches"
-                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Live Pitches
-                </a>
-                <a
-                  href="#features"
-                  className="block text-gray-300 text-base font-semibold hover:text-gold transition-colors py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Features
-                </a>
-
-                <div className="pt-4 border-t border-gold/10">
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <button className="w-full px-6 py-3 text-white text-sm font-bold border-2 border-gold/10 rounded-xl hover:border-gold transition-all mb-4">
-                      Log In
-                    </button>
-                  </Link>
-                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <button className="w-full px-6 py-3 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-sm font-bold rounded-xl shadow-lg">
-                      Sign Up Free
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.nav>
-      {/* Content Layer - Above background */}
-      <div className="relative z-10">
-        {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 relative">
-          <motion.div
-            className="max-w-7xl w-full"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {/* Live Indicator */}
-            <motion.div
-              className="inline-flex items-center gap-3 px-6 py-3 bg-gold/10 border border-gold/30 rounded-full mb-12 backdrop-blur-lg"
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <motion.span
-                className="w-2.5 h-2.5 bg-gold rounded-full shadow-[0_0_20px_#F5B942]"
-                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              <span className="text-gold text-xs font-bold tracking-wider">
-                LIVE ON EXPGLO FUND — 2,400+ FOUNDERS PITCHING
-              </span>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 gap-16 items-center">
-              {/* Left - Text */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-              >
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight mb-6 sm:mb-8">
-                  <span className="block">Pitch in</span>
-                  <motion.span
-                    className="block bg-gradient-to-r from-gold via-bright-gold to-gold bg-clip-text text-transparent italic"
-                    animate={{
-                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                    }}
-                    transition={{ duration: 5, repeat: Infinity }}
-                    style={{ backgroundSize: "200% 100%" }}
-                  >
-                    60 Seconds.
-                  </motion.span>
-                  <span className="block">Fund the Future.</span>
-                </h1>
-
-                <p className="text-xl text-gray-300 leading-relaxed mb-10 max-w-xl">
-                  Skip the old, boring funding process. Upload your 60-second
-                  pitch video and connect with investors who believe in your
-                  vision. No more endless meetings, no more waiting months.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  <motion.button
-                    className="px-8 py-4 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-base font-bold rounded-xl shadow-lg shadow-gold/30 flex items-center justify-center gap-2"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -5,
-                      boxShadow: "0 20px 60px rgba(245, 185, 66, 0.4)",
-                    }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <span>I'm a Founder</span>
-                    <motion.span
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      →
-                    </motion.span>
-                  </motion.button>
-                  <motion.button
-                    className="px-8 py-4 bg-gradient-to-r from-primary-green to-secondary-green text-white text-base font-bold rounded-xl shadow-lg shadow-primary-green/30 flex items-center justify-center gap-2"
-                    whileHover={{
-                      scale: 1.05,
-                      y: -5,
-                      boxShadow: "0 20px 60px rgba(45, 122, 79, 0.4)",
-                    }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <span>I'm an Investor</span>
-                    <motion.span
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: 0.2,
-                      }}
-                    >
-                      →
-                    </motion.span>
-                  </motion.button>
-                </div>
-
-                <p className="text-sm text-gray-400">
-                  ✓ Free to join · No credit card required · 5 min setup
-                </p>
-              </motion.div>
-
-              {/* Right - Video */}
-              <motion.div
-                className="relative perspective-1000"
-                initial={{ opacity: 0, x: 100, rotateY: -20 }}
-                animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                transition={{ delay: 0.4, duration: 1 }}
-              >
-                <motion.div
-                  className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-gold/20"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <video
-                    ref={videoRef}
-                    className="w-full h-auto rounded-3xl"
-                    loop
-                    muted={isMuted}
-                    playsInline
-                  >
-                    <source src="/pitchvideo.mp4" type="video/mp4" />
-                  </video>
-
-                  {/* Video Overlay */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <motion.div
-                      className="absolute top-4 left-4 px-4 py-2 bg-gold/95 text-dark-navy rounded-lg text-xs font-bold backdrop-blur-lg shadow-lg shadow-gold/40 flex items-center gap-2 pointer-events-auto z-20"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 1, type: "spring", stiffness: 200 }}
-                    >
-                      <HiVideoCamera className="w-4 h-4" />
-                      OLD vs NEW Funding
-                    </motion.div>
-
-                    <motion.button
-                      onClick={toggleMute}
-                      className="absolute top-4 right-4 w-14 h-14 rounded-full bg-dark-navy/90 border-2 border-gold text-gold flex items-center justify-center backdrop-blur-lg hover:bg-gold hover:text-dark-navy transition-all z-20 pointer-events-auto animate-pulse-button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.5 }}
-                      title={isMuted ? "Unmute video" : "Mute video"}
-                    >
-                      {isMuted ? (
-                        <HiVolumeOff size={26} />
-                      ) : (
-                        <HiVolumeUp size={26} />
-                      )}
-                    </motion.button>
-                  </div>
-
-                  {/* Glow Effect */}
-                  <motion.div
-                    className="absolute -inset-[20%] bg-gradient-radial from-gold/30 to-transparent -z-10 blur-3xl"
-                    animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  />
-                </motion.div>
-
-                {/* Floating Stats - Show "2x Faster" on mobile, all on desktop */}
-                <div className="block">
-                  {/* 2x Faster - On mobile: inside video bottom-right to cover Gemini watermark */}
-                  {/* On desktop: floating outside right side */}
-                  <FloatingElement delay={0}>
-                    <motion.div
-                      className="absolute bottom-3 right-3 md:top-1/4 md:bottom-auto md:-right-16 px-4 py-2.5 bg-card-bg/95 border-2 border-gold rounded-xl backdrop-blur-lg shadow-xl flex items-center gap-2 z-30"
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 1.5, type: "spring" }}
-                    >
-                      <HiLightningBolt className="w-5 h-5 text-gold" />
-                      <span className="text-xs font-bold text-gold whitespace-nowrap">
-                        2x Faster
-                      </span>
-                    </motion.div>
-                  </FloatingElement>
-
-                  {/* $340M Raised - Hidden on mobile, visible on desktop */}
-                  <div className="hidden md:block">
-                    <FloatingElement delay={0.5}>
-                      <motion.div
-                        className="absolute top-1/2 -left-16 px-4 py-2.5 bg-card-bg/95 border-2 border-gold rounded-xl backdrop-blur-lg shadow-xl flex items-center gap-2"
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 1.7, type: "spring" }}
-                      >
-                        <HiCurrencyDollar className="w-5 h-5 text-gold" />
-                        <span className="text-xs font-bold text-gold whitespace-nowrap">
-                          $340M Raised
-                        </span>
-                      </motion.div>
-                    </FloatingElement>
-                  </div>
-
-                  {/* 850+ Investors - Hidden on mobile, visible on desktop */}
-                  <div className="hidden md:block">
-                    <FloatingElement delay={1}>
-                      <motion.div
-                        className="absolute bottom-1/4 -right-16 px-4 py-2.5 bg-card-bg/95 border-2 border-gold rounded-xl backdrop-blur-lg shadow-xl flex items-center gap-2"
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 1.9, type: "spring" }}
-                      >
-                        <IoRocketSharp className="w-5 h-5 text-gold" />
-                        <span className="text-xs font-bold text-gold whitespace-nowrap">
-                          850+ Investors
-                        </span>
-                      </motion.div>
-                    </FloatingElement>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Scroll Indicator */}
-            <motion.div
-              className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-400 text-xs font-semibold tracking-widest"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2 }}
-            >
-              <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <span>SCROLL TO EXPLORE</span>
-                <HiChevronDown className="w-5 h-5 mx-auto mt-1" />
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* Stats Section */}
-        <motion.section
-          className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-dark-bg/50 backdrop-blur-lg border-y border-gold/10"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8 }}
-        >
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                className="text-center p-10 bg-card-bg/50 rounded-2xl border-2 border-gold/10 backdrop-blur-lg relative overflow-hidden group"
-                initial={{ opacity: 0, y: 50, scale: 0.8 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                whileHover={{
-                  scale: 1.05,
-                  y: -10,
-                  boxShadow: "0 20px 60px rgba(245, 185, 66, 0.2)",
-                }}
-              >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold to-bright-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-                <motion.h3
-                  className="text-4xl sm:text-5xl md:text-6xl font-black bg-gradient-to-br from-gold to-bright-gold bg-clip-text text-transparent mb-2"
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    delay: index * 0.1 + 0.3,
-                    type: "spring",
-                    stiffness: 200,
-                  }}
-                >
-                  {stat.prefix}
-                  <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                </motion.h3>
-                <p className="text-base text-gray-300 font-semibold">
-                  {stat.label}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* Live Pitches Section */}
-        <section
-          id="pitches"
-          className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-dark-navy"
-        >
-          <motion.div
-            className="max-w-7xl mx-auto"
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="text-center mb-16">
-              <motion.p
-                className="inline-flex items-center gap-2 text-gold text-sm font-bold tracking-widest mb-4"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-              >
-                <HiTrendingUp className="w-5 h-5" />
-                LIVE ON PLATFORM
-              </motion.p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4">
-                Pitches Investors Are{" "}
-                <motion.span
-                  className="bg-gradient-to-r from-gold via-bright-gold to-gold bg-clip-text text-transparent"
-                  animate={{
-                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                  }}
-                  transition={{ duration: 5, repeat: Infinity }}
-                  style={{ backgroundSize: "200% 100%" }}
-                >
-                  Watching Now
-                </motion.span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {pitches.map((pitch, index) => (
-                <motion.div
-                  key={pitch.id}
-                  className="bg-card-bg border-2 border-gold/10 rounded-3xl overflow-hidden hover:border-gold transition-all cursor-pointer group"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1, duration: 0.6 }}
-                  whileHover={{ y: -10, scale: 1.02 }}
-                >
-                  <div className="relative h-56 overflow-hidden">
-                    <img
-                      src={pitch.thumbnail}
-                      alt={pitch.company}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-dark-navy/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <motion.div
-                        className="w-16 h-16 rounded-full bg-gold flex items-center justify-center"
-                        whileHover={{ scale: 1.2 }}
-                      >
-                        <svg
-                          className="w-8 h-8 text-dark-navy ml-1"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </motion.div>
-                    </div>
-                    <div className="absolute top-4 right-4 px-3 py-1.5 bg-primary-green text-white text-xs font-bold rounded-lg">
-                      {pitch.category}
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <h4 className="text-xl font-bold mb-1">{pitch.company}</h4>
-                    <p className="text-sm text-gray-400 mb-2">
-                      {pitch.founder}
-                    </p>
-                    <p className="text-sm text-gold font-bold mb-4">
-                      {pitch.funding} {pitch.stage}
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-4">
-                      {pitch.description}
-                    </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-gold/10">
-                      <span className="text-sm text-gray-400 flex items-center gap-1">
-                        <HiEye className="w-4 h-4" /> {pitch.views} views
-                      </span>
-                      <motion.button
-                        className="px-4 py-2 bg-gold text-dark-navy text-sm font-bold rounded-lg"
-                        whileHover={{ scale: 1.1, x: 5 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        Connect →
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              className="text-center mt-12"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <motion.button
-                className="px-10 py-4 bg-transparent border-2 border-gold text-gold text-base font-bold rounded-xl hover:bg-gold hover:text-dark-navy transition-all"
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 10px 40px rgba(245, 185, 66, 0.3)",
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                View All 2,400+ Pitches →
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* Features Section */}
-        <section
-          id="features"
-          className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-dark-bg"
-        >
-          <motion.div
-            className="max-w-7xl mx-auto"
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="text-center mb-16">
-              <p className="inline-flex items-center gap-2 text-gold text-sm font-bold tracking-widest mb-4">
-                <HiLightningBolt className="w-5 h-5" />
-                PLATFORM FEATURES
-              </p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black">
-                Everything You Need to{" "}
-                <span className="bg-gradient-to-r from-gold to-bright-gold bg-clip-text text-transparent">
-                  Close the Deal
-                </span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  className="bg-card-bg border-2 border-gold/10 rounded-3xl p-12 text-center relative overflow-hidden group"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1, duration: 0.6 }}
-                  whileHover={{
-                    scale: 1.05,
-                    y: -10,
-                    boxShadow: "0 20px 60px rgba(245, 185, 66, 0.2)",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-radial from-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <motion.div
-                    className="text-gold mb-6 inline-block"
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      delay: index * 0.2,
-                    }}
-                  >
-                    {feature.icon}
-                  </motion.div>
-                  <h4 className="text-2xl font-bold mb-4">{feature.title}</h4>
-                  <p className="text-base text-gray-300 leading-relaxed">
-                    {feature.desc}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Final CTA */}
-        <motion.section
-          className="py-20 sm:py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-green/10 to-gold/10 border-y border-gold/10"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.div
-            className="max-w-4xl mx-auto text-center"
-            initial={{ scale: 0.8, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <motion.h2
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-6"
-              initial={{ y: 30, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-            >
-              Ready to Change How Deals Get Done?
-            </motion.h2>
-            <motion.p
-              className="text-xl text-gray-300 mb-12"
-              initial={{ y: 30, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-            >
-              Join 3,000+ founders and investors already on EXPGLO FUND
-            </motion.p>
-            <motion.div
-              className="flex flex-col sm:flex-row gap-6 justify-center"
-              initial={{ y: 30, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 }}
-            >
-              <motion.button
-                className="px-12 py-5 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-lg font-bold rounded-xl shadow-lg"
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 20px 60px rgba(245, 185, 66, 0.5)",
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Start Pitching Today →
-              </motion.button>
-              <motion.button
-                className="px-12 py-5 bg-gradient-to-r from-primary-green to-secondary-green text-white text-lg font-bold rounded-xl shadow-lg"
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 20px 60px rgba(45, 122, 79, 0.5)",
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Find Your Next Investment →
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        </motion.section>
-
-        {/* Footer */}
-        <footer className="bg-dark-bg border-t border-gold/10 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 gap-8 mb-12">
-              {/* Logo */}
-              <div>
-                <img
-                  src="/Logobgremove.jpeg"
-                  alt="EXPGLO FUND"
-                  className="h-14 mb-4 drop-shadow-[0_0_10px_rgba(245,185,66,0.3)]"
-                />
-                <p className="text-base text-gray-300 leading-relaxed max-w-md">
-                  Where great ideas meet the capital to change the world.
-                </p>
-              </div>
-
-              {/* Links - 2 columns on mobile, 3 on desktop */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-16">
-                {/* Platform */}
-                <div>
-                  <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
-                    PLATFORM
-                  </h5>
-                  <div className="space-y-3">
-                    <a
-                      href="#founders"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      For Founders
-                    </a>
-                    <a
-                      href="#investors"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      For Investors
-                    </a>
-                    <Link
-                      to="/courses"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      Courses
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Company */}
-                <div>
-                  <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
-                    COMPANY
-                  </h5>
-                  <div className="space-y-3">
-                    <a
-                      href="#about"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      About
-                    </a>
-                    <a
-                      href="#blog"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      Blog
-                    </a>
-                    <a
-                      href="#careers"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      Careers
-                    </a>
-                  </div>
-                </div>
-
-                {/* Legal */}
-                <div>
-                  <h5 className="text-sm font-bold tracking-wider text-gold mb-4">
-                    LEGAL
-                  </h5>
-                  <div className="space-y-3">
-                    <a
-                      href="#privacy"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      Privacy
-                    </a>
-                    <a
-                      href="#terms"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      Terms
-                    </a>
-                    <a
-                      href="#security"
-                      className="block text-sm text-gray-300 hover:text-gold transition-all hover:translate-x-1"
-                    >
-                      Security
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gold/10 gap-4">
-              <p className="text-sm text-gray-400">
-                © 2026 EXPGLO FUND, Inc. All rights reserved.
-              </p>
-              <p className="text-sm text-gray-400">
-                Built for founders, backed by conviction.
-              </p>
-            </div>
-          </div>
-        </footer>
-      </div>{" "}
-      {/* End Content Layer */}
+      </div>
+    );
+  }
+  return (
+    <div className="flex justify-end">
+      <div className="px-3 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white rounded-2xl rounded-br-md max-w-[70%]">
+        <p className="text-xs">{text}</p>
+      </div>
     </div>
   );
 }
 
-export default HomePage;
+function MiniStat({ icon: Icon, label, value }) {
+  return (
+    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/15">
+      <Icon className="w-4 h-4 text-[#F5B942] mb-1" />
+      <p className="text-base font-black">{value}</p>
+      <p className="text-[10px] text-white/65">{label}</p>
+    </div>
+  );
+}
+
+// ─── DUAL VALUE — founder vs investor ──────
+function DualValue() {
+  return (
+    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto">
+        <Eyebrow>BUILT FOR BOTH SIDES</Eyebrow>
+        <h2 className="text-center text-3xl sm:text-5xl font-black mb-14 leading-tight">
+          One platform. <span className="text-[#1B5E3F]">Two superpowers.</span>
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <ValueCard
+            accent="green"
+            icon={IoRocketSharp}
+            tag="FOR FOUNDERS"
+            title="Pitch once. Reach 850+ investors."
+            points={[
+              "60-second video instead of 30-page decks",
+              "Real-time analytics — see who's watching",
+              "Skip gatekeepers and middlemen",
+              "Built-in chat + audio + video calls",
+              "Close rounds 6× faster",
+            ]}
+            cta="Start pitching"
+            to="/signup"
+          />
+          <ValueCard
+            accent="gold"
+            icon={HiShieldCheck}
+            tag="FOR INVESTORS"
+            title="See real founders, not slide decks."
+            points={[
+              "Vetted founders, KYC-verified",
+              "Filter by industry, stage, ask",
+              "AI matching to your thesis",
+              "Browse 2,400+ pitches anywhere",
+              "Invest directly through the platform",
+            ]}
+            cta="Browse pitches"
+            to="/signup"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── GLOBAL NETWORK — uses globalnetwork.mp4 ──
+function GlobalNetworkSection() {
+  return (
+    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#FAFAF7] relative z-10 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+          {/* Left: video */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="relative order-2 lg:order-1"
+          >
+            <div className="absolute -inset-6 bg-gradient-to-br from-[#1B5E3F]/20 via-[#F5B942]/15 to-[#1B5E3F]/10 rounded-[2.5rem] blur-3xl opacity-70" />
+            <div className="relative aspect-square rounded-3xl overflow-hidden bg-[#0A1F14] shadow-2xl shadow-[#1B5E3F]/30 ring-1 ring-[#1B5E3F]/10">
+              <video
+                src="/videos/globalnetwork.mp4"
+                muted
+                loop
+                playsInline
+                autoPlay
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/90 backdrop-blur text-[#0F4A2E] text-[11px] font-black tracking-wide rounded-full shadow-lg">
+                🌍 LIVE · across 12 countries
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right: copy */}
+          <div className="order-1 lg:order-2">
+            <Eyebrow>GLOBAL NETWORK</Eyebrow>
+            <h2 className="text-3xl sm:text-5xl font-black mb-5 leading-tight">
+              A global stage for{" "}
+              <span className="text-[#1B5E3F]">founders & investors</span>
+            </h2>
+            <p className="text-lg text-[#0A1F14]/65 mb-7 leading-relaxed">
+              From Mumbai to New York to Singapore — capital flows where great
+              ideas live. Connect across borders, currencies, and time zones.
+            </p>
+            <div className="grid grid-cols-2 gap-3 mb-7">
+              <NetworkPill icon={HiGlobeAlt} label="12 countries" />
+              <NetworkPill icon={MdVerified} label="850+ verified investors" />
+              <NetworkPill icon={IoRocketSharp} label="2,400+ founders" />
+              <NetworkPill icon={HiCurrencyDollar} label="$340M+ raised" />
+            </div>
+            <Link to="/signup">
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                className="px-7 py-3.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-lg shadow-[#1B5E3F]/25 inline-flex items-center gap-2 transition-all"
+              >
+                Join the network <HiArrowRight />
+              </motion.button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function NetworkPill({ icon: Icon, label }) {
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-3 bg-white border border-[#1B5E3F]/10 rounded-2xl shadow-sm">
+      <Icon className="w-5 h-5 text-[#1B5E3F]" />
+      <span className="text-sm font-semibold text-[#0A1F14]/85">{label}</span>
+    </div>
+  );
+}
+
+// ─── STATS ──────────────────────────────────
+function StatsSection() {
+  return (
+    <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto">
+        <Eyebrow>BY THE NUMBERS</Eyebrow>
+        <h2 className="text-center text-3xl sm:text-5xl font-black mb-14 leading-tight">
+          The platform{" "}
+          <span className="text-[#1B5E3F]">founders actually use</span>
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Stat value={2400} suffix="+" label="Founders pitching" />
+          <Stat value={850} suffix="+" label="Verified investors" />
+          <Stat value={340} suffix="M+" prefix="$" label="Capital raised" />
+          <Stat value={12000} suffix="+" label="Connections made" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── TESTIMONIALS ──────────────────────────
+function TestimonialsSection() {
+  return (
+    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#FAFAF7] relative z-10">
+      <div className="max-w-6xl mx-auto">
+        <Eyebrow>STORIES</Eyebrow>
+        <h2 className="text-center text-3xl sm:text-5xl font-black mb-14 leading-tight">
+          Founders who closed
+          <br />
+          <span className="text-[#1B5E3F]">in less than 30 days</span>
+        </h2>
+        <div className="grid md:grid-cols-3 gap-5">
+          <Testimonial
+            quote="Three days after my pitch went live, I had four term sheets. EXPGLO FUND completely changed how I think about fundraising."
+            author="Aisha Kamara"
+            role="Founder · NovaMed AI"
+            avatar="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop"
+          />
+          <Testimonial
+            quote="As an angel, I see 50+ pitches a week here. The video format means I can evaluate deals in minutes, not hours."
+            author="Vikram Patel"
+            role="Angel · Altva Capital"
+            avatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop"
+          />
+          <Testimonial
+            quote="Closed our seed round in 18 days. The video pitch let me share my vision in a way no deck ever could."
+            author="Rahul Mehta"
+            role="Founder · GreenChain"
+            avatar="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── BIG CTA ───────────────────────────────
+function BigCTA() {
+  return (
+    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0F4A2E] via-[#1B5E3F] to-[#0F4A2E] text-white relative overflow-hidden">
+      <div className="absolute -top-32 -left-20 w-96 h-96 bg-[#F5B942]/15 rounded-full blur-[140px]" />
+      <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-[#F5B942]/10 rounded-full blur-[160px]" />
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+      <div className="max-w-4xl mx-auto text-center relative">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 border border-white/20 rounded-full mb-6 backdrop-blur">
+          <HiSparkles className="w-4 h-4 text-[#F5B942]" />
+          <span className="text-xs font-bold tracking-wider uppercase">
+            Limited beta · Free for the first year
+          </span>
+        </div>
+        <h2 className="text-3xl sm:text-5xl md:text-6xl font-black mb-6 leading-tight">
+          Ready to change how
+          <br />
+          <span className="bg-gradient-to-r from-[#FFD166] via-[#F5B942] to-[#FFD166] bg-clip-text text-transparent">
+            deals get done?
+          </span>
+        </h2>
+        <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto">
+          Join 3,000+ founders and investors who are already raising and backing
+          the next wave of breakthrough companies.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link to="/signup">
+            <motion.button
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="group px-8 py-4 bg-[#F5B942] hover:bg-[#FFD166] text-[#0F4A2E] text-base font-bold rounded-full shadow-xl shadow-[#F5B942]/25 inline-flex items-center justify-center gap-2 w-full sm:w-auto transition-all"
+            >
+              Start pitching today
+              <HiArrowRight className="group-hover:translate-x-0.5 transition-transform" />
+            </motion.button>
+          </Link>
+          <Link to="/login">
+            <motion.button
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-8 py-4 bg-white/10 hover:bg-white/15 text-white text-base font-bold rounded-full border-2 border-white/25 backdrop-blur inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+            >
+              I'm already a member
+            </motion.button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── helpers ───────────────────────────────
+function Eyebrow({ children }) {
+  return (
+    <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-4">
+      {children}
+    </p>
+  );
+}
+
+function ValueCard({ accent, icon: Icon, tag, title, points, cta, to }) {
+  const map = {
+    green: {
+      bg: "bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white",
+      ring: "ring-[#1B5E3F]/30",
+      iconBg: "bg-[#F5B942]",
+      iconShadow: "shadow-[#F5B942]/40",
+      iconColor: "text-[#0F4A2E]",
+      tag: "text-[#F5B942]",
+      check: "text-[#F5B942]",
+    },
+    gold: {
+      bg: "bg-gradient-to-br from-[#FFF6E0] to-[#FFE9BD]",
+      ring: "ring-[#F5B942]/40",
+      iconBg: "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E]",
+      iconShadow: "shadow-[#1B5E3F]/30",
+      iconColor: "text-[#F5B942]",
+      tag: "text-[#0F4A2E]/70",
+      check: "text-[#1B5E3F]",
+    },
+  }[accent];
+  const isGreen = accent === "green";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -4 }}
+      className={`relative ${map.bg} ring-1 ${map.ring} rounded-3xl p-7 sm:p-9 shadow-lg hover:shadow-2xl transition-all`}
+    >
+      <div
+        className={`w-14 h-14 rounded-2xl ${map.iconBg} flex items-center justify-center shadow-lg ${map.iconShadow} mb-5`}
+      >
+        <Icon className={`w-7 h-7 ${map.iconColor}`} />
+      </div>
+      <p
+        className={`text-xs uppercase tracking-[0.18em] font-bold ${map.tag} mb-2`}
+      >
+        {tag}
+      </p>
+      <h3 className="text-2xl sm:text-3xl font-black mb-5 leading-tight">
+        {title}
+      </h3>
+      <ul className="space-y-2.5 mb-7">
+        {points.map((p) => (
+          <li
+            key={p}
+            className={`flex items-start gap-2.5 ${isGreen ? "text-white/85" : "text-[#0A1F14]/80"}`}
+          >
+            <HiCheck className={`w-5 h-5 flex-shrink-0 mt-0.5 ${map.check}`} />
+            <span className="text-sm sm:text-base">{p}</span>
+          </li>
+        ))}
+      </ul>
+      <Link to={to}>
+        <button
+          className={`px-6 py-3 ${
+            isGreen
+              ? "bg-[#F5B942] hover:bg-[#FFD166] text-[#0F4A2E]"
+              : "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white"
+          } text-sm font-bold rounded-full inline-flex items-center gap-2 shadow-md transition-all`}
+        >
+          {cta} <HiArrowRight />
+        </button>
+      </Link>
+    </motion.div>
+  );
+}
+
+function Stat({ value, suffix, prefix, label }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -3 }}
+      className="text-center bg-white border border-[#1B5E3F]/10 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-xl transition-all"
+    >
+      <p className="text-4xl sm:text-5xl font-black bg-gradient-to-br from-[#0F4A2E] via-[#1B5E3F] to-[#2D7A4F] bg-clip-text text-transparent mb-1.5">
+        <Counter end={value} suffix={suffix} prefix={prefix} />
+      </p>
+      <p className="text-sm font-semibold text-[#0A1F14]/65">{label}</p>
+    </motion.div>
+  );
+}
+
+function Testimonial({ quote, author, role, avatar }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -3 }}
+      className="bg-white border border-[#1B5E3F]/10 rounded-2xl p-7 shadow-sm hover:shadow-xl transition-all flex flex-col"
+    >
+      <div className="flex gap-1 mb-3">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <HiStar key={s} className="w-4 h-4 text-[#F5B942]" />
+        ))}
+      </div>
+      <p className="text-[#0A1F14]/80 leading-relaxed mb-6 flex-1">"{quote}"</p>
+      <div className="flex items-center gap-3 pt-4 border-t border-[#1B5E3F]/10">
+        <img
+          src={avatar}
+          alt={author}
+          className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/10"
+        />
+        <div>
+          <p className="font-bold text-sm">{author}</p>
+          <p className="text-xs text-[#0A1F14]/60">{role}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

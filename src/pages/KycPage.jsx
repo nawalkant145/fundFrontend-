@@ -17,23 +17,21 @@ const ROLE_TABS = [
   { value: "investor", label: "Investor" },
 ];
 
-function KycPage() {
+export default function KycPage() {
   const navigate = useNavigate();
-  // In real app this comes from auth context. For static, let user toggle.
   const [role, setRole] = useState("founder");
 
   const [docs, setDocs] = useState({
     panCard: null,
     aadhar: null,
     selfie: null,
-    businessReg: null, // founder
-    bankProof: null, // investor
-    incomeProof: null, // investor
+    businessReg: null,
+    bankProof: null,
+    incomeProof: null,
   });
   const [submitted, setSubmitted] = useState(false);
 
   const update = (key, file) => setDocs((p) => ({ ...p, [key]: file }));
-
   const requiredFilled = docs.panCard && docs.aadhar && docs.selfie;
 
   const handleSubmit = (e) => {
@@ -53,24 +51,24 @@ function KycPage() {
             exit={{ opacity: 0 }}
           >
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gold/10 border border-gold/30 mb-3">
-                <HiShieldCheck className="w-8 h-8 text-gold" />
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] mb-3 shadow-md shadow-[#1B5E3F]/25">
+                <HiShieldCheck className="w-7 h-7 text-[#F5B942]" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black mb-2">
+              <h1 className="text-3xl sm:text-4xl font-black mb-2 tracking-tight">
                 Get your{" "}
-                <span className="bg-gradient-to-r from-gold to-bright-gold bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#1B5E3F] via-[#2D7A4F] to-[#1B5E3F] bg-clip-text text-transparent">
                   blue tick
                 </span>
               </h1>
-              <p className="text-gray-300 text-sm sm:text-base max-w-xl mx-auto">
+              <p className="text-[#0A1F14]/60 text-sm sm:text-base max-w-xl mx-auto">
                 Submit ID proof for our team to review. Most approvals happen
                 within 24 hours.
               </p>
             </div>
 
-            {/* Role tabs (static toggle) */}
+            {/* Role tabs */}
             <div className="flex justify-center mb-6">
-              <div className="inline-flex bg-dark-bg/60 border border-gold/15 rounded-full p-1">
+              <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1">
                 {ROLE_TABS.map((t) => (
                   <button
                     key={t.value}
@@ -78,8 +76,8 @@ function KycPage() {
                     onClick={() => setRole(t.value)}
                     className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
                       role === t.value
-                        ? "bg-gold text-dark-navy shadow-md shadow-gold/30"
-                        : "text-gray-300 hover:text-white"
+                        ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md shadow-[#1B5E3F]/25"
+                        : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
                     }`}
                   >
                     I'm a {t.label}
@@ -90,7 +88,7 @@ function KycPage() {
 
             <InfoBanner />
 
-            <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
               <FileDropzone
                 label="PAN Card"
                 description="Image of your PAN card · JPG, PNG or PDF · max 10MB"
@@ -150,18 +148,20 @@ function KycPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/")}
-                  className="text-sm text-gray-400 hover:text-white"
+                  className="text-sm text-[#0A1F14]/55 hover:text-[#1B5E3F] font-semibold transition-colors"
                 >
                   Skip for now
                 </button>
                 <motion.button
                   type="submit"
                   disabled={!requiredFilled}
-                  className={`w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-base shadow-lg transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-gold/30 hover:shadow-gold/50 ${
-                    !requiredFilled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  whileHover={requiredFilled ? { scale: 1.02, y: -2 } : {}}
+                  whileHover={requiredFilled ? { y: -2 } : {}}
                   whileTap={requiredFilled ? { scale: 0.98 } : {}}
+                  className={`w-full sm:w-auto px-7 py-3.5 rounded-full font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-[#1B5E3F]/30 ${
+                    !requiredFilled
+                      ? "opacity-50 cursor-not-allowed shadow-none"
+                      : ""
+                  }`}
                 >
                   Submit for review <HiArrowRight />
                 </motion.button>
@@ -174,29 +174,29 @@ function KycPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", stiffness: 200 }}
-            className="text-center space-y-6 py-4"
+            className="text-center space-y-6 py-2"
           >
             <motion.div
-              className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-emerald-500/15 border-2 border-emerald-500/40"
+              className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
             >
-              <MdVerified className="w-14 h-14 text-emerald-400" />
+              <MdVerified className="w-12 h-12 text-emerald-500" />
             </motion.div>
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+              <h2 className="text-2xl sm:text-3xl font-black mb-2">
                 Documents submitted
               </h2>
-              <p className="text-gray-300 max-w-md mx-auto">
+              <p className="text-[#0A1F14]/65 max-w-md mx-auto">
                 Our verification team usually reviews submissions within 24
                 hours. We'll email you the moment it's approved.
               </p>
             </div>
             <Link to="/">
               <motion.button
-                className="px-7 py-3.5 rounded-xl font-bold bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30"
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={{ y: -2 }}
+                className="px-7 py-3.5 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-xl shadow-[#1B5E3F]/30 transition-all"
               >
                 Back to home
               </motion.button>
@@ -215,16 +215,16 @@ function InfoBanner() {
     "Selfie must clearly show your face and the ID.",
   ];
   return (
-    <div className="bg-dark-bg/60 border border-gold/15 rounded-2xl p-4 flex gap-3">
-      <HiInformationCircle className="w-6 h-6 text-gold flex-shrink-0 mt-0.5" />
+    <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+      <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-semibold mb-2 text-white">
+        <p className="text-sm font-bold mb-2 text-[#0F4A2E]">
           Before you upload
         </p>
-        <ul className="space-y-1 text-xs text-gray-300">
+        <ul className="space-y-1 text-xs text-[#0A1F14]/70">
           {items.map((t) => (
             <li key={t} className="flex items-center gap-2">
-              <HiCheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <HiCheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               {t}
             </li>
           ))}
@@ -233,5 +233,3 @@ function InfoBanner() {
     </div>
   );
 }
-
-export default KycPage;

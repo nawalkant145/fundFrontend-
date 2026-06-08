@@ -572,3 +572,318 @@ export const FOUNDER_PROFILES = {
     pitches: [MOCK_PITCHES[4]],
   },
 };
+
+// ─── Founder posts (Instagram/LinkedIn-style) ────────────
+export const MOCK_POSTS = [
+  {
+    _id: "p_1",
+    authorId: {
+      _id: "f_1",
+      name: "Aisha Kamara",
+      username: "aisha_novamed",
+      avatar: MOCK_PITCHES[0].founderId.avatar,
+      companyName: "NovaMed AI",
+      isVerified: true,
+    },
+    type: "images",
+    images: [
+      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1080&h=1080&fit=crop",
+      "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1080&h=1080&fit=crop",
+      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1080&h=1080&fit=crop",
+    ],
+    caption:
+      "Excited to announce we just deployed our edge AI in 4 more rural clinics in Tamil Nadu. Real-time cardiac screening with no internet needed. Special thanks to our amazing partners! 🎉🏥",
+    link: "https://novamed.ai/news/tamil-nadu-launch",
+    hashtags: ["healthtech", "ruralhealth", "AI", "deeptech"],
+    likes: 412,
+    saves: 89,
+    commentCount: 34,
+    createdAt: "2026-05-29",
+  },
+  {
+    _id: "p_2",
+    authorId: {
+      _id: "f_2",
+      name: "Rahul Mehta",
+      username: "rahul_greenchain",
+      avatar: MOCK_PITCHES[1].founderId.avatar,
+      companyName: "GreenChain",
+      isVerified: true,
+    },
+    type: "text",
+    images: [],
+    caption:
+      "Quick thought — most carbon credit markets are broken because they're optimizing for issuance, not for verifiable retirement. Until that flips, real climate action stays a nice-to-have on a pitch deck. We're betting the next decade on rebuilding the bottom of the stack.",
+    link: "",
+    hashtags: ["climatetech", "web3", "founderlife"],
+    likes: 287,
+    saves: 124,
+    commentCount: 58,
+    createdAt: "2026-05-28",
+  },
+  {
+    _id: "p_3",
+    authorId: {
+      _id: "f_3",
+      name: "Sofia Chen",
+      username: "sofia_eduforge",
+      avatar: MOCK_PITCHES[2].founderId.avatar,
+      companyName: "EduForge",
+      isVerified: false,
+    },
+    type: "images",
+    images: [
+      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1080&h=1080&fit=crop",
+    ],
+    caption:
+      "12,000 students. 8 languages. 85% completion. The team has been heads-down for 8 months and tomorrow we cross our most important milestone yet — first paying B2B customer 🚀",
+    link: "",
+    hashtags: ["edtech", "milestone"],
+    likes: 198,
+    saves: 23,
+    commentCount: 19,
+    createdAt: "2026-05-26",
+  },
+  {
+    _id: "p_4",
+    authorId: {
+      _id: "f_1",
+      name: "Aisha Kamara",
+      username: "aisha_novamed",
+      avatar: MOCK_PITCHES[0].founderId.avatar,
+      companyName: "NovaMed AI",
+      isVerified: true,
+    },
+    type: "images",
+    images: [
+      "https://images.unsplash.com/photo-1551076805-e1869033e561?w=1080&h=1080&fit=crop",
+      "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=1080&h=1080&fit=crop",
+    ],
+    caption:
+      "Customer Story 📖 — Aayush Hospital in Erode used our device to screen 1,200 patients in 6 weeks. Picked up 27 cardiac issues that would've otherwise gone unnoticed. THIS is why we build.",
+    link: "",
+    hashtags: ["customerstory", "healthtech"],
+    likes: 524,
+    saves: 167,
+    commentCount: 92,
+    createdAt: "2026-05-24",
+  },
+  {
+    _id: "p_5",
+    authorId: {
+      _id: "f_4",
+      name: "Marcus Webb",
+      username: "marcus_supplysync",
+      avatar: MOCK_PITCHES[3].founderId.avatar,
+      companyName: "SupplySync",
+      isVerified: true,
+    },
+    type: "images",
+    images: [
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1080&h=1080&fit=crop",
+      "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1080&h=1080&fit=crop",
+      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1080&h=1080&fit=crop",
+      "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1080&h=1080&fit=crop",
+    ],
+    caption:
+      "Sneak peek at our v2 dashboard. Cleaner, faster, and now with predictive shipping ETAs. Beta opens next month — DM if you want early access.",
+    link: "https://supplysync.com/v2",
+    hashtags: ["productlaunch", "logistics"],
+    likes: 332,
+    saves: 76,
+    commentCount: 28,
+    createdAt: "2026-05-22",
+  },
+];
+
+// ─── Mock active boosts ─────────────────────────────
+export const MOCK_BOOSTS = [
+  {
+    _id: "b_1",
+    pitchId: "v_2", // GreenChain
+    founderId: "f_2",
+    tier: "pro",
+    amountPaid: 1499,
+    durationHours: 168,
+    startedAt: "2026-05-28",
+    expiresAt: "2026-06-04",
+    status: "active",
+  },
+];
+
+// ─── Boost pricing tiers ────────────────────────────
+export const BOOST_TIERS = [
+  {
+    id: "mini",
+    name: "Mini Boost",
+    price: 499,
+    durationHours: 24,
+    duration: "24 hours",
+    description: "Top of feed for matching-industry investors",
+    perks: [
+      "Priority placement for 24 hours",
+      "Targeted to your industry investors",
+      "Featured ribbon on pitch card",
+    ],
+  },
+  {
+    id: "pro",
+    name: "Pro Boost",
+    price: 1499,
+    durationHours: 24 * 7,
+    duration: "7 days",
+    description: "Top of feed for matching-industry investors",
+    popular: true,
+    perks: [
+      "Priority placement for a full week",
+      "Targeted to your industry investors",
+      "Featured ribbon on pitch card",
+      "Daily reach analytics",
+    ],
+  },
+  {
+    id: "mega",
+    name: "Mega Boost",
+    price: 4999,
+    durationHours: 24 * 30,
+    duration: "30 days",
+    description: "Top of feed for ALL investors + Featured badge",
+    perks: [
+      "Priority placement for 30 days",
+      "Visible to every investor — not just matching industries",
+      "Premium gold Featured badge",
+      "Full reach + engagement analytics",
+      "Priority customer support",
+    ],
+  },
+];
+
+// ─── Subscription plan (EXPGLO Pro) ────────────────
+export const SUBSCRIPTION_PLAN = {
+  id: "pro",
+  name: "EXPGLO Pro",
+  price: 499,
+  cycle: "month",
+  features: [
+    "Unlimited new conversations",
+    "Audio + video calls",
+    "1 free Mini boost / month",
+    "See everyone who viewed your profile",
+    "Advanced filters in Discover",
+    "Priority customer support",
+  ],
+};
+
+// ─── Role-specific subscription plans ──────────────
+export const INVESTOR_PLAN = {
+  id: "investor-pro",
+  role: "investor",
+  name: "Investor Pro",
+  tagline: "Connect & invest at full speed",
+  price: 499,
+  cycle: "month",
+  features: [
+    {
+      label: "Start NEW conversations",
+      free: "1 / month",
+      pro: "Unlimited",
+    },
+    {
+      label: "Audio + video calls with founders",
+      free: false,
+      pro: "Unlimited",
+    },
+    {
+      label: "Advanced filters in Discover",
+      free: "Basic",
+      pro: "Full",
+    },
+    {
+      label: "See everyone who viewed your profile",
+      free: "Last 3",
+      pro: "Full list",
+    },
+    {
+      label: "Express investment interest",
+      free: true,
+      pro: true,
+    },
+    {
+      label: "Save unlimited pitches & posts",
+      free: true,
+      pro: true,
+    },
+    {
+      label: "Browse Feed + Pitch",
+      free: true,
+      pro: true,
+    },
+    {
+      label: "Priority customer support",
+      free: false,
+      pro: true,
+    },
+  ],
+};
+
+export const FOUNDER_PLAN = {
+  id: "founder-pro",
+  role: "founder",
+  name: "Studio Pro",
+  tagline: "Power up your studio",
+  price: 299,
+  cycle: "month",
+  features: [
+    {
+      label: "Free Mini boost every month",
+      free: false,
+      pro: "₹499 value",
+    },
+    {
+      label: "Active pitches at once",
+      free: "1",
+      pro: "Up to 3",
+    },
+    {
+      label: "Advanced pitch analytics",
+      free: "Basic",
+      pro: "Heatmap + drop-off + audience",
+    },
+    {
+      label: "Custom Studio profile header",
+      free: false,
+      pro: true,
+    },
+    {
+      label: "Gold Studio Pro badge",
+      free: false,
+      pro: true,
+    },
+    {
+      label: "Priority pitch review",
+      free: "Standard 24h",
+      pro: "Under 4h",
+    },
+    {
+      label: "Daily post limit",
+      free: "10 / day",
+      pro: "Unlimited",
+    },
+    {
+      label: "Send messages to investors",
+      free: "Always free",
+      pro: "Always free",
+    },
+    {
+      label: "Priority customer support",
+      free: false,
+      pro: true,
+    },
+  ],
+};
+
+// Returns the plan that applies to a given role
+export function getPlanForRole(role) {
+  if (role === "founder") return FOUNDER_PLAN;
+  return INVESTOR_PLAN; // default to investor for everyone else
+}

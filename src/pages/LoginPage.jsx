@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { HiUser, HiLockClosed, HiTrendingUp } from "react-icons/hi";
+import {
+  HiUser,
+  HiLockClosed,
+  HiTrendingUp,
+  HiArrowRight,
+  HiCheckCircle,
+} from "react-icons/hi";
 import { IoRocketSharp } from "react-icons/io5";
 import { FcGoogle } from "react-icons/fc";
 import { FaLinkedin } from "react-icons/fa";
@@ -10,7 +16,7 @@ import AuthShell from "../components/auth/AuthShell";
 import { FormField, Checkbox } from "../components/auth/FormField";
 import { setAuth } from "../lib/auth";
 
-function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState("");
   const [formData, setFormData] = useState({
@@ -22,13 +28,9 @@ function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.identifier || !formData.password) return;
-
-    // Static demo login: detect admin if identifier contains "admin"
     const role = /admin/i.test(formData.identifier) ? "admin" : userType;
     setAuth({ role, identifier: formData.identifier });
-
-    if (role === "admin") navigate("/admin");
-    else navigate("/app");
+    navigate(role === "admin" ? "/admin" : "/app");
   };
 
   const handleChange = (e) => {
@@ -41,36 +43,39 @@ function LoginPage() {
     <AuthShell maxWidth="max-w-3xl">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 leading-tight tracking-tight">
           Welcome back to{" "}
-          <span className="bg-gradient-to-r from-gold to-bright-gold bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#1B5E3F] via-[#2D7A4F] to-[#1B5E3F] bg-clip-text text-transparent">
             EXPGLO FUND
           </span>
         </h1>
-        <p className="text-gray-300 text-base sm:text-lg">
-          Log in to continue your journey
+        <p className="text-[#0A1F14]/60 text-base sm:text-lg">
+          Log in to continue your fundraising journey
         </p>
       </div>
 
       {!userType ? (
-        <div className="space-y-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-center mb-6">
-            I am a...
+        <div>
+          <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-3">
+            CHOOSE YOUR PATH
+          </p>
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-6 text-[#0A1F14]">
+            I am a…
           </h2>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
             <RoleCard
               role="founder"
               title="Founder"
-              icon={<IoRocketSharp className="w-12 h-12 text-gold" />}
-              description="Pitch your startup and connect with investors who believe in your vision."
+              icon={<IoRocketSharp className="w-7 h-7 text-[#0F4A2E]" />}
+              description="Pitch your startup. Connect with investors. Close your round."
               accent="gold"
               onClick={() => setUserType("founder")}
             />
             <RoleCard
               role="investor"
               title="Investor"
-              icon={<HiTrendingUp className="w-12 h-12 text-primary-green" />}
-              description="Discover promising startups and back the next big thing."
+              icon={<HiTrendingUp className="w-7 h-7 text-[#F5B942]" />}
+              description="Discover promising startups. Back the next big thing."
               accent="green"
               onClick={() => setUserType("investor")}
             />
@@ -84,7 +89,7 @@ function LoginPage() {
         >
           <RoleBadge userType={userType} onChange={() => setUserType("")} />
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <FormField
               label="Username, email, or phone"
               name="identifier"
@@ -108,7 +113,7 @@ function LoginPage() {
               required
             />
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-1">
               <Checkbox
                 name="remember"
                 checked={formData.remember}
@@ -118,7 +123,7 @@ function LoginPage() {
               </Checkbox>
               <Link
                 to="/forgot-password"
-                className="text-sm text-gold hover:text-bright-gold font-semibold transition-colors"
+                className="text-sm text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors"
               >
                 Forgot password?
               </Link>
@@ -126,21 +131,18 @@ function LoginPage() {
 
             <motion.button
               type="submit"
-              className={`w-full py-4 rounded-xl font-bold text-base sm:text-lg shadow-lg transition-all ${
-                userType === "founder"
-                  ? "bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-gold/30 hover:shadow-gold/50"
-                  : "bg-gradient-to-r from-primary-green to-secondary-green text-white shadow-primary-green/30 hover:shadow-primary-green/50"
-              }`}
-              whileHover={{ scale: 1.01, y: -2 }}
+              className="w-full mt-2 py-3.5 rounded-full font-bold text-base shadow-xl transition-all bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-[#1B5E3F]/30 inline-flex items-center justify-center gap-2"
+              whileHover={{ y: -2 }}
               whileTap={{ scale: 0.99 }}
             >
-              Log In
+              Log in
+              <HiArrowRight />
             </motion.button>
           </form>
 
           <Divider>Or continue with</Divider>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <SocialButton icon={<FcGoogle className="w-5 h-5" />}>
               Google
             </SocialButton>
@@ -153,12 +155,12 @@ function LoginPage() {
         </motion.div>
       )}
 
-      <div className="text-center mt-8 pt-6 border-t border-gold/10">
-        <p className="text-gray-300 text-sm sm:text-base">
+      <div className="text-center mt-7 pt-6 border-t border-[#1B5E3F]/10">
+        <p className="text-[#0A1F14]/65 text-sm sm:text-base">
           Don't have an account?{" "}
           <Link
             to="/signup"
-            className="text-gold hover:text-bright-gold font-semibold transition-colors"
+            className="text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors"
           >
             Sign up for free
           </Link>
@@ -168,59 +170,92 @@ function LoginPage() {
   );
 }
 
+// ─── Sub-components ──────────────────────────
+
 function RoleCard({ title, icon, description, accent, onClick }) {
-  const accents =
-    accent === "gold"
-      ? "from-gold/10 to-bright-gold/5 border-gold/30 hover:border-gold text-gold"
-      : "from-primary-green/10 to-secondary-green/5 border-primary-green/30 hover:border-primary-green text-primary-green";
+  const isGold = accent === "gold";
   return (
     <motion.button
+      type="button"
       onClick={onClick}
-      className={`group relative p-6 sm:p-8 bg-gradient-to-br ${accents} border-2 rounded-2xl transition-all text-left overflow-hidden`}
-      whileHover={{ scale: 1.02, y: -5 }}
+      whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
+      className={`group relative p-5 sm:p-6 rounded-3xl border text-left overflow-hidden transition-all ${
+        isGold
+          ? "bg-gradient-to-br from-[#FFF6E0] to-[#FFE9BD] border-[#F5B942]/40 hover:border-[#F5B942]/70 shadow-md hover:shadow-xl hover:shadow-[#F5B942]/20"
+          : "bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] border-[#1B5E3F]/30 hover:border-[#1B5E3F] shadow-md hover:shadow-xl hover:shadow-[#1B5E3F]/30 text-white"
+      }`}
     >
-      <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl bg-current opacity-10 group-hover:opacity-20 transition-all" />
-      <div className="relative z-10">
-        {icon}
-        <h3 className="text-xl sm:text-2xl font-bold mb-2 mt-3 text-white">
-          {title}
-        </h3>
-        <p className="text-gray-300 text-sm">{description}</p>
-        <motion.div
-          className="mt-4 font-semibold flex items-center gap-2"
-          animate={{ x: [0, 5, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+      <div className="flex items-center justify-between mb-4">
+        <div
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${
+            isGold
+              ? "bg-[#F5B942] shadow-[#F5B942]/35"
+              : "bg-[#F5B942] shadow-[#F5B942]/35"
+          }`}
         >
-          Continue as {title} →
-        </motion.div>
+          {icon}
+        </div>
+        <span
+          className={`text-[10px] uppercase tracking-wider font-black px-2.5 py-1 rounded-full ${
+            isGold
+              ? "bg-[#0F4A2E] text-[#F5B942]"
+              : "bg-[#F5B942] text-[#0F4A2E]"
+          }`}
+        >
+          {isGold ? "FOR FOUNDERS" : "FOR INVESTORS"}
+        </span>
+      </div>
+      <h3
+        className={`text-xl sm:text-2xl font-black mb-1.5 ${
+          isGold ? "text-[#0F4A2E]" : "text-white"
+        }`}
+      >
+        {title}
+      </h3>
+      <p
+        className={`text-sm mb-3 leading-relaxed ${
+          isGold ? "text-[#0A1F14]/75" : "text-white/80"
+        }`}
+      >
+        {description}
+      </p>
+      <div
+        className={`mt-3 font-bold flex items-center gap-1.5 text-sm ${
+          isGold ? "text-[#0F4A2E]" : "text-[#F5B942]"
+        }`}
+      >
+        Continue as {title}
+        <HiArrowRight className="group-hover:translate-x-0.5 transition-transform" />
       </div>
     </motion.button>
   );
 }
 
 function RoleBadge({ userType, onChange }) {
+  const isFounder = userType === "founder";
   return (
-    <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
+    <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
       <div
-        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border-2 ${
-          userType === "founder"
-            ? "bg-gold/10 border-gold/30 text-gold"
-            : "bg-primary-green/10 border-primary-green/30 text-primary-green"
+        className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border ${
+          isFounder
+            ? "bg-[#FFF6E0] border-[#F5B942]/40 text-[#0F4A2E]"
+            : "bg-[#1B5E3F]/10 border-[#1B5E3F]/30 text-[#0F4A2E]"
         }`}
       >
-        {userType === "founder" ? (
-          <IoRocketSharp className="w-5 h-5" />
+        {isFounder ? (
+          <IoRocketSharp className="w-4 h-4 text-[#0F4A2E]" />
         ) : (
-          <HiTrendingUp className="w-5 h-5" />
+          <HiTrendingUp className="w-4 h-4 text-[#1B5E3F]" />
         )}
-        <span className="font-bold text-sm">
-          Continuing as {userType === "founder" ? "Founder" : "Investor"}
+        <span className="font-bold text-xs uppercase tracking-wider">
+          {isFounder ? "Founder" : "Investor"}
         </span>
       </div>
       <button
+        type="button"
         onClick={onChange}
-        className="text-sm text-gray-400 hover:text-gold transition-colors underline"
+        className="text-xs text-[#0A1F14]/55 hover:text-[#1B5E3F] transition-colors underline font-semibold"
       >
         Change
       </button>
@@ -230,12 +265,14 @@ function RoleBadge({ userType, onChange }) {
 
 function Divider({ children }) {
   return (
-    <div className="relative my-7">
+    <div className="relative my-6">
       <div className="absolute inset-0 flex items-center">
-        <div className="w-full border-t border-gold/15" />
+        <div className="w-full border-t border-[#1B5E3F]/15" />
       </div>
       <div className="relative flex justify-center text-sm">
-        <span className="px-4 bg-card-bg/60 text-gray-400">{children}</span>
+        <span className="px-4 bg-white text-[#0A1F14]/55 font-semibold">
+          {children}
+        </span>
       </div>
     </div>
   );
@@ -245,14 +282,12 @@ function SocialButton({ icon, children }) {
   return (
     <motion.button
       type="button"
-      className="py-3 px-4 bg-dark-bg/60 border-2 border-gold/20 rounded-xl hover:border-gold transition-all font-semibold flex items-center justify-center gap-2"
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ y: -1 }}
       whileTap={{ scale: 0.98 }}
+      className="py-3 px-4 bg-white border border-[#1B5E3F]/15 rounded-full hover:border-[#1B5E3F]/40 hover:shadow-md transition-all font-bold text-sm flex items-center justify-center gap-2 text-[#0A1F14]"
     >
       {icon}
       <span>{children}</span>
     </motion.button>
   );
 }
-
-export default LoginPage;

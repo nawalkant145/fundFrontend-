@@ -29,6 +29,8 @@ import DropdownMenu from "../../components/ui/DropdownMenu";
 import Modal from "../../components/ui/Modal";
 import Confirm from "../../components/ui/Confirm";
 import { useToast } from "../../components/ui/Toast";
+import ProUpgradeModal from "../../components/monetization/ProUpgradeModal";
+import { canStartCall } from "../../lib/auth";
 import {
   MOCK_CHATS,
   MOCK_MESSAGES,
@@ -152,7 +154,7 @@ export default function MessagesPage() {
                       </p>
                     </div>
                     {c.unread > 0 && !isActive && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0" />
                     )}
                   </Link>
                 );
@@ -218,12 +220,14 @@ function EmptyState() {
 // ─── ACTIVE CHAT (right side) ─────────────────
 function ActiveChat({ chat, onBack, onConfirmDelete }) {
   const toast = useToast();
+  const navigate = useNavigate();
   const other =
     CURRENT_USER.role === "founder" ? chat.investorId : chat.founderId;
   const [messages, setMessages] = useState(MOCK_MESSAGES);
   const [text, setText] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [callPaywall, setCallPaywall] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const endRef = useRef(null);
@@ -231,6 +235,15 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleStartCall = (kind) => {
+    const check = canStartCall();
+    if (!check.allowed) {
+      setCallPaywall(true);
+      return;
+    }
+    navigate(`/app/call/${kind}/${chat._id}`);
+  };
 
   const send = (e) => {
     e?.preventDefault();
@@ -345,22 +358,20 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
           </button>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <Link to={`/app/call/audio/${chat._id}`}>
-            <button
-              className="p-2 hover:bg-dark-bg/60 rounded-lg"
-              title="Audio call"
-            >
-              <HiPhone className="w-5 h-5" />
-            </button>
-          </Link>
-          <Link to={`/app/call/video/${chat._id}`}>
-            <button
-              className="p-2 hover:bg-dark-bg/60 rounded-lg"
-              title="Video call"
-            >
-              <HiVideoCamera className="w-5 h-5" />
-            </button>
-          </Link>
+          <button
+            onClick={() => handleStartCall("audio")}
+            className="p-2 hover:bg-dark-bg/60 rounded-lg"
+            title="Audio call"
+          >
+            <HiPhone className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => handleStartCall("video")}
+            className="p-2 hover:bg-dark-bg/60 rounded-lg"
+            title="Video call"
+          >
+            <HiVideoCamera className="w-5 h-5" />
+          </button>
           <button
             onClick={() => setShowProfile(true)}
             className="p-2 hover:bg-dark-bg/60 rounded-lg"
@@ -416,7 +427,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
               )}
               <div
                 className={`max-w-[70%] rounded-2xl px-3.5 py-2 ${
-                  isMe ? "bg-blue-500 text-white" : "bg-card-bg text-white"
+                  isMe ? "bg-primary-green text-white" : "bg-card-bg text-white"
                 }`}
               >
                 {m.type === "file" || m.type === "image" ? (
@@ -492,7 +503,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
           {text.trim() && (
             <button
               type="submit"
-              className="px-3 py-1 text-blue-400 hover:text-blue-300 font-bold text-sm"
+              className="px-3 py-1 text-gold hover:text-bright-gold font-bold text-sm"
             >
               Send
             </button>
@@ -521,18 +532,18 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
             {other.isOnline ? "● Online" : "Offline"}
           </p>
           <div className="flex justify-center gap-2 mb-4">
-            <Link
-              to={`/app/call/audio/${chat._id}`}
+            <button
+              onClick={() => handleStartCall("audio")}
               className="px-4 py-2 bg-dark-bg/60 hover:bg-gold/20 rounded-xl text-sm font-bold flex items-center gap-1.5"
             >
               <HiPhone className="w-4 h-4" /> Audio
-            </Link>
-            <Link
-              to={`/app/call/video/${chat._id}`}
+            </button>
+            <button
+              onClick={() => handleStartCall("video")}
               className="px-4 py-2 bg-dark-bg/60 hover:bg-gold/20 rounded-xl text-sm font-bold flex items-center gap-1.5"
             >
               <HiVideoCamera className="w-4 h-4" /> Video
-            </Link>
+            </button>
           </div>
         </div>
       </Modal>
@@ -560,6 +571,13 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
           )}
         </div>
       </Modal>
+
+      {/* Pro paywall — calls */}
+      <ProUpgradeModal
+        open={callPaywall}
+        onClose={() => setCallPaywall(false)}
+        reason="pro-required"
+      />
     </>
   );
 }
