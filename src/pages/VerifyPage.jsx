@@ -11,6 +11,9 @@ import {
 import AuthShell from "../components/auth/AuthShell";
 import OtpInput from "../components/auth/OtpInput";
 import Stepper from "../components/auth/Stepper";
+import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
+import { setAuth } from "../lib/auth";
 
 const STEPS = ["Email", "Phone", "Done"];
 const RESEND_SECONDS = 30;
@@ -18,8 +21,10 @@ const RESEND_SECONDS = 30;
 export default function VerifyPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { register, refreshUser } = useAuth();
   const email = location.state?.email || "you@example.com";
-  const phone = location.state?.phone || "+91 98765 43210";
+  const phone = location.state?.phone || "";
+  const registerData = location.state?.registerData || null;
 
   const [step, setStep] = useState(0);
   const [emailOtp, setEmailOtp] = useState("");
@@ -27,6 +32,7 @@ export default function VerifyPage() {
   const [emailCooldown, setEmailCooldown] = useState(RESEND_SECONDS);
   const [phoneCooldown, setPhoneCooldown] = useState(RESEND_SECONDS);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (step !== 0 || emailCooldown <= 0) return;
@@ -40,35 +46,69 @@ export default function VerifyPage() {
     return () => clearInterval(t);
   }, [step, phoneCooldown]);
 
-  const handleEmailVerify = (e) => {
+  const handleEmailVerify = async (e) => {
     e.preventDefault();
     setError("");
     if (emailOtp.length !== 6) {
       setError("Enter the full 6-digit code");
       return;
     }
-    setStep(1);
-    setPhoneCooldown(RESEND_SECONDS);
+    setLoading(true);
+    try {
+      // Verify OTP
+      await authService.verifyPreRegisterOtp(email, emailOtp);
+
+      // Now create the account (email is verified)
+      if (registerData) {
+        await register(registerData);
+      }
+
+      // If phone provided, move to phone verification
+      if (phone) {
+        setStep(1);
+        setPhoneCooldown(RESEND_SECONDS);
+        authService.sendPhoneOtp(phone).catch(() => {});
+      } else {
+        setStep(2);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid code. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePhoneVerify = (e) => {
+  const handlePhoneVerify = async (e) => {
     e.preventDefault();
     setError("");
     if (phoneOtp.length !== 6) {
       setError("Enter the full 6-digit code");
       return;
     }
-    setStep(2);
+    setLoading(true);
+    try {
+      await authService.verifyPhoneOtp(phoneOtp);
+      await refreshUser();
+      setStep(2);
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid code. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const resend = (which) => {
-    if (which === "email") {
-      setEmailCooldown(RESEND_SECONDS);
-      setEmailOtp("");
-    } else {
-      setPhoneCooldown(RESEND_SECONDS);
-      setPhoneOtp("");
-    }
+  const resend = async (which) => {
+    try {
+      if (which === "email") {
+        await authService.sendPreRegisterOtp(email);
+        setEmailCooldown(RESEND_SECONDS);
+        setEmailOtp("");
+      } else {
+        await authService.sendPhoneOtp(phone);
+        setPhoneCooldown(RESEND_SECONDS);
+        setPhoneOtp("");
+      }
+    } catch {}
   };
 
   return (

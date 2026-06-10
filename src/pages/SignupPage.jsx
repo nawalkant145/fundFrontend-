@@ -27,6 +27,7 @@ import {
 import Select from "../components/auth/Select";
 import Stepper from "../components/auth/Stepper";
 import { setAuth } from "../lib/auth";
+import { authService } from "../services/authService";
 import {
   INDUSTRIES,
   FUNDING_STAGES,
@@ -41,6 +42,8 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [userType, setUserType] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     fullName: "",
     username: "",
@@ -96,11 +99,42 @@ export default function SignupPage() {
         data.preferredIndustries.length > 0 &&
         data.preferredStages.length > 0;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!profileStepValid) return;
-    setAuth({ role: userType, identifier: data.email });
-    navigate("/verify", { state: { email: data.email, phone: data.phone } });
+    setError("");
+    setLoading(true);
+
+    try {
+      // Step 1: Send OTP to verify email (account is NOT created yet)
+      await authService.sendPreRegisterOtp(data.email);
+      // Navigate to verify page with all form data so we can register after OTP
+      navigate("/verify", {
+        state: {
+          email: data.email,
+          phone: data.phone,
+          registerData: {
+            name: data.fullName,
+            email: data.email,
+            password: data.password,
+            role: userType,
+            phone: data.phone || undefined,
+            companyName: data.companyName || undefined,
+            industry: data.industry || undefined,
+            fundingStage: data.fundingStage || undefined,
+            website: data.website || undefined,
+            linkedIn: data.linkedIn || undefined,
+            preferredIndustries: data.preferredIndustries?.length ? data.preferredIndustries : undefined,
+            preferredStages: data.preferredStages?.length ? data.preferredStages : undefined,
+          },
+        },
+      });
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to send verification email. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

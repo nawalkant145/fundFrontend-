@@ -95,8 +95,6 @@ export default function InvestorFeed() {
       setDirection("down");
       setIdx(idx + 1);
       setExpanded(false);
-    } else {
-      toast.info("You've reached the end of the feed");
     }
   };
   const prev = () => {
@@ -238,7 +236,6 @@ export default function InvestorFeed() {
     const id = pitch._id;
     const wasLiked = liked[id];
     setLiked((p) => ({ ...p, [id]: !wasLiked }));
-    if (!wasLiked) toast.success("Liked");
   };
 
   // Double-tap on the video — Instagram only LIKES (never unlikes) on double-tap
@@ -246,7 +243,6 @@ export default function InvestorFeed() {
     const id = pitch._id;
     if (!liked[id]) {
       setLiked((p) => ({ ...p, [id]: true }));
-      toast.success("Liked");
     }
   };
 
@@ -254,7 +250,6 @@ export default function InvestorFeed() {
     const id = pitch._id;
     const wasSaved = saved[id];
     setSaved((p) => ({ ...p, [id]: !wasSaved }));
-    toast.success(wasSaved ? "Removed from saved" : "Saved");
   };
 
   const toggleFollow = () => {
@@ -263,15 +258,9 @@ export default function InvestorFeed() {
     if (wasFollowing) unfollowUser(id);
     else followUser(id);
     setFollowing((p) => ({ ...p, [id]: !wasFollowing }));
-    toast.success(
-      wasFollowing
-        ? `Unfollowed ${pitch.founderId.name}`
-        : `Following ${pitch.founderId.name}`,
-    );
   };
 
   const skip = () => {
-    toast.info("We won't show this pitch again");
     next();
   };
 
@@ -378,13 +367,13 @@ export default function InvestorFeed() {
                       className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
                     />
                     <div className="text-left min-w-0">
-                      <p className="font-bold feed-fluid-text-sm flex items-center gap-1 truncate leading-tight">
+                      <p className="font-bold text-[12px] md:text-sm flex items-center gap-1 truncate leading-tight">
                         {pitch.founderId.name}
                         {pitch.founderId.isVerified && (
                           <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
                         )}
                       </p>
-                      <p className="feed-fluid-text-xs text-gray-300 truncate leading-tight">
+                      <p className="text-[11px] md:text-xs text-gray-300 truncate leading-tight">
                         {pitch.founderId.companyName}
                       </p>
                     </div>
@@ -395,13 +384,13 @@ export default function InvestorFeed() {
                   />
                 </div>
 
-                <h3 className="font-black feed-fluid-text-base mb-0.5 pointer-events-auto">
+                <h3 className="font-black text-[13px] md:text-[16px] leading-tight mb-0.5 pointer-events-auto">
                   {pitch.title}
                 </h3>
 
                 <div className="pointer-events-auto">
                   <p
-                    className={`feed-fluid-text-sm text-gray-200 leading-snug ${
+                    className={`text-[12px] md:text-sm text-gray-200 leading-snug ${
                       expanded ? "" : "line-clamp-1"
                     }`}
                   >
@@ -410,7 +399,7 @@ export default function InvestorFeed() {
                   {pitch.description.length > 50 && (
                     <button
                       onClick={() => setExpanded((v) => !v)}
-                      className="feed-fluid-text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
+                      className="text-[11px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
                     >
                       {expanded ? "less" : "more"}
                     </button>
@@ -456,8 +445,8 @@ export default function InvestorFeed() {
 
         {/* ACTION RAIL — overlays video on mobile, sits in flex row next to it on desktop */}
         <div
-          className="absolute right-2 bottom-32 z-20 flex flex-col gap-2.5 items-center
-                     md:static md:mb-6 md:gap-3 md:right-auto md:bottom-auto"
+          className="absolute right-3 bottom-24 z-20 flex flex-col gap-5 items-center
+                     md:static md:mb-6 md:gap-5 md:right-auto md:bottom-auto"
         >
           <RailButton
             icon={HiHeart}
@@ -497,9 +486,9 @@ export default function InvestorFeed() {
             items={moreMenu}
             placement="top"
             trigger={
-              <HiDotsVertical className="w-5 h-5 md:w-6 md:h-6 text-white" />
+              <HiDotsVertical className="w-[28px] h-[28px] text-white" />
             }
-            triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
+            triggerClass="flex items-center justify-center"
           />
         </div>
       </div>
@@ -571,16 +560,14 @@ function RailButton({
       onClick={onClick}
       title={title}
       whileTap={{ scale: 0.85 }}
-      whileHover={{ scale: 1.06 }}
-      className="flex flex-col items-center gap-0.5 md:gap-1 transition-opacity"
+      className="flex flex-col items-center gap-0.5 transition-opacity"
     >
-      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center transition-all backdrop-blur-md">
-        <Icon
-          className={`w-5 h-5 md:w-6 md:h-6 ${active ? activeClass : "text-white"}`}
-        />
-      </div>
+      <Icon
+        className={`w-[28px] h-[28px] ${active ? activeClass : "text-white"}`}
+        strokeWidth={1.5}
+      />
       {label !== undefined && (
-        <span className="text-[10px] font-bold text-white md:text-gray-300 drop-shadow">
+        <span className="text-[11px] font-medium text-white">
           {label > 999 ? `${(label / 1000).toFixed(1)}k` : label}
         </span>
       )}

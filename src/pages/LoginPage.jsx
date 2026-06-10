@@ -14,23 +14,40 @@ import { FaLinkedin } from "react-icons/fa";
 
 import AuthShell from "../components/auth/AuthShell";
 import { FormField, Checkbox } from "../components/auth/FormField";
-import { setAuth } from "../lib/auth";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [userType, setUserType] = useState("");
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
     remember: true,
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.identifier || !formData.password) return;
-    const role = /admin/i.test(formData.identifier) ? "admin" : userType;
-    setAuth({ role, identifier: formData.identifier });
-    navigate(role === "admin" ? "/admin" : "/app");
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await login({
+        email: formData.identifier,
+        password: formData.password,
+      });
+      const role = data.user?.role || userType;
+      navigate(role === "admin" ? "/admin" : "/app");
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -129,14 +146,27 @@ export default function LoginPage() {
               </Link>
             </div>
 
+            {error && (
+              <p className="text-red-500 text-sm font-medium text-center bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                {error}
+              </p>
+            )}
+
             <motion.button
               type="submit"
-              className="w-full mt-2 py-3.5 rounded-full font-bold text-base shadow-xl transition-all bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-[#1B5E3F]/30 inline-flex items-center justify-center gap-2"
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.99 }}
+              disabled={loading}
+              className={`w-full mt-2 py-3.5 rounded-full font-bold text-base shadow-xl transition-all bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-[#1B5E3F]/30 inline-flex items-center justify-center gap-2 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+              whileHover={loading ? {} : { y: -2 }}
+              whileTap={loading ? {} : { scale: 0.99 }}
             >
-              Log in
-              <HiArrowRight />
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Log in
+                  <HiArrowRight />
+                </>
+              )}
             </motion.button>
           </form>
 

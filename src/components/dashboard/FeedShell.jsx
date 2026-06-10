@@ -18,14 +18,13 @@ export default function FeedShell({ children, mode }) {
       <Sidebar mode={resolvedMode} />
       <BottomBar mode={resolvedMode} />
 
-      {/* Main: starts at left=72px on desktop (sidebar width), fills to right edge.
-          On mobile, leaves 56px at bottom for the tab bar. The feed itself
-          paints its own black background — this wrapper just positions it. */}
+      {/* Main: On desktop sidebar pushes content right.
+          On mobile, feed area stops above the bottom bar so nothing gets
+          clipped — the progress bar, text, and actions all stay visible.
+          This matches how Instagram Reels actually works: the video area
+          ends at the top of the tab bar, it does NOT extend behind it. */}
       <div
-        className="absolute inset-0 md:left-[72px] z-10 bg-black text-white"
-        style={{
-          bottom: "var(--bottombar-h, 56px)",
-        }}
+        className="absolute inset-0 bottom-14 md:bottom-0 md:left-[72px] z-10 bg-black text-white"
       >
         <main className="relative w-full h-full overflow-hidden">
           {children}

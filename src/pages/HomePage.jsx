@@ -192,9 +192,9 @@ function Hero() {
   return (
     <section
       ref={containerRef}
-      className="pt-28 pb-12 sm:pt-36 sm:pb-20 px-4 sm:px-6 lg:px-8 relative"
+      className="pt-20 pb-12 sm:pt-24 sm:pb-20 px-4 sm:px-6 lg:px-8 relative"
     >
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-14 items-center">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[0.85fr_1.4fr] gap-10 lg:gap-14 items-center">
         {/* LEFT — copy */}
         <div className="text-center lg:text-left order-2 lg:order-1">
           <motion.div
@@ -322,7 +322,7 @@ function Hero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="relative w-full max-w-[560px]"
+            className="relative w-full"
           >
             {/* Glow */}
             <div className="absolute -inset-6 bg-gradient-to-br from-[#1B5E3F]/25 via-[#F5B942]/25 to-[#1B5E3F]/15 rounded-[2.5rem] blur-3xl opacity-70" />
@@ -581,7 +581,7 @@ function BentoShowcase() {
               </p>
             </div>
             <h3 className="text-xl font-black mb-3 text-[#0F4A2E]">
-              Built-in WebRTC
+              One-tap Connect
             </h3>
             <p className="text-sm text-[#0A1F14]/70 mb-4">
               No external links. No scheduling chaos.
@@ -623,7 +623,7 @@ function BentoShowcase() {
                 Verified
               </p>
             </div>
-            <h3 className="text-xl font-black mb-3">KYC for everyone</h3>
+            <h3 className="text-xl font-black mb-3">Verified profiles</h3>
             <p className="text-sm text-[#0A1F14]/65 mb-4">
               No fake accounts. Real founders, real investors.
             </p>

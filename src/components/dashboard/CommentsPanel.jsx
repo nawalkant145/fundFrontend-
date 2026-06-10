@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiX, HiHeart, HiOutlineHeart, HiEmojiHappy } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
+import { CURRENT_USER } from "../../constants/mockData";
 
 /**
- * Instagram-style side panel for comments.
- *   - Desktop: slides in from the right next to the video, video keeps playing
- *   - Mobile: bottom sheet that slides up from the bottom (Insta mobile pattern)
+ * Instagram-style comments bottom sheet.
+ * White background, slides up from bottom on mobile, side panel on desktop.
+ * Matches Instagram Reels comment UX exactly.
  */
 export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
   const [text, setText] = useState("");
@@ -26,6 +27,7 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: `c_${Date.now()}`,
       author: "You",
       handle: "you",
+      avatar: CURRENT_USER.avatar,
       text: text.trim(),
       time: "now",
       isVerified: false,
@@ -42,7 +44,8 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f1",
       author: "Vikram Patel",
       handle: "vikram_capital",
-      text: "Strong traction, would love to see CAC numbers. 🚀",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop",
+      text: "Strong traction, would love to see CAC numbers 🚀",
       time: "2h",
       isVerified: true,
       likes: 124,
@@ -52,6 +55,7 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f2",
       author: "Meera Kapoor",
       handle: "meera_invests",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop",
       text: "Brilliant pitch — what's the regulatory roadmap?",
       time: "5h",
       isVerified: true,
@@ -62,6 +66,7 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f3",
       author: "Arjun Nair",
       handle: "arjun_n",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop",
       text: "Followed. Excited to see where this goes.",
       time: "1d",
       isVerified: false,
@@ -72,6 +77,7 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f4",
       author: "Karan Mehta",
       handle: "karan_m",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop",
       text: "How do you handle data privacy with the diagnostic AI?",
       time: "2d",
       isVerified: false,
@@ -85,51 +91,49 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Mobile backdrop only */}
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="md:hidden fixed inset-0 bg-black/40 z-[60]"
+            className="fixed inset-0 bg-black/50 z-[60]"
           />
 
-          {/* Panel */}
+          {/* Bottom sheet (mobile) / side panel (desktop) */}
           <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            className="fixed z-[70] bg-card-bg border-l-2 border-gold/15 shadow-2xl shadow-black/60
-                       bottom-0 right-0
-                       w-full md:w-[400px] lg:w-[440px]
-                       h-[80vh] md:h-screen
-                       md:top-0
-                       rounded-t-3xl md:rounded-none
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="fixed z-[70] bg-white
+                       bottom-0 left-0 right-0
+                       md:left-auto md:right-0 md:top-0 md:w-[420px]
+                       h-[70vh] md:h-full
+                       rounded-t-2xl md:rounded-none
                        flex flex-col"
             style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
           >
+            {/* Drag handle (mobile) */}
+            <div className="md:hidden flex justify-center pt-2 pb-1">
+              <div className="w-9 h-1 bg-gray-300 rounded-full" />
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gold/10">
-              <h2 className="font-bold text-base">
-                Comments{" "}
-                <span className="text-gray-400 text-sm font-normal">
-                  ({all.length})
-                </span>
+            <div className="flex items-center justify-center relative px-4 py-3 border-b border-gray-100">
+              <h2 className="font-bold text-[15px] text-gray-900">
+                Comments
               </h2>
               <button
                 onClick={onClose}
-                className="p-2 -mr-2 hover:bg-dark-bg/60 rounded-lg text-gray-400 hover:text-white"
+                className="absolute right-4 p-1 text-gray-400 hover:text-gray-700"
               >
                 <HiX className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Mobile drag handle */}
-            <div className="md:hidden absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-600 rounded-full" />
-
             {/* Comments list */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5">
               {all.map((c) => (
                 <CommentRow
                   key={c._id}
@@ -139,36 +143,36 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
                 />
               ))}
               {all.length === 0 && (
-                <p className="text-center text-gray-400 py-12 text-sm">
-                  No comments yet. Be the first.
-                </p>
+                <div className="flex flex-col items-center justify-center py-16">
+                  <p className="text-gray-400 text-sm">No comments yet</p>
+                  <p className="text-gray-300 text-xs mt-1">Start the conversation.</p>
+                </div>
               )}
             </div>
 
-            {/* Composer */}
+            {/* Composer — Instagram style */}
             <form
               onSubmit={submit}
-              className="p-3 border-t border-gold/10 flex items-center gap-2"
+              className="px-4 py-3 border-t border-gray-100 flex items-center gap-3"
             >
-              <button
-                type="button"
-                className="p-2 text-gray-400 hover:text-gold transition-colors"
-              >
-                <HiEmojiHappy className="w-5 h-5" />
-              </button>
+              <img
+                src={CURRENT_USER.avatar}
+                alt=""
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+              />
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Add a comment…"
-                className="flex-1 px-3 py-2 bg-dark-bg/60 border border-gold/15 rounded-full text-white placeholder-gray-500 focus:border-gold focus:outline-none text-sm"
+                placeholder="Add a comment..."
+                className="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none"
               />
               <button
                 type="submit"
                 disabled={!text.trim()}
-                className={`px-4 py-2 rounded-full font-bold text-sm transition-all ${
+                className={`text-sm font-bold transition-colors ${
                   text.trim()
-                    ? "text-gold hover:text-bright-gold"
-                    : "text-gray-500 cursor-not-allowed"
+                    ? "text-[#1B5E3F]"
+                    : "text-[#1B5E3F]/30 cursor-not-allowed"
                 }`}
               >
                 Post
@@ -184,41 +188,47 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
 function CommentRow({ c, isLiked, onToggleLike }) {
   return (
     <div className="flex gap-3">
-      <div className="w-9 h-9 rounded-full bg-gold/20 text-gold flex items-center justify-center font-bold text-sm flex-shrink-0">
-        {c.author[0]}
-      </div>
+      {/* Avatar */}
+      <img
+        src={c.avatar}
+        alt=""
+        className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+      />
+
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="font-bold text-sm flex items-center gap-1">
+        <p className="text-[13px] text-gray-900 leading-snug">
+          <span className="font-semibold inline-flex items-center gap-1">
             {c.handle || c.author.toLowerCase().replace(/\s/g, "_")}
-            {c.isVerified && <MdVerified className="w-3.5 h-3.5 text-gold" />}
-          </span>
-          <span className="text-xs text-gray-500">{c.time}</span>
-        </div>
-        <p className="text-sm text-gray-100 leading-snug mt-0.5">{c.text}</p>
-        <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
+            {c.isVerified && <MdVerified className="w-3 h-3 text-blue-500" />}
+          </span>{" "}
+          {c.text}
+        </p>
+        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400">
+          <span>{c.time}</span>
           {c.likes > 0 && (
             <span className="font-semibold">
-              {c.likes + (isLiked ? 1 : 0)} like
-              {c.likes + (isLiked ? 1 : 0) === 1 ? "" : "s"}
+              {c.likes + (isLiked ? 1 : 0)} likes
             </span>
           )}
-          <button className="font-semibold hover:text-white transition-colors">
+          <button className="font-semibold hover:text-gray-600 transition-colors">
             Reply
           </button>
         </div>
         {c.replies > 0 && (
-          <button className="text-xs text-gray-400 hover:text-white font-semibold mt-1.5 flex items-center gap-1">
-            <span className="w-6 h-px bg-gray-600" />
+          <button className="text-[11px] text-gray-400 font-semibold mt-2 flex items-center gap-2">
+            <span className="w-6 h-px bg-gray-300" />
             View {c.replies} {c.replies === 1 ? "reply" : "replies"}
           </button>
         )}
       </div>
-      <button onClick={onToggleLike} className="self-start mt-1 flex-shrink-0">
+
+      {/* Like button */}
+      <button onClick={onToggleLike} className="self-start mt-1 flex-shrink-0 p-1">
         {isLiked ? (
-          <HiHeart className="w-4 h-4 text-red-500" />
+          <HiHeart className="w-3.5 h-3.5 text-red-500" />
         ) : (
-          <HiOutlineHeart className="w-4 h-4 text-gray-400 hover:text-white" />
+          <HiOutlineHeart className="w-3.5 h-3.5 text-gray-400" />
         )}
       </button>
     </div>
