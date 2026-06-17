@@ -49,8 +49,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and not already retrying
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't auto-refresh on auth routes (login, register, OTP, etc.)
+    // These are expected to return 401 for wrong credentials — let the
+    // calling code handle the error directly.
+    const isAuthRoute = originalRequest.url?.includes("/auth/");
+
+    // If 401 and not already retrying and NOT an auth route
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthRoute
+    ) {
       if (isRefreshing) {
         // Queue this request until refresh completes
         return new Promise((resolve, reject) => {
