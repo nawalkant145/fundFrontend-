@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -67,6 +67,49 @@ export default function SignupPage() {
 
   const update = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
 
+  // ─── Live availability checks (username / email) ─────────────
+  // 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+  const [usernameStatus, setUsernameStatus] = useState("idle");
+  const [emailStatus, setEmailStatus] = useState("idle");
+  const debounceRef = useRef({});
+
+  const usernameValidFmt = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
+  const emailValidFmt = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current.username);
+    if (!data.username) return setUsernameStatus("idle");
+    if (!usernameValidFmt) return setUsernameStatus("invalid");
+    setUsernameStatus("checking");
+    debounceRef.current.username = setTimeout(async () => {
+      try {
+        const res = await authService.checkAvailability({
+          username: data.username,
+        });
+        setUsernameStatus(res?.data?.data?.username || "idle");
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 450);
+    return () => clearTimeout(debounceRef.current.username);
+  }, [data.username, usernameValidFmt]);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current.email);
+    if (!data.email) return setEmailStatus("idle");
+    if (!emailValidFmt) return setEmailStatus("invalid");
+    setEmailStatus("checking");
+    debounceRef.current.email = setTimeout(async () => {
+      try {
+        const res = await authService.checkAvailability({ email: data.email });
+        setEmailStatus(res?.data?.data?.email || "idle");
+      } catch {
+        setEmailStatus("idle");
+      }
+    }, 450);
+    return () => clearTimeout(debounceRef.current.email);
+  }, [data.email, emailValidFmt]);
+
   const handleChange = (e) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
@@ -83,7 +126,11 @@ export default function SignupPage() {
   const accountStepValid =
     data.fullName.trim().length >= 2 &&
     usernameValid &&
+    usernameStatus !== "taken" &&
+    usernameStatus !== "invalid" &&
     emailValid &&
+    emailStatus !== "taken" &&
+    emailStatus !== "invalid" &&
     phoneValid &&
     passwordValid &&
     passwordsMatch &&
@@ -107,30 +154,64 @@ export default function SignupPage() {
 
     try {
       // Step 1: Send OTP to verify email (account is NOT created yet)
-      await authService.sendPreRegisterOtp(data.email);
+      const res = await authService.sendPreRegisterOtp(data.email);
+      const devOtp = res?.data?.data?.devOtp || null;
+
+      // Convert the selected investment-range key → { min, max } for the API
+      const rangeOpt = INVESTMENT_RANGES.find(
+        (r) => r.value === data.investmentRange,
+      );
+      const investmentRange = rangeOpt
+        ? { min: rangeOpt.min, max: rangeOpt.max }
+        : undefined;
+
+      const isFounder = userType === "founder";
+
       // Navigate to verify page with all form data so we can register after OTP
       navigate("/verify", {
         state: {
           email: data.email,
           phone: data.phone,
+          devOtp,
           registerData: {
+            // Common
             name: data.fullName,
+            username: data.username,
             email: data.email,
             password: data.password,
             role: userType,
             phone: data.phone || undefined,
-            companyName: data.companyName || undefined,
-            industry: data.industry || undefined,
-            fundingStage: data.fundingStage || undefined,
-            website: data.website || undefined,
+            country: data.country || undefined,
             linkedIn: data.linkedIn || undefined,
-            preferredIndustries: data.preferredIndustries?.length ? data.preferredIndustries : undefined,
-            preferredStages: data.preferredStages?.length ? data.preferredStages : undefined,
+            // Founder-only
+            ...(isFounder
+              ? {
+                  companyName: data.companyName || undefined,
+                  industry: data.industry || undefined,
+                  fundingStage: data.fundingStage || undefined,
+                  website: data.website || undefined,
+                }
+              : {
+                  // Investor-only
+                  investorType: data.investorType || undefined,
+                  investmentRange,
+                  investmentThesis: data.investmentThesis || undefined,
+                  preferredIndustries: data.preferredIndustries?.length
+                    ? data.preferredIndustries
+                    : undefined,
+                  preferredStages: data.preferredStages?.length
+                    ? data.preferredStages
+                    : undefined,
+                }),
           },
         },
       });
     } catch (err) {
-      const msg = err.response?.data?.message || "Failed to send verification email. Please try again.";
+      console.error("Signup error:", err);
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to send verification email. Please try again.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -240,16 +321,22 @@ export default function SignupPage() {
                 placeholder="john_startup"
                 autoComplete="username"
                 helper={
-                  data.username && !usernameValid
-                    ? null
-                    : "3-20 characters, letters, numbers, underscore"
+                  usernameStatus === "checking"
+                    ? "Checking availability…"
+                    : usernameStatus === "idle" && !data.username
+                      ? "3-20 characters, letters, numbers, underscore"
+                      : null
                 }
                 error={
-                  data.username && !usernameValid
-                    ? "Invalid username format"
-                    : null
+                  usernameStatus === "invalid"
+                    ? "3-20 chars: letters, numbers, underscore only"
+                    : usernameStatus === "taken"
+                      ? "This username is already taken"
+                      : null
                 }
-                success={data.username && usernameValid ? "Looks good" : null}
+                success={
+                  usernameStatus === "available" ? "Username available" : null
+                }
                 required
               />
             </div>
@@ -264,7 +351,17 @@ export default function SignupPage() {
               placeholder="you@example.com"
               autoComplete="email"
               required
-              error={data.email && !emailValid ? "Invalid email" : null}
+              helper={
+                emailStatus === "checking" ? "Checking availability…" : null
+              }
+              error={
+                emailStatus === "invalid"
+                  ? "Enter a valid email"
+                  : emailStatus === "taken"
+                    ? "This email is already registered — try logging in"
+                    : null
+              }
+              success={emailStatus === "available" ? "Email available" : null}
             />
 
             <div>
@@ -491,10 +588,16 @@ export default function SignupPage() {
               </>
             )}
 
+            {error && (
+              <p className="text-sm text-red-500 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                {error}
+              </p>
+            )}
+
             <div className="flex items-center justify-between gap-3 pt-2">
               <BackButton onClick={() => setStep(1)} />
-              <NextButton type="submit" disabled={!profileStepValid}>
-                Create account
+              <NextButton type="submit" disabled={!profileStepValid || loading}>
+                {loading ? "Sending OTP…" : "Create account"}
               </NextButton>
             </div>
           </motion.form>

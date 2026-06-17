@@ -4,7 +4,14 @@ import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext(null);
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/api/v1", "") || "http://localhost:5000";
+// Auto-detect the socket server origin (same logic as api.js)
+const PROD_ORIGIN = "https://expglofundbackend.onrender.com";
+const LOCAL_ORIGIN = "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace("/api/v1", "")
+  : import.meta.env.PROD
+    ? PROD_ORIGIN
+    : LOCAL_ORIGIN;
 
 export function SocketProvider({ children }) {
   const { user } = useAuth();

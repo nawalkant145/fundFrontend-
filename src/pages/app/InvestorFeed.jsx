@@ -347,15 +347,27 @@ export default function InvestorFeed() {
               {/* Bottom gradient — only behind text area */}
               <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
-              {/* Top bar — only the industry tag now */}
-              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
-                <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy feed-fluid-text-xs font-black rounded-full uppercase pointer-events-auto">
+              {/* Top bar — industry tag (left) + mute toggle (right) */}
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
+                <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy feed-fluid-text-xs font-black rounded-full uppercase">
                   {pitch.industry}
                 </span>
+                <button
+                  onClick={() => setMuted((m) => !m)}
+                  className="w-9 h-9 rounded-full bg-black/45 backdrop-blur-md flex items-center justify-center hover:bg-black/65 transition-all"
+                  title={muted ? "Unmute" : "Mute"}
+                >
+                  {muted ? (
+                    <HiVolumeOff className="w-4 h-4 text-white" />
+                  ) : (
+                    <HiVolumeUp className="w-4 h-4 text-white" />
+                  )}
+                </button>
               </div>
 
-              {/* Bottom info — padded right on mobile to clear the action rail */}
-              <div className="absolute bottom-0 left-0 right-0 feed-fluid-pad-sm pr-16 md:pr-3.5 pb-3 z-10 pointer-events-none">
+              {/* Bottom info — lifted above the floating tab bar on mobile,
+                  padded right to clear the action rail */}
+              <div className="absolute bottom-16 md:bottom-0 left-0 right-0 pl-3 pr-20 md:pr-4 pb-3 pt-2 z-10 pointer-events-none">
                 <div className="flex items-center gap-2 mb-2.5 pointer-events-auto">
                   <button
                     onClick={() => setActiveModal("profile")}
@@ -384,13 +396,13 @@ export default function InvestorFeed() {
                   />
                 </div>
 
-                <h3 className="font-black text-[13px] md:text-[16px] leading-tight mb-0.5 pointer-events-auto">
+                <h3 className="font-black text-[15px] md:text-[17px] leading-tight mb-0.5 pointer-events-auto line-clamp-2">
                   {pitch.title}
                 </h3>
 
                 <div className="pointer-events-auto">
                   <p
-                    className={`text-[12px] md:text-sm text-gray-200 leading-snug ${
+                    className={`text-[13px] md:text-sm text-gray-200 leading-snug ${
                       expanded ? "" : "line-clamp-1"
                     }`}
                   >
@@ -399,7 +411,7 @@ export default function InvestorFeed() {
                   {pitch.description.length > 50 && (
                     <button
                       onClick={() => setExpanded((v) => !v)}
-                      className="text-[11px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
+                      className="text-[12px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
                     >
                       {expanded ? "less" : "more"}
                     </button>
@@ -424,28 +436,16 @@ export default function InvestorFeed() {
                   <span className="feed-fluid-text-xs text-gray-300 capitalize">
                     {pitch.fundingStage}
                   </span>
-
-                  {/* Mute button — bottom right of video like Instagram */}
-                  <button
-                    onClick={() => setMuted((m) => !m)}
-                    className="ml-auto w-8 h-8 rounded-full bg-dark-navy/70 backdrop-blur border border-white/20 flex items-center justify-center hover:bg-dark-navy/90 transition-all"
-                    title={muted ? "Unmute" : "Mute"}
-                  >
-                    {muted ? (
-                      <HiVolumeOff className="w-4 h-4 text-white" />
-                    ) : (
-                      <HiVolumeUp className="w-4 h-4 text-white" />
-                    )}
-                  </button>
                 </div>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* ACTION RAIL — overlays video on mobile, sits in flex row next to it on desktop */}
+        {/* ACTION RAIL — overlays video on mobile (right side, above caption),
+            sits in flex row next to it on desktop */}
         <div
-          className="absolute right-3 bottom-24 z-20 flex flex-col gap-5 items-center
+          className="absolute right-2 bottom-24 z-20 flex flex-col gap-4 items-center
                      md:static md:mb-6 md:gap-5 md:right-auto md:bottom-auto"
         >
           <RailButton
@@ -486,9 +486,9 @@ export default function InvestorFeed() {
             items={moreMenu}
             placement="top"
             trigger={
-              <HiDotsVertical className="w-[28px] h-[28px] text-white" />
+              <HiDotsVertical className="w-5 h-5 md:w-6 md:h-6 text-white" />
             }
-            triggerClass="flex items-center justify-center"
+            triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
           />
         </div>
       </div>

@@ -20,10 +20,15 @@ export default function Select({
     ? "border-red-300 focus:border-red-400 focus:ring-red-100"
     : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15";
 
+  const fieldId = name ? `select-${name}` : undefined;
+
   return (
     <div>
       {label && (
-        <label className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
+        <label
+          htmlFor={fieldId}
+          className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85"
+        >
           <span>
             {label}
             {required && <span className="text-[#1B5E3F] ml-1">*</span>}
@@ -33,10 +38,12 @@ export default function Select({
       )}
       <div className="relative">
         <select
+          id={fieldId}
           name={name}
           value={value ?? ""}
           onChange={onChange}
           required={required}
+          autoComplete="off"
           className={`w-full appearance-none pl-4 pr-12 py-3.5 bg-white border ${borderClass} rounded-xl text-[#0A1F14] focus:outline-none focus:ring-4 transition-all text-base`}
         >
           <option value="" disabled>

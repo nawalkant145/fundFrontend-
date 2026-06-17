@@ -1,7 +1,15 @@
 import axios from "axios";
 
-// Base URL — backend server
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+// ─── Base URL — auto-detects environment ──────────────────
+// Priority:
+//   1. VITE_API_URL (explicit override via .env)
+//   2. Production build → Render backend
+//   3. Local dev → localhost
+const PROD_API = "https://expglofundbackend.onrender.com/api/v1";
+const LOCAL_API = "http://localhost:5000/api/v1";
+
+const BASE_URL =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PROD_API : LOCAL_API);
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -21,7 +29,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // ─── Response interceptor — auto-refresh on 401 ────────
@@ -62,7 +70,7 @@ api.interceptors.response.use(
         const { data } = await axios.post(
           `${BASE_URL}/auth/refresh-token`,
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const newToken = data.data?.accessToken || data.accessToken;
@@ -85,7 +93,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

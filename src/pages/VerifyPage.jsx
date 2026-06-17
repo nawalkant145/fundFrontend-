@@ -33,6 +33,9 @@ export default function VerifyPage() {
   const [phoneCooldown, setPhoneCooldown] = useState(RESEND_SECONDS);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Dev-only: OTP shown on screen (no real email/SMS during testing)
+  const [devEmailOtp, setDevEmailOtp] = useState(location.state?.devOtp || "");
+  const [devPhoneOtp, setDevPhoneOtp] = useState("");
 
   useEffect(() => {
     if (step !== 0 || emailCooldown <= 0) return;
@@ -67,7 +70,10 @@ export default function VerifyPage() {
       if (phone) {
         setStep(1);
         setPhoneCooldown(RESEND_SECONDS);
-        authService.sendPhoneOtp(phone).catch(() => {});
+        authService
+          .sendPhoneOtp(phone)
+          .then((res) => setDevPhoneOtp(res?.data?.data?.devOtp || ""))
+          .catch(() => {});
       } else {
         setStep(2);
       }
@@ -100,11 +106,13 @@ export default function VerifyPage() {
   const resend = async (which) => {
     try {
       if (which === "email") {
-        await authService.sendPreRegisterOtp(email);
+        const res = await authService.sendPreRegisterOtp(email);
+        setDevEmailOtp(res?.data?.data?.devOtp || "");
         setEmailCooldown(RESEND_SECONDS);
         setEmailOtp("");
       } else {
-        await authService.sendPhoneOtp(phone);
+        const res = await authService.sendPhoneOtp(phone);
+        setDevPhoneOtp(res?.data?.data?.devOtp || "");
         setPhoneCooldown(RESEND_SECONDS);
         setPhoneOtp("");
       }
@@ -150,6 +158,8 @@ export default function VerifyPage() {
 
             <OtpInput value={emailOtp} onChange={setEmailOtp} />
 
+            {devEmailOtp && <DevOtpBanner otp={devEmailOtp} />}
+
             {error && (
               <p className="text-center text-sm text-red-500 font-semibold">
                 {error}
@@ -188,6 +198,8 @@ export default function VerifyPage() {
             </div>
 
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} />
+
+            {devPhoneOtp && <DevOtpBanner otp={devPhoneOtp} />}
 
             {error && (
               <p className="text-center text-sm text-red-500 font-semibold">
@@ -264,6 +276,19 @@ export default function VerifyPage() {
         )}
       </AnimatePresence>
     </AuthShell>
+  );
+}
+
+function DevOtpBanner({ otp }) {
+  return (
+    <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FFF6E0] border border-[#F5B942]/40 rounded-xl">
+      <span className="text-xs font-semibold text-[#0A1F14]/70">
+        Dev mode — your code is
+      </span>
+      <span className="text-base font-black tracking-[0.3em] text-[#0F4A2E]">
+        {otp}
+      </span>
+    </div>
   );
 }
 

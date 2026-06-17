@@ -65,7 +65,7 @@ export default function MessagesPage() {
   });
 
   return (
-    <DashboardShell title={null} noPad>
+    <DashboardShell title={null} noPad hideMobileHeader>
       <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen">
         {/* ─── Chat list (left column) ─────────────── */}
         <div

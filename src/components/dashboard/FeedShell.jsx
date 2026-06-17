@@ -12,20 +12,21 @@ export default function FeedShell({ children, mode }) {
 
   return (
     <div
-      className="overflow-hidden bg-white relative"
-      style={{ height: "100dvh", minHeight: "100vh" }}
+      className="overflow-hidden bg-black relative"
+      style={{ height: "100dvh" }}
     >
       <Sidebar mode={resolvedMode} />
       <BottomBar mode={resolvedMode} />
 
-      {/* Main: On desktop sidebar pushes content right.
-          On mobile, feed area stops above the bottom bar so nothing gets
-          clipped — the progress bar, text, and actions all stay visible.
-          This matches how Instagram Reels actually works: the video area
-          ends at the top of the tab bar, it does NOT extend behind it. */}
-      <div
-        className="absolute inset-0 bottom-14 md:bottom-0 md:left-[72px] z-10 bg-black text-white"
-      >
+      {/* Main feed area.
+          Desktop: sidebar pushes content right (left-[72px]), full-height
+                   centered portrait card.
+          Mobile:  fully immersive — the video fills the ENTIRE screen
+                   edge-to-edge (inset-0), exactly like Instagram Reels on
+                   mobile web. The bottom tab bar floats over the video as a
+                   translucent overlay, and the caption + action rail are
+                   lifted to clear it. */}
+      <div className="absolute inset-0 md:left-[72px] z-10 bg-black text-white">
         <main className="relative w-full h-full overflow-hidden">
           {children}
         </main>

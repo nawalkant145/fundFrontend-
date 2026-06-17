@@ -21,19 +21,22 @@ import {
 import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
 
 /**
- * Instagram-style mobile bottom tab bar — light theme.
+ * Instagram-style mobile bottom tab bar.
+ * 5 slots: 4 tab buttons + profile avatar. Messages sits in the MIDDLE.
+ * Notifications live in the sidebar (desktop) and the in-page header bell
+ * on mobile — not in the bottom bar.
  */
 const FOUNDER_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
-  { to: "/app/upload", label: "Upload", icon: HiUpload },
+  { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
   { to: "/app/studio", label: "Studio", icon: HiCollection },
 ];
 
 const INVESTOR_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
-  { to: "/app/discover", label: "Discover", icon: HiSearch },
+  { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
   { to: "/app/saved", label: "Saved", icon: HiBookmark },
 ];
 
@@ -56,6 +59,12 @@ export default function BottomBar({ mode }) {
 
   const unread = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
 
+  // Immersive routes — the swipeable Pitch player. Here the bar floats as a
+  // translucent dark overlay on top of the video, exactly like Instagram
+  // Reels on mobile web.
+  const immersive =
+    location.pathname === "/app/pitch" || location.pathname === "/app/feed";
+
   const isActive = (tab) =>
     tab.end
       ? location.pathname === tab.to
@@ -64,23 +73,23 @@ export default function BottomBar({ mode }) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-[#1B5E3F]/8 shadow-[0_-4px_24px_rgba(15,74,46,0.04)]"
+      className={`md:hidden fixed bottom-0 left-0 right-0 z-50 ${
+        immersive
+          ? "bg-gradient-to-t from-black/85 to-transparent border-0"
+          : "bg-white/90 backdrop-blur-xl border-t border-[#1B5E3F]/8 shadow-[0_-4px_24px_rgba(15,74,46,0.04)]"
+      }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
     >
       <div className="flex items-center justify-around h-14">
         {tabs.map((tab) => (
-          <TabButton key={tab.to} {...tab} active={isActive(tab)} />
+          <TabButton
+            key={tab.to}
+            {...tab}
+            active={isActive(tab)}
+            immersive={immersive}
+            badge={tab.center ? unread : 0}
+          />
         ))}
-        <TabButton
-          to={role === "admin" ? "/admin/audit" : "/app/notifications"}
-          label="Alerts"
-          icon={role === "admin" ? HiClipboardList : HiBell}
-          active={
-            location.pathname.endsWith("/notifications") ||
-            location.pathname.endsWith("/audit")
-          }
-          badge={role === "admin" ? 0 : unread}
-        />
         <Link
           to="/app/profile"
           className="flex items-center justify-center w-14 h-full"
@@ -90,7 +99,9 @@ export default function BottomBar({ mode }) {
             alt="Profile"
             className={`w-7 h-7 rounded-full object-cover ring-2 transition-all ${
               location.pathname === "/app/profile"
-                ? "ring-[#1B5E3F] scale-110"
+                ? immersive
+                  ? "ring-white scale-110"
+                  : "ring-[#1B5E3F] scale-110"
                 : "ring-transparent"
             }`}
           />
@@ -100,7 +111,7 @@ export default function BottomBar({ mode }) {
   );
 }
 
-function TabButton({ to, icon: Icon, active, badge }) {
+function TabButton({ to, icon: Icon, active, badge, immersive, center }) {
   return (
     <Link
       to={to}
@@ -108,8 +119,14 @@ function TabButton({ to, icon: Icon, active, badge }) {
     >
       <motion.div whileTap={{ scale: 0.85 }} className="relative">
         <Icon
-          className={`w-7 h-7 transition-all ${
-            active ? "text-[#1B5E3F]" : "text-[#0A1F14]/55"
+          className={`transition-all ${center ? "w-8 h-8" : "w-7 h-7"} ${
+            immersive
+              ? active
+                ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+                : "text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+              : active
+                ? "text-[#1B5E3F]"
+                : "text-[#0A1F14]/55"
           }`}
         />
         {badge > 0 && (

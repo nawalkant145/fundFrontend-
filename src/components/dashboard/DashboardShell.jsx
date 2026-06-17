@@ -1,16 +1,17 @@
+import { Link } from "react-router-dom";
+import { HiBell } from "react-icons/hi";
 import Sidebar from "./Sidebar";
 import BottomBar from "./BottomBar";
-import { CURRENT_USER } from "../../constants/mockData";
+import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
 
 /**
  * Standard dashboard layout — light premium theme.
  *   - Desktop: Instagram-style collapsed sidebar on the left
- *   - Mobile:  bottom tab bar
- *   - No top navbar
+ *   - Mobile:  slim top header (logo + notifications) + bottom tab bar
  *
  * Props:
- *   noPad — pass true for full-bleed pages (Messages) that need to fill
- *           the full width without the centered max-w-7xl wrapper
+ *   noPad      — full-bleed pages (Messages) skip the centered wrapper
+ *   hideMobileHeader — hide the mobile top header (e.g. chat windows)
  */
 export default function DashboardShell({
   children,
@@ -18,8 +19,10 @@ export default function DashboardShell({
   subtitle,
   mode,
   noPad,
+  hideMobileHeader,
 }) {
   const resolvedMode = mode || CURRENT_USER.role;
+  const unread = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
 
   return (
     <div
@@ -34,6 +37,33 @@ export default function DashboardShell({
 
       <Sidebar mode={resolvedMode} />
       <BottomBar mode={resolvedMode} />
+
+      {/* Mobile top header — logo + notification bell (Instagram-style) */}
+      {!hideMobileHeader && (
+        <header className="md:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8">
+          <div className="flex items-center justify-between px-4 h-14">
+            <Link to="/app" className="flex items-center">
+              <img
+                src="/Logobgremove.jpeg"
+                alt="EXPGLO FUND"
+                className="h-8 w-auto mix-blend-multiply"
+              />
+            </Link>
+            <Link
+              to="/app/notifications"
+              className="relative p-2 -mr-2 text-[#0F4A2E]"
+              aria-label="Notifications"
+            >
+              <HiBell className="w-6 h-6" />
+              {unread > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center">
+                  {unread}
+                </span>
+              )}
+            </Link>
+          </div>
+        </header>
+      )}
 
       <div className="md:pl-[72px] relative z-10">
         {noPad ? (

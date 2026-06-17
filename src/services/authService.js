@@ -7,9 +7,15 @@ export const authService = {
   refreshToken: () => api.post("/auth/refresh-token"),
   getMe: () => api.get("/auth/me"),
 
+  // Live availability check (username / email / phone)
+  checkAvailability: (params) =>
+    api.get("/auth/check-availability", { params }),
+
   // Pre-register OTP (verify email before account creation)
-  sendPreRegisterOtp: (email) => api.post("/auth/send-pre-register-otp", { email }),
-  verifyPreRegisterOtp: (email, otp) => api.post("/auth/verify-pre-register-otp", { email, otp }),
+  sendPreRegisterOtp: (email) =>
+    api.post("/auth/send-pre-register-otp", { email }),
+  verifyPreRegisterOtp: (email, otp) =>
+    api.post("/auth/verify-pre-register-otp", { email, otp }),
 
   // OTP (for already logged-in users)
   sendEmailOtp: () => api.post("/auth/send-email-otp"),

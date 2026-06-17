@@ -6,14 +6,48 @@ import {
   HiOfficeBuilding,
   HiBriefcase,
   HiShieldCheck,
+  HiUpload,
+  HiChartBar,
+  HiCurrencyDollar,
+  HiDocumentText,
+  HiSearch,
+  HiBell,
+  HiSparkles,
+  HiCog,
+  HiLogout,
+  HiChevronRight,
 } from "react-icons/hi";
 import { FaLinkedin } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { CURRENT_USER, MOCK_PITCHES } from "../../constants/mockData";
+import { clearAuth } from "../../lib/auth";
+
+// Menu items shown on mobile only (the sidebar links that don't fit in the
+// 5-slot bottom tab bar). Role-aware.
+const FOUNDER_MENU = [
+  { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
+  { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
+  { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
+  { to: "/app/deck-requests", label: "Deck Requests", icon: HiDocumentText },
+  { to: "/app/notifications", label: "Notifications", icon: HiBell },
+  { to: "/app/subscription", label: "Studio Pro", icon: HiSparkles },
+  { to: "/app/settings", label: "Settings", icon: HiCog },
+];
+
+const INVESTOR_MENU = [
+  { to: "/app/discover", label: "Discover", icon: HiSearch },
+  { to: "/app/investments", label: "Investments", icon: HiCurrencyDollar },
+  { to: "/app/notifications", label: "Notifications", icon: HiBell },
+  { to: "/app/subscription", label: "Investor Pro", icon: HiSparkles },
+  { to: "/app/settings", label: "Settings", icon: HiCog },
+];
 
 export default function ProfilePage() {
+  const role = CURRENT_USER.role;
+  const menu = role === "investor" ? INVESTOR_MENU : FOUNDER_MENU;
+
   return (
     <DashboardShell title="My profile">
       {/* Cover + avatar */}
@@ -127,6 +161,39 @@ export default function ProfilePage() {
           </div>
         </>
       )}
+      {/* Mobile-only menu — sidebar items that don't fit the bottom bar */}
+      <div className="md:hidden mt-8">
+        <h3 className="text-base font-bold mb-3">Menu</h3>
+        <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden divide-y divide-[#1B5E3F]/8">
+          {menu.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="flex items-center gap-3 px-4 py-3.5 active:bg-[#FAFAF7] transition-colors"
+            >
+              <span className="w-9 h-9 rounded-xl bg-[#1B5E3F]/10 flex items-center justify-center flex-shrink-0">
+                <item.icon className="w-5 h-5 text-[#1B5E3F]" />
+              </span>
+              <span className="flex-1 font-semibold text-sm text-[#0A1F14]">
+                {item.label}
+              </span>
+              <HiChevronRight className="w-5 h-5 text-[#0A1F14]/35" />
+            </Link>
+          ))}
+          <Link
+            to="/login"
+            onClick={() => clearAuth()}
+            className="flex items-center gap-3 px-4 py-3.5 active:bg-red-50 transition-colors"
+          >
+            <span className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+              <HiLogout className="w-5 h-5 text-red-500" />
+            </span>
+            <span className="flex-1 font-semibold text-sm text-red-500">
+              Log out
+            </span>
+          </Link>
+        </div>
+      </div>
     </DashboardShell>
   );
 }

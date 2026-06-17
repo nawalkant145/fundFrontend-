@@ -36,7 +36,7 @@ export default function LoginPage() {
 
     try {
       const data = await login({
-        email: formData.identifier,
+        identifier: formData.identifier,
         password: formData.password,
       });
       const role = data.user?.role || userType;

@@ -32,10 +32,15 @@ export function FormField({
       ? "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-100"
       : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15";
 
+  const fieldId = name ? `field-${name}` : undefined;
+
   return (
     <div>
       {label && (
-        <label className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
+        <label
+          htmlFor={fieldId}
+          className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85"
+        >
           <span>
             {label}
             {required && <span className="text-[#1B5E3F] ml-1">*</span>}
@@ -48,13 +53,14 @@ export function FormField({
           <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0A1F14]/40 pointer-events-none" />
         )}
         <input
+          id={fieldId}
           type={inputType}
           name={name}
           value={value ?? ""}
           onChange={onChange}
           placeholder={placeholder}
           required={required}
-          autoComplete={autoComplete}
+          autoComplete={autoComplete || "off"}
           className={`w-full ${Icon ? "pl-12" : "pl-4"} ${
             isPassword || rightSlot ? "pr-12" : "pr-4"
           } py-3.5 bg-white border ${borderClass} rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:outline-none focus:ring-4 transition-all text-base`}
