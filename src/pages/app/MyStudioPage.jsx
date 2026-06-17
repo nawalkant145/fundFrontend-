@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +17,9 @@ import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import BoostModal from "../../components/monetization/BoostModal";
+import { videoService } from "../../services/videoService";
+import { postService } from "../../services/postService";
+import { useAuth } from "../../context/AuthContext";
 import {
   CURRENT_USER,
   MOCK_PITCHES,
@@ -28,25 +31,44 @@ import {
 /**
  * Combined "My Studio" page — replaces "My Pitches".
  * Sub-tabs: Pitches | Posts.
- *
- * For founders this is their content hub. Boost CTAs on each pitch.
  */
 export default function MyStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "posts" ? "posts" : "pitches";
   const [tab, setTab] = useState(initialTab);
   const [boostFor, setBoostFor] = useState(null);
+  const { user } = useAuth();
 
-  // Filter to "current user's" content. With mock data we use the first
-  // founder profile (f_1) as "me" so there's content to display.
-  const myPitches = useMemo(
-    () => MOCK_PITCHES.filter((p) => p.founderId._id === "f_1"),
-    [],
-  );
-  const myPosts = useMemo(
-    () => MOCK_POSTS.filter((p) => p.authorId._id === "f_1"),
-    [],
-  );
+  // Fetch real pitches — show empty state if none uploaded yet
+  const [myPitches, setMyPitches] = useState([]);
+  const [pitchesLoading, setPitchesLoading] = useState(true);
+
+  useEffect(() => {
+    videoService
+      .getMyPitches()
+      .then((res) => {
+        const data = res?.data?.data;
+        const videos = data?.videos || data || [];
+        setMyPitches(videos);
+      })
+      .catch(() => {
+        setMyPitches([]);
+      })
+      .finally(() => setPitchesLoading(false));
+  }, []);
+
+  // Fetch real posts
+  const [myPosts, setMyPosts] = useState([]);
+  useEffect(() => {
+    postService
+      .getMyPosts()
+      .then((res) => {
+        const data = res?.data?.data;
+        const posts = data?.posts || data || [];
+        setMyPosts(posts);
+      })
+      .catch(() => setMyPosts([]));
+  }, []);
 
   const activeBoost = (pitchId) =>
     MOCK_BOOSTS.find((b) => b.pitchId === pitchId && b.status === "active");
@@ -61,20 +83,22 @@ export default function MyStudioPage() {
       {/* Profile header */}
       <div className="flex flex-col sm:flex-row items-center gap-5 mb-6 sm:mb-8">
         <img
-          src={CURRENT_USER.avatar}
-          alt={CURRENT_USER.name}
+          src={user?.avatar || CURRENT_USER.avatar}
+          alt={user?.name || CURRENT_USER.name}
           className="w-20 h-20 sm:w-24 sm:h-24 rounded-full ring-4 ring-[#1B5E3F]/15 object-cover"
         />
         <div className="flex-1 text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-black text-[#0A1F14] inline-flex items-center gap-2 leading-tight">
-            {CURRENT_USER.name}
-            {CURRENT_USER.isVerified && (
+            {user?.name || CURRENT_USER.name}
+            {(user?.isVerified || CURRENT_USER.isVerified) && (
               <MdVerified className="w-6 h-6 text-[#F5B942]" />
             )}
           </h1>
           <p className="text-sm text-[#0A1F14]/65">
-            @{CURRENT_USER.username || "you"} ·{" "}
-            <span className="capitalize">{CURRENT_USER.role || "founder"}</span>
+            @{user?.username || CURRENT_USER.username || "you"} ·{" "}
+            <span className="capitalize">
+              {user?.role || CURRENT_USER.role || "founder"}
+            </span>
           </p>
           <div className="flex justify-center sm:justify-start gap-5 mt-3 text-sm">
             <Stat label="Pitches" value={myPitches.length} />

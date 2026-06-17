@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   HiHeart,
@@ -16,6 +16,7 @@ import { MdVerified } from "react-icons/md";
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
+import { notificationService } from "../../services/notificationService";
 import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
 
 const ICONS = {
@@ -53,6 +54,18 @@ export default function NotificationsPage() {
   const toast = useToast();
   const [items, setItems] = useState(MOCK_NOTIFICATIONS);
   const [filter, setFilter] = useState("all");
+
+  // Fetch real notifications on mount
+  useEffect(() => {
+    notificationService
+      .list({ limit: 50 })
+      .then((res) => {
+        const data = res?.data?.data;
+        const list = data?.notifications || data || [];
+        if (list.length > 0) setItems(list);
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = items.filter((n) => {
     if (filter === "all") return true;

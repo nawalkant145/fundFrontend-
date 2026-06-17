@@ -25,6 +25,7 @@ import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import Modal from "../../components/ui/Modal";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
+import { videoService } from "../../services/videoService";
 import {
   MOCK_PITCHES,
   CURRENT_USER,
@@ -40,11 +41,32 @@ export default function InvestorFeed() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
+
+  // Pitches array — starts with mock, replaced by real data if API succeeds
+  const [pitches, setPitches] = useState(MOCK_PITCHES);
+  const [feedLoaded, setFeedLoaded] = useState(false);
+
+  // Fetch real feed on mount
+  useEffect(() => {
+    videoService
+      .getFeed({ limit: 20 })
+      .then((res) => {
+        const data = res?.data?.data;
+        const videos = data?.videos || data;
+        if (videos?.length > 0) {
+          setPitches(videos);
+          setFeedLoaded(true);
+        }
+      })
+      .catch(() => {
+        // API unavailable — keep mock data
+      });
+  }, []);
+
   const [idx, setIdx] = useState(() => {
-    // If URL has ?pitch=<id>, start on that pitch
     const param = new URLSearchParams(window.location.search).get("pitch");
     if (param) {
-      const found = MOCK_PITCHES.findIndex((p) => p._id === param);
+      const found = pitches.findIndex((p) => p._id === param);
       if (found >= 0) return found;
     }
     return 0;
@@ -75,7 +97,7 @@ export default function InvestorFeed() {
   useEffect(() => {
     const param = searchParams.get("pitch");
     if (!param) return;
-    const found = MOCK_PITCHES.findIndex((p) => p._id === param);
+    const found = pitches.findIndex((p) => p._id === param);
     if (found >= 0 && found !== idx) {
       setDirection(found > idx ? "down" : "up");
       setIdx(found);
@@ -88,10 +110,10 @@ export default function InvestorFeed() {
     // eslint-disable-next-line
   }, [searchParams]);
 
-  const pitch = MOCK_PITCHES[idx];
+  const pitch = pitches[idx];
 
   const next = () => {
-    if (idx < MOCK_PITCHES.length - 1) {
+    if (idx < pitches.length - 1) {
       setDirection("down");
       setIdx(idx + 1);
       setExpanded(false);
@@ -107,7 +129,7 @@ export default function InvestorFeed() {
 
   // Jump to a specific pitch (used when picking from founder profile)
   const jumpToPitch = (pitchObj) => {
-    const i = MOCK_PITCHES.findIndex((p) => p._id === pitchObj._id);
+    const i = pitches.findIndex((p) => p._id === pitchObj._id);
     if (i >= 0) {
       setDirection(i > idx ? "down" : "up");
       setIdx(i);
@@ -236,6 +258,7 @@ export default function InvestorFeed() {
     const id = pitch._id;
     const wasLiked = liked[id];
     setLiked((p) => ({ ...p, [id]: !wasLiked }));
+    videoService.like(id).catch(() => {});
   };
 
   // Double-tap on the video — Instagram only LIKES (never unlikes) on double-tap
@@ -243,6 +266,7 @@ export default function InvestorFeed() {
     const id = pitch._id;
     if (!liked[id]) {
       setLiked((p) => ({ ...p, [id]: true }));
+      videoService.like(id).catch(() => {});
     }
   };
 
@@ -250,6 +274,7 @@ export default function InvestorFeed() {
     const id = pitch._id;
     const wasSaved = saved[id];
     setSaved((p) => ({ ...p, [id]: !wasSaved }));
+    videoService.save(id).catch(() => {});
   };
 
   const toggleFollow = () => {
@@ -287,8 +312,8 @@ export default function InvestorFeed() {
 
   // Preload neighbor videos so the next/prev slide-in is instant
   const neighborSrcs = [
-    MOCK_PITCHES[idx + 1]?.videoUrl,
-    MOCK_PITCHES[idx - 1]?.videoUrl,
+    pitches[idx + 1]?.videoUrl,
+    pitches[idx - 1]?.videoUrl,
   ].filter(Boolean);
 
   return (

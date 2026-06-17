@@ -15,6 +15,7 @@ import FileDropzone from "../../components/auth/FileDropzone";
 import { FormField } from "../../components/auth/FormField";
 import Select from "../../components/auth/Select";
 import { useToast } from "../../components/ui/Toast";
+import { videoService } from "../../services/videoService";
 import { INDUSTRIES, FUNDING_STAGES } from "../../constants/options";
 
 export default function UploadPitchPage() {
@@ -67,15 +68,27 @@ export default function UploadPitchPage() {
     data.fundingStage &&
     Number(data.askAmount) > 0;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!valid) return;
     setUploading(true);
-    setTimeout(() => {
+    try {
+      await videoService.upload(videoFile, {
+        title: data.title,
+        description: data.description,
+        industry: data.industry,
+        fundingStage: data.fundingStage,
+        askAmount: data.askAmount,
+        equityOffered: data.equityOffered,
+      });
       setUploading(false);
       setSubmitted(true);
-      toast.success("Pitch submitted for review");
-    }, 1500);
+      toast.success("Pitch uploaded — processing video…");
+    } catch (err) {
+      setUploading(false);
+      const msg = err.response?.data?.message || "Upload failed. Try again.";
+      toast.error(msg);
+    }
   };
 
   if (submitted) {

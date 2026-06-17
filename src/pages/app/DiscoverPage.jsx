@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { HiSearch, HiAdjustments, HiTrendingUp } from "react-icons/hi";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import PitchCard from "../../components/dashboard/PitchCard";
+import { videoService } from "../../services/videoService";
 import { MOCK_PITCHES } from "../../constants/mockData";
 import { INDUSTRIES, FUNDING_STAGES } from "../../constants/options";
 
@@ -18,11 +19,31 @@ export default function DiscoverPage() {
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("");
   const [stage, setStage] = useState("");
+  const [pitches, setPitches] = useState(MOCK_PITCHES);
 
-  const filtered = MOCK_PITCHES.filter((p) => {
+  // Fetch real pitches — search/filter
+  useEffect(() => {
+    const params = {};
+    if (query) params.q = query;
+    if (industry) params.industry = industry;
+    if (stage) params.stage = stage;
+    if (tab === "trending") params.sort = "trending";
+    else if (tab === "new") params.sort = "newest";
+
+    videoService
+      .search(params)
+      .then((res) => {
+        const data = res?.data?.data;
+        const videos = data?.videos || data || [];
+        if (videos.length > 0) setPitches(videos);
+      })
+      .catch(() => {});
+  }, [query, industry, stage, tab]);
+
+  const filtered = pitches.filter((p) => {
     if (
       query &&
-      !`${p.title} ${p.description} ${p.founderId.companyName}`
+      !`${p.title} ${p.description} ${p.founderId?.companyName || ""}`
         .toLowerCase()
         .includes(query.toLowerCase())
     )

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -11,6 +11,7 @@ import {
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import PitchCard from "../../components/dashboard/PitchCard";
+import { videoService } from "../../services/videoService";
 import { MOCK_PITCHES, MOCK_POSTS } from "../../constants/mockData";
 
 /**
@@ -21,10 +22,20 @@ export default function SavedPitchesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "posts" ? "posts" : "pitches";
   const [tab, setTab] = useState(initialTab);
-
-  // Mock: pretend investor has saved 3 pitches and 2 posts
-  const savedPitches = MOCK_PITCHES.slice(0, 3);
+  const [savedPitches, setSavedPitches] = useState(MOCK_PITCHES.slice(0, 3));
   const savedPosts = MOCK_POSTS.slice(0, 2);
+
+  // Fetch real saved pitches
+  useEffect(() => {
+    videoService
+      .getSaved()
+      .then((res) => {
+        const data = res?.data?.data;
+        const videos = data?.videos || data || [];
+        if (videos.length > 0) setSavedPitches(videos);
+      })
+      .catch(() => {});
+  }, []);
 
   const switchTab = (next) => {
     setTab(next);

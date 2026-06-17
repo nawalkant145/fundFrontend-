@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { HiBell } from "react-icons/hi";
 import Sidebar from "./Sidebar";
 import BottomBar from "./BottomBar";
-import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { useAuth } from "../../context/AuthContext";
+import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
 
 /**
  * Standard dashboard layout — light premium theme.
@@ -21,7 +22,8 @@ export default function DashboardShell({
   noPad,
   hideMobileHeader,
 }) {
-  const resolvedMode = mode || CURRENT_USER.role;
+  const { user } = useAuth();
+  const resolvedMode = mode || user?.role || "founder";
   const unread = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
 
   return (

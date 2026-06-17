@@ -39,23 +39,17 @@ export default function SubscriptionPage() {
     await new Promise((r) => setTimeout(r, 900));
     activatePro();
     setSubmitting(false);
-    toast?.show({
-      type: "success",
-      title: `Welcome to ${plan.name} 🎉`,
-      message: isInvestor
-        ? "Unlimited chats and calls unlocked."
-        : "Pitch boosts and analytics unlocked.",
-    });
+    toast?.success(
+      isInvestor
+        ? "Unlimited chats and calls unlocked 🎉"
+        : "Pitch boosts and analytics unlocked 🎉",
+    );
     navigate("/app");
   };
 
   const handleCancel = () => {
     cancelPro();
-    toast?.show({
-      type: "info",
-      title: "Subscription cancelled",
-      message: "Your Pro perks will end at the next billing cycle.",
-    });
+    toast?.info("Subscription cancelled — perks end at next billing cycle.");
   };
 
   return (

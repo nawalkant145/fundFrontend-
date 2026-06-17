@@ -23,6 +23,7 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import FollowButton from "../../components/monetization/FollowButton";
 import ProUpgradeModal from "../../components/monetization/ProUpgradeModal";
 import { useToast } from "../../components/ui/Toast";
+import { videoService } from "../../services/videoService";
 import {
   MOCK_PITCHES,
   MOCK_POSTS,
@@ -45,6 +46,19 @@ export default function LinearFeed() {
   const isFounder = role === "founder";
 
   const [paywall, setPaywall] = useState(false);
+  const [realPitches, setRealPitches] = useState(null);
+
+  // Fetch real pitches on mount; fall back to mock data if API fails
+  useEffect(() => {
+    videoService
+      .getFeed({ limit: 20 })
+      .then((res) => {
+        const data = res?.data?.data;
+        const videos = data?.videos || data;
+        if (videos?.length > 0) setRealPitches(videos);
+      })
+      .catch(() => {});
+  }, []);
 
   // Disable browser scroll-restoration so refresh always lands at the top
   // of the feed (Instagram/TikTok behaviour).
@@ -71,20 +85,24 @@ export default function LinearFeed() {
 
   const items = useMemo(() => {
     const ownId = isFounder ? "f_1" : null;
+    const pitchSource = realPitches || MOCK_PITCHES;
 
     const boostedPitchIds = new Set(
       MOCK_BOOSTS.filter((b) => b.status === "active").map((b) => b.pitchId),
     );
 
-    const pitchEntries = MOCK_PITCHES.filter(
-      (p) => p.founderId._id !== ownId,
-    ).map((p) => ({
-      kind: "pitch",
-      id: p._id,
-      ts: new Date(p.createdAt).getTime(),
-      boosted: boostedPitchIds.has(p._id),
-      data: p,
-    }));
+    const pitchEntries = pitchSource
+      .filter((p) => {
+        const fId = p.founderId?._id || p.founderId;
+        return fId !== ownId;
+      })
+      .map((p) => ({
+        kind: "pitch",
+        id: p._id,
+        ts: new Date(p.createdAt).getTime(),
+        boosted: boostedPitchIds.has(p._id),
+        data: p,
+      }));
 
     const postEntries = MOCK_POSTS.filter((p) => p.authorId._id !== ownId).map(
       (p) => ({
@@ -105,7 +123,7 @@ export default function LinearFeed() {
     });
 
     return merged;
-  }, [isFounder]);
+  }, [isFounder, realPitches]);
 
   return (
     <DashboardShell>
@@ -269,10 +287,7 @@ function PitchFeedCard({
       return;
     }
     if (check.isFreeChat) consumeFreeChat();
-    toast?.show({
-      type: "success",
-      title: `Chat opened with ${pitch.founderId.name}`,
-    });
+    toast?.success(`Chat opened with ${pitch.founderId.name}`);
     navigate("/app/messages");
   };
 
@@ -437,10 +452,7 @@ function PostFeedCard({ post, isFounder, onChatBlocked }) {
       return;
     }
     if (check.isFreeChat) consumeFreeChat();
-    toast?.show({
-      type: "success",
-      title: `Chat opened with ${post.authorId.name}`,
-    });
+    toast?.success(`Chat opened with ${post.authorId.name}`);
     navigate("/app/messages");
   };
 

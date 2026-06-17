@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   HiPencilAlt,
   HiGlobe,
@@ -21,11 +21,9 @@ import { FaLinkedin } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
-import { CURRENT_USER, MOCK_PITCHES } from "../../constants/mockData";
-import { clearAuth } from "../../lib/auth";
+import { useAuth } from "../../context/AuthContext";
 
-// Menu items shown on mobile only (the sidebar links that don't fit in the
-// 5-slot bottom tab bar). Role-aware.
+// Menu items shown on mobile only (sidebar items that don't fit bottom bar)
 const FOUNDER_MENU = [
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
@@ -45,36 +43,48 @@ const INVESTOR_MENU = [
 ];
 
 export default function ProfilePage() {
-  const role = CURRENT_USER.role;
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const role = user?.role || "founder";
   const menu = role === "investor" ? INVESTOR_MENU : FOUNDER_MENU;
+
+  if (!user) return null;
 
   return (
     <DashboardShell title="My profile">
       {/* Cover + avatar */}
-      <div className="relative bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden mb-6">
-        <div className="h-28 sm:h-40 bg-gradient-to-br from-gold/30 via-primary-green/30 to-dark-navy" />
+      <div className="relative bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden mb-6">
+        <div className="h-28 sm:h-40 bg-gradient-to-br from-[#1B5E3F]/20 via-[#F5B942]/20 to-[#1B5E3F]/10" />
         <div className="px-4 sm:px-5 pb-5 -mt-10 sm:-mt-12">
           <img
-            src={CURRENT_USER.avatar}
-            alt={CURRENT_USER.name}
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-card-bg object-cover"
+            src={
+              user.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1B5E3F&color=fff&size=200`
+            }
+            alt={user.name}
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white object-cover shadow-md"
           />
           <div className="flex items-end justify-between flex-wrap gap-3 mt-3">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black flex items-center gap-2">
-                {CURRENT_USER.name}
-                {CURRENT_USER.isVerified && (
-                  <MdVerified className="w-5 h-5 sm:w-6 sm:h-6 text-gold" />
+              <h2 className="text-xl sm:text-2xl font-black flex items-center gap-2 text-[#0A1F14]">
+                {user.name}
+                {user.isVerified && (
+                  <MdVerified className="w-5 h-5 sm:w-6 sm:h-6 text-[#F5B942]" />
                 )}
               </h2>
-              <p className="text-sm text-gray-400">@{CURRENT_USER.username}</p>
-              <p className="text-sm text-gray-300 mt-2 max-w-2xl">
-                {CURRENT_USER.bio}
+              <p className="text-sm text-[#0A1F14]/55">
+                @{user.username || "user"} ·{" "}
+                <span className="capitalize">{role}</span>
               </p>
+              {user.bio && (
+                <p className="text-sm text-[#0A1F14]/75 mt-2 max-w-2xl">
+                  {user.bio}
+                </p>
+              )}
             </div>
             <Link to="/app/settings">
               <motion.button
-                className="px-5 py-2.5 bg-gold text-dark-navy text-sm font-bold rounded-xl flex items-center gap-2"
+                className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full flex items-center gap-2 shadow-md shadow-[#1B5E3F]/25"
                 whileHover={{ scale: 1.03 }}
               >
                 <HiPencilAlt className="w-4 h-4" />
@@ -85,19 +95,15 @@ export default function ProfilePage() {
 
           {/* Quick info chips */}
           <div className="flex flex-wrap gap-2 mt-4">
-            {CURRENT_USER.companyName && (
-              <Chip icon={HiOfficeBuilding}>{CURRENT_USER.companyName}</Chip>
+            {user.companyName && (
+              <Chip icon={HiOfficeBuilding}>{user.companyName}</Chip>
             )}
-            {CURRENT_USER.industry && (
-              <Chip icon={HiBriefcase}>{CURRENT_USER.industry}</Chip>
+            {user.industry && <Chip icon={HiBriefcase}>{user.industry}</Chip>}
+            {user.fundingStage && (
+              <Chip icon={HiShieldCheck}>{user.fundingStage}</Chip>
             )}
-            {CURRENT_USER.fundingStage && (
-              <Chip icon={HiShieldCheck}>{CURRENT_USER.fundingStage}</Chip>
-            )}
-            {CURRENT_USER.website && (
-              <Chip icon={HiGlobe}>{CURRENT_USER.website}</Chip>
-            )}
-            {CURRENT_USER.linkedIn && <Chip icon={FaLinkedin}>LinkedIn</Chip>}
+            {user.website && <Chip icon={HiGlobe}>{user.website}</Chip>}
+            {user.linkedIn && <Chip icon={FaLinkedin}>LinkedIn</Chip>}
           </div>
         </div>
       </div>
@@ -105,65 +111,41 @@ export default function ProfilePage() {
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
         {/* Stats */}
         <div className="lg:col-span-2 grid grid-cols-3 gap-4">
-          <MiniStat label="Total views" value="4.2k" />
-          <MiniStat label="Connections" value="38" />
-          <MiniStat label="Saves" value="89" />
+          <MiniStat label="Total views" value={user.totalPitchViews || 0} />
+          <MiniStat label="Connections" value={user.followersCount || 0} />
+          <MiniStat
+            label="Level"
+            value={`${user.verificationLevel || 0} / 3`}
+          />
         </div>
 
         {/* Profile completeness */}
-        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-wider font-bold text-gray-400 mb-1">
+        <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-5">
+          <p className="text-xs uppercase tracking-wider font-bold text-[#0A1F14]/55 mb-1">
             Profile completeness
           </p>
-          <p className="text-3xl font-black mb-2">
-            {CURRENT_USER.profileCompleteness}%
+          <p className="text-3xl font-black text-[#0A1F14] mb-2">
+            {user.profileCompleteness || 0}%
           </p>
-          <div className="h-2 bg-dark-bg rounded-full overflow-hidden">
+          <div className="h-2 bg-[#FAFAF7] rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-gold to-bright-gold"
+              className="h-full bg-gradient-to-r from-[#1B5E3F] to-[#F5B942]"
               initial={{ width: 0 }}
-              animate={{ width: `${CURRENT_USER.profileCompleteness}%` }}
+              animate={{ width: `${user.profileCompleteness || 0}%` }}
               transition={{ duration: 1 }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Add a pitch deck to reach 100%
+          <p className="text-xs text-[#0A1F14]/55 mt-2">
+            {user.profileCompleteness >= 100
+              ? "All set!"
+              : "Complete your profile for better reach"}
           </p>
         </div>
       </div>
 
-      {/* Pitches — only for founders */}
-      {CURRENT_USER.role === "founder" && (
-        <>
-          <h3 className="text-base sm:text-lg font-bold mb-3">My pitches</h3>
-          <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-            {MOCK_PITCHES.slice(0, 2).map((p) => (
-              <div
-                key={p._id}
-                className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden flex"
-              >
-                <img
-                  src={p.thumbnailUrl}
-                  alt={p.title}
-                  className="w-24 sm:w-32 h-24 sm:h-32 object-cover flex-shrink-0"
-                />
-                <div className="p-3 min-w-0 flex-1">
-                  <p className="font-bold text-sm line-clamp-1">{p.title}</p>
-                  <p className="text-xs text-gray-400 line-clamp-2 mt-1">
-                    {p.description}
-                  </p>
-                  <p className="text-xs text-gold font-bold mt-2">
-                    {p.views.toLocaleString()} views · {p.likes.length} likes
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
       {/* Mobile-only menu — sidebar items that don't fit the bottom bar */}
       <div className="md:hidden mt-8">
-        <h3 className="text-base font-bold mb-3">Menu</h3>
+        <h3 className="text-base font-bold mb-3 text-[#0A1F14]">Menu</h3>
         <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden divide-y divide-[#1B5E3F]/8">
           {menu.map((item) => (
             <Link
@@ -180,18 +162,20 @@ export default function ProfilePage() {
               <HiChevronRight className="w-5 h-5 text-[#0A1F14]/35" />
             </Link>
           ))}
-          <Link
-            to="/login"
-            onClick={() => clearAuth()}
-            className="flex items-center gap-3 px-4 py-3.5 active:bg-red-50 transition-colors"
+          <button
+            onClick={async () => {
+              await logout();
+              navigate("/login");
+            }}
+            className="flex items-center gap-3 px-4 py-3.5 active:bg-red-50 transition-colors w-full"
           >
             <span className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
               <HiLogout className="w-5 h-5 text-red-500" />
             </span>
-            <span className="flex-1 font-semibold text-sm text-red-500">
+            <span className="flex-1 font-semibold text-sm text-red-500 text-left">
               Log out
             </span>
-          </Link>
+          </button>
         </div>
       </div>
     </DashboardShell>
@@ -200,9 +184,9 @@ export default function ProfilePage() {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-3 sm:p-5 text-center">
-      <p className="text-xl sm:text-3xl font-black">{value}</p>
-      <p className="text-[10px] sm:text-xs text-gray-400 mt-1 font-semibold">
+    <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-3 sm:p-5 text-center">
+      <p className="text-xl sm:text-3xl font-black text-[#0A1F14]">{value}</p>
+      <p className="text-[10px] sm:text-xs text-[#0A1F14]/55 mt-1 font-semibold">
         {label}
       </p>
     </div>
@@ -211,8 +195,8 @@ function MiniStat({ label, value }) {
 
 function Chip({ icon: Icon, children }) {
   return (
-    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-dark-bg/60 border border-gold/15 rounded-full text-xs font-semibold text-gray-300">
-      <Icon className="w-4 h-4 text-gold" />
+    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#FAFAF7] border border-[#1B5E3F]/10 rounded-full text-xs font-semibold text-[#0A1F14]/75">
+      <Icon className="w-4 h-4 text-[#1B5E3F]" />
       {children}
     </span>
   );

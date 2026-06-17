@@ -13,6 +13,7 @@ import {
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { useToast } from "../../components/ui/Toast";
+import { postService } from "../../services/postService";
 
 const MAX_IMAGES = 10;
 const MAX_CAPTION = 2200;
@@ -54,14 +55,21 @@ export default function UploadPostPage() {
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSubmitting(false);
-    toast?.show({
-      type: "success",
-      title: "Post published 🎉",
-      message: "Your post is now live in your studio.",
-    });
-    navigate("/app/studio?tab=posts");
+    try {
+      const files = type === "images" ? images.map((img) => img.file) : [];
+      await postService.create(files, {
+        caption,
+        link,
+        hashtags,
+        type,
+      });
+      setSubmitting(false);
+      toast.success("Post published 🎉");
+      navigate("/app/studio?tab=posts");
+    } catch (err) {
+      setSubmitting(false);
+      toast.error(err.response?.data?.message || "Post failed. Try again.");
+    }
   };
 
   return (

@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiMenu, HiSearch, HiBell } from "react-icons/hi";
-import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TopBar({ onMenuClick, title, subtitle }) {
+  const { user } = useAuth();
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
 
   return (

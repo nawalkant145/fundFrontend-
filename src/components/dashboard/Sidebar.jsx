@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   HiHome,
   HiUpload,
@@ -22,8 +22,9 @@ import {
   HiBookmark,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
-import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
-import { clearAuth, isPro } from "../../lib/auth";
+import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { isPro } from "../../lib/auth";
+import { useAuth } from "../../context/AuthContext";
 
 const founderNav = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
@@ -66,7 +67,9 @@ const adminNav = [
  */
 export default function Sidebar({ mode }) {
   const location = useLocation();
-  const role = mode || CURRENT_USER.role;
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const role = mode || user?.role || "founder";
   const items =
     role === "investor"
       ? investorNav
@@ -106,17 +109,20 @@ export default function Sidebar({ mode }) {
       >
         <div className="relative flex-shrink-0">
           <img
-            src={CURRENT_USER.avatar}
-            alt={CURRENT_USER.name}
+            src={
+              user?.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
+            }
+            alt={user?.name || "User"}
             className="w-10 h-10 rounded-full ring-2 ring-[#1B5E3F]/20 object-cover"
           />
-          {CURRENT_USER.isVerified && (
+          {user?.isVerified && (
             <MdVerified className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-[#F5B942] bg-white rounded-full" />
           )}
         </div>
         <div className="ml-3 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <p className="font-bold text-sm truncate text-[#0A1F14] inline-flex items-center gap-1.5">
-            {CURRENT_USER.name}
+            {user?.name || "User"}
             {isPro() && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-br from-[#F5B942] to-[#FFD166] text-[#0F4A2E] text-[8px] font-black uppercase tracking-wider rounded-full">
                 <HiSparkles className="w-2.5 h-2.5" /> PRO
@@ -153,16 +159,18 @@ export default function Sidebar({ mode }) {
             active={location.pathname === "/app/settings"}
           />
         )}
-        <Link
-          to="/login"
-          onClick={() => clearAuth()}
-          className="flex items-center h-12 rounded-xl text-[#0A1F14]/65 hover:bg-red-50 hover:text-red-500 transition-colors"
+        <button
+          onClick={async () => {
+            await logout();
+            navigate("/login");
+          }}
+          className="w-full flex items-center h-12 rounded-xl text-[#0A1F14]/65 hover:bg-red-50 hover:text-red-500 transition-colors"
         >
           <HiLogout className="w-6 h-6 flex-shrink-0 mx-3" />
           <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-semibold">
             Log out
           </span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

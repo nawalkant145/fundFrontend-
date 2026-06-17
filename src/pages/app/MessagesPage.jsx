@@ -31,6 +31,7 @@ import Confirm from "../../components/ui/Confirm";
 import { useToast } from "../../components/ui/Toast";
 import ProUpgradeModal from "../../components/monetization/ProUpgradeModal";
 import { canStartCall } from "../../lib/auth";
+import { chatService } from "../../services/chatService";
 import {
   MOCK_CHATS,
   MOCK_MESSAGES,
@@ -49,6 +50,18 @@ export default function MessagesPage() {
   const [chats, setChats] = useState(MOCK_CHATS);
   const [query, setQuery] = useState("");
   const [confirming, setConfirming] = useState(null);
+
+  // Fetch real chats on mount
+  useEffect(() => {
+    chatService
+      .listChats()
+      .then((res) => {
+        const data = res?.data?.data;
+        const list = data?.chats || data || [];
+        if (list.length > 0) setChats(list);
+      })
+      .catch(() => {});
+  }, []);
 
   const activeChat = chats.find((c) => c._id === chatId);
 

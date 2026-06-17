@@ -18,7 +18,8 @@ import {
   HiPlay,
   HiBookmark,
 } from "react-icons/hi";
-import { CURRENT_USER, MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * Instagram-style mobile bottom tab bar.
@@ -49,7 +50,8 @@ const ADMIN_TABS = [
 
 export default function BottomBar({ mode }) {
   const location = useLocation();
-  const role = mode || CURRENT_USER.role;
+  const { user } = useAuth();
+  const role = mode || user?.role || "founder";
   const tabs =
     role === "investor"
       ? INVESTOR_TABS
@@ -95,7 +97,10 @@ export default function BottomBar({ mode }) {
           className="flex items-center justify-center w-14 h-full"
         >
           <img
-            src={CURRENT_USER.avatar}
+            src={
+              user?.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=56`
+            }
             alt="Profile"
             className={`w-7 h-7 rounded-full object-cover ring-2 transition-all ${
               location.pathname === "/app/profile"

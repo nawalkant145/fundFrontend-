@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   HiUser,
@@ -14,7 +14,8 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import { FormField, Checkbox } from "../../components/auth/FormField";
 import Confirm from "../../components/ui/Confirm";
 import { useToast } from "../../components/ui/Toast";
-import { CURRENT_USER } from "../../constants/mockData";
+import { useAuth } from "../../context/AuthContext";
+import { userService } from "../../services/userService";
 
 const TABS = [
   { value: "account", label: "Account", icon: HiUser },
@@ -62,17 +63,63 @@ export default function SettingsPage() {
 }
 
 function AccountTab() {
+  const { user, refreshUser } = useAuth();
+  const toast = useToast();
+  const avatarRef = useRef(null);
   const [data, setData] = useState({
-    name: CURRENT_USER.name,
-    username: CURRENT_USER.username,
-    email: CURRENT_USER.email,
-    bio: CURRENT_USER.bio,
+    name: user?.name || "",
+    username: user?.username || "",
+    email: user?.email || "",
+    bio: user?.bio || "",
   });
+  const [saving, setSaving] = useState(false);
   const handle = (e) =>
     setData((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await userService.uploadAvatar(file);
+      await refreshUser();
+      toast.success("Profile photo updated");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload failed");
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-bold">Account information</h3>
+      <h3 className="text-lg font-bold text-[#0A1F14]">Account information</h3>
+
+      {/* Avatar upload */}
+      <div className="flex items-center gap-4">
+        <img
+          src={
+            user?.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=160`
+          }
+          alt={user?.name}
+          className="w-16 h-16 rounded-full object-cover ring-2 ring-[#1B5E3F]/20"
+        />
+        <div>
+          <button
+            onClick={() => avatarRef.current?.click()}
+            className="px-4 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-xs font-bold rounded-full shadow-md"
+          >
+            Change photo
+          </button>
+          <input
+            ref={avatarRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+          <p className="text-xs text-[#0A1F14]/55 mt-1">JPG, PNG · Max 5MB</p>
+        </div>
+      </div>
+
       <FormField
         label="Full name"
         name="name"
@@ -104,10 +151,32 @@ function AccountTab() {
           value={data.bio}
           onChange={handle}
           rows={3}
-          className="w-full px-4 py-3 bg-dark-bg/60 border-2 border-gold/20 rounded-xl text-white focus:border-gold focus:outline-none resize-none"
+          className="w-full px-4 py-3 bg-white border border-[#1B5E3F]/15 rounded-xl text-[#0A1F14] focus:border-[#1B5E3F]/60 focus:outline-none resize-none"
         />
       </div>
-      <SaveButton />
+      <motion.button
+        whileHover={{ scale: 1.01, y: -2 }}
+        whileTap={{ scale: 0.99 }}
+        disabled={saving}
+        onClick={async () => {
+          setSaving(true);
+          try {
+            await userService.updateProfile({
+              name: data.name,
+              bio: data.bio,
+            });
+            await refreshUser();
+            toast.success("Profile saved ✓");
+          } catch (err) {
+            toast.error(err.response?.data?.message || "Save failed");
+          } finally {
+            setSaving(false);
+          }
+        }}
+        className={`px-6 py-3 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md shadow-[#1B5E3F]/25 ${saving ? "opacity-60" : ""}`}
+      >
+        {saving ? "Saving…" : "Save changes"}
+      </motion.button>
     </div>
   );
 }

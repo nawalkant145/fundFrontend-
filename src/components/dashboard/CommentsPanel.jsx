@@ -2,16 +2,41 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiX, HiHeart, HiOutlineHeart, HiEmojiHappy } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
-import { CURRENT_USER } from "../../constants/mockData";
+import { commentService } from "../../services/commentService";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * Instagram-style comments bottom sheet.
- * White background, slides up from bottom on mobile, side panel on desktop.
- * Matches Instagram Reels comment UX exactly.
+ * Fetches from real API if videoId is provided; shows seed + local comments otherwise.
  */
-export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
+export default function CommentsPanel({
+  open,
+  onClose,
+  comments = [],
+  onAdd,
+  videoId,
+}) {
   const [text, setText] = useState("");
   const [likes, setLikes] = useState({});
+  const [realComments, setRealComments] = useState([]);
+  const [loadedFromApi, setLoadedFromApi] = useState(false);
+  const { user } = useAuth();
+
+  // Fetch real comments when panel opens
+  useEffect(() => {
+    if (!open || !videoId) return;
+    commentService
+      .list(videoId, { limit: 30 })
+      .then((res) => {
+        const data = res?.data?.data;
+        const list = data?.comments || data || [];
+        if (list.length > 0) {
+          setRealComments(list);
+          setLoadedFromApi(true);
+        }
+      })
+      .catch(() => {});
+  }, [open, videoId]);
 
   useEffect(() => {
     if (!open) return;
@@ -23,28 +48,39 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
   const submit = (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    onAdd({
+    const newComment = {
       _id: `c_${Date.now()}`,
-      author: "You",
-      handle: "you",
-      avatar: CURRENT_USER.avatar,
+      author: user?.name || "You",
+      handle: user?.username || "you",
+      avatar: user?.avatar || "",
       text: text.trim(),
       time: "now",
-      isVerified: false,
+      isVerified: user?.isVerified || false,
       replies: 0,
       likes: 0,
-    });
+    };
+    // Optimistic — add to local list immediately
+    setRealComments((prev) => [newComment, ...prev]);
+    onAdd?.(newComment);
     setText("");
+    // Fire API call in background
+    if (videoId) {
+      commentService.create({ videoId, text: newComment.text }).catch(() => {});
+    }
   };
 
-  const toggleLike = (id) => setLikes((p) => ({ ...p, [id]: !p[id] }));
+  const toggleLike = (id) => {
+    setLikes((p) => ({ ...p, [id]: !p[id] }));
+    commentService.like(id).catch(() => {});
+  };
 
   const fakeSeed = [
     {
       _id: "f1",
       author: "Vikram Patel",
       handle: "vikram_capital",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop",
+      avatar:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop",
       text: "Strong traction, would love to see CAC numbers 🚀",
       time: "2h",
       isVerified: true,
@@ -55,7 +91,8 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f2",
       author: "Meera Kapoor",
       handle: "meera_invests",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop",
+      avatar:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop",
       text: "Brilliant pitch — what's the regulatory roadmap?",
       time: "5h",
       isVerified: true,
@@ -66,7 +103,8 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f3",
       author: "Arjun Nair",
       handle: "arjun_n",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop",
+      avatar:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop",
       text: "Followed. Excited to see where this goes.",
       time: "1d",
       isVerified: false,
@@ -77,7 +115,8 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       _id: "f4",
       author: "Karan Mehta",
       handle: "karan_m",
-      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop",
+      avatar:
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop",
       text: "How do you handle data privacy with the diagnostic AI?",
       time: "2d",
       isVerified: false,
@@ -85,7 +124,9 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
       replies: 2,
     },
   ];
-  const all = [...fakeSeed, ...comments];
+  const all = loadedFromApi
+    ? [...realComments]
+    : [...fakeSeed, ...comments, ...realComments];
 
   return (
     <AnimatePresence>
@@ -121,9 +162,7 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
 
             {/* Header */}
             <div className="flex items-center justify-center relative px-4 py-3 border-b border-gray-100">
-              <h2 className="font-bold text-[15px] text-gray-900">
-                Comments
-              </h2>
+              <h2 className="font-bold text-[15px] text-gray-900">Comments</h2>
               <button
                 onClick={onClose}
                 className="absolute right-4 p-1 text-gray-400 hover:text-gray-700"
@@ -145,7 +184,9 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
               {all.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16">
                   <p className="text-gray-400 text-sm">No comments yet</p>
-                  <p className="text-gray-300 text-xs mt-1">Start the conversation.</p>
+                  <p className="text-gray-300 text-xs mt-1">
+                    Start the conversation.
+                  </p>
                 </div>
               )}
             </div>
@@ -156,7 +197,7 @@ export default function CommentsPanel({ open, onClose, comments = [], onAdd }) {
               className="px-4 py-3 border-t border-gray-100 flex items-center gap-3"
             >
               <img
-                src={CURRENT_USER.avatar}
+                src={user?.avatar || ""}
                 alt=""
                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
               />
@@ -224,7 +265,10 @@ function CommentRow({ c, isLiked, onToggleLike }) {
       </div>
 
       {/* Like button */}
-      <button onClick={onToggleLike} className="self-start mt-1 flex-shrink-0 p-1">
+      <button
+        onClick={onToggleLike}
+        className="self-start mt-1 flex-shrink-0 p-1"
+      >
         {isLiked ? (
           <HiHeart className="w-3.5 h-3.5 text-red-500" />
         ) : (

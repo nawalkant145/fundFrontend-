@@ -26,11 +26,7 @@ export default function BoostModal({ open, onClose, pitch, onBoosted }) {
     // Mock the Razorpay flow
     await new Promise((r) => setTimeout(r, 900));
     setSubmitting(false);
-    toast?.show({
-      type: "success",
-      title: `${tier.name} activated`,
-      message: `Your pitch is now boosted for ${tier.duration}`,
-    });
+    toast?.success(`${tier.name} activated for ${tier.duration}`);
     onBoosted?.({ pitchId: pitch?._id, tier: tier.id });
     onClose();
   };
