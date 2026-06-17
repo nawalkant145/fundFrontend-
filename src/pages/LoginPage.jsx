@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   HiUser,
@@ -18,6 +18,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [userType, setUserType] = useState("");
   const [formData, setFormData] = useState({
@@ -27,6 +28,9 @@ export default function LoginPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect to the page they were trying to visit before being redirected to login
+  const from = location.state?.from?.pathname || "/app";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +44,7 @@ export default function LoginPage() {
         password: formData.password,
       });
       const role = data.user?.role || userType;
-      navigate(role === "admin" ? "/admin" : "/app");
+      navigate(role === "admin" ? "/admin" : from, { replace: true });
     } catch (err) {
       const msg =
         err.response?.data?.message || "Login failed. Please try again.";
