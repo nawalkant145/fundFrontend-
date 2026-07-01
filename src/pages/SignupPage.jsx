@@ -67,14 +67,16 @@ export default function SignupPage() {
 
   const update = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
 
-  // ─── Live availability checks (username / email) ─────────────
+  // ─── Live availability checks (username / email / phone) ─────────────
   // 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
   const [usernameStatus, setUsernameStatus] = useState("idle");
   const [emailStatus, setEmailStatus] = useState("idle");
+  const [phoneStatus, setPhoneStatus] = useState("idle");
   const debounceRef = useRef({});
 
   const usernameValidFmt = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
   const emailValidFmt = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+  const phoneValidFmt = /^\+\d{1,4}\d{6,14}$/.test(data.phone);
 
   useEffect(() => {
     clearTimeout(debounceRef.current.username);
@@ -110,6 +112,22 @@ export default function SignupPage() {
     return () => clearTimeout(debounceRef.current.email);
   }, [data.email, emailValidFmt]);
 
+  useEffect(() => {
+    clearTimeout(debounceRef.current.phone);
+    if (!data.phone) return setPhoneStatus("idle");
+    if (!phoneValidFmt) return setPhoneStatus("idle");
+    setPhoneStatus("checking");
+    debounceRef.current.phone = setTimeout(async () => {
+      try {
+        const res = await authService.checkAvailability({ phone: data.phone });
+        setPhoneStatus(res?.data?.data?.phone || "idle");
+      } catch {
+        setPhoneStatus("idle");
+      }
+    }, 450);
+    return () => clearTimeout(debounceRef.current.phone);
+  }, [data.phone, phoneValidFmt]);
+
   const handleChange = (e) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
@@ -132,6 +150,7 @@ export default function SignupPage() {
     emailStatus !== "taken" &&
     emailStatus !== "invalid" &&
     phoneValid &&
+    phoneStatus !== "taken" &&
     passwordValid &&
     passwordsMatch &&
     data.agreeToTerms;
@@ -369,9 +388,26 @@ export default function SignupPage() {
                 Phone number<span className="text-[#1B5E3F] ml-1">*</span>
               </label>
               <PhoneInput value={data.phone} onChange={handleChange} required />
-              <p className="text-xs text-[#0A1F14]/55 mt-1.5">
-                We'll send a verification code to this number.
-              </p>
+              {phoneStatus === "checking" && (
+                <p className="text-xs text-[#0A1F14]/55 mt-1.5">
+                  Checking availability…
+                </p>
+              )}
+              {phoneStatus === "taken" && (
+                <p className="text-xs text-red-500 font-semibold mt-1.5">
+                  This phone number is already registered
+                </p>
+              )}
+              {phoneStatus === "available" && (
+                <p className="text-xs text-emerald-600 font-semibold mt-1.5">
+                  Phone number available ✓
+                </p>
+              )}
+              {phoneStatus === "idle" && (
+                <p className="text-xs text-[#0A1F14]/55 mt-1.5">
+                  We'll send a verification code to this number.
+                </p>
+              )}
             </div>
 
             <Select

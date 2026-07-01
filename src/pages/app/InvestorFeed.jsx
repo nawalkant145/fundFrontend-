@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,12 +25,11 @@ import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import Modal from "../../components/ui/Modal";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
+import { useAuth } from "../../context/AuthContext";
 import { videoService } from "../../services/videoService";
-import {
-  MOCK_PITCHES,
-  CURRENT_USER,
-  formatINR,
-} from "../../constants/mockData";
+import { investmentService } from "../../services/investmentService";
+import { reportService } from "../../services/reportService";
+import { MOCK_PITCHES, formatINR } from "../../constants/mockData";
 import {
   isFollowing,
   follow as followUser,
@@ -41,6 +40,8 @@ export default function InvestorFeed() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
+  const { user } = useAuth();
+  const userId = user?._id;
 
   // Pitches array — starts with mock, replaced by real data if API succeeds
   const [pitches, setPitches] = useState(MOCK_PITCHES);
@@ -56,6 +57,16 @@ export default function InvestorFeed() {
         if (videos?.length > 0) {
           setPitches(videos);
           setFeedLoaded(true);
+
+          // Initialize liked/saved from API's isLiked/isSaved booleans
+          const likedInit = {};
+          const savedInit = {};
+          videos.forEach((v) => {
+            if (v.isLiked) likedInit[v._id] = true;
+            if (v.isSaved) savedInit[v._id] = true;
+          });
+          setLiked(likedInit);
+          setSaved(savedInit);
         }
       })
       .catch(() => {
@@ -87,7 +98,7 @@ export default function InvestorFeed() {
   const [liked, setLiked] = useState({});
   const [saved, setSaved] = useState({});
   const [following, setFollowing] = useState({});
-  const [comments, setComments] = useState({});
+  const [localCommentCount, setLocalCommentCount] = useState({});
   const [expanded, setExpanded] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
 
@@ -111,6 +122,23 @@ export default function InvestorFeed() {
   }, [searchParams]);
 
   const pitch = pitches[idx];
+
+  // ─── View tracking ────────────────────────────────
+  // Log a view when a pitch becomes active (once per pitch per session).
+  // Fires after 1.5s on the pitch so quick scroll-throughs don't count.
+  const viewedRef = useRef(new Set());
+  useEffect(() => {
+    if (!pitch?._id) return;
+    // Skip mock pitches (their ids aren't real Mongo ObjectIds)
+    const isRealId = /^[a-f0-9]{24}$/i.test(pitch._id);
+    if (!isRealId || viewedRef.current.has(pitch._id)) return;
+
+    const timer = setTimeout(() => {
+      viewedRef.current.add(pitch._id);
+      videoService.logView(pitch._id, {}).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [pitch?._id]);
 
   const next = () => {
     if (idx < pitches.length - 1) {
@@ -433,7 +461,7 @@ export default function InvestorFeed() {
                   >
                     {pitch.description}
                   </p>
-                  {pitch.description.length > 50 && (
+                  {(pitch.description || "").length > 50 && (
                     <button
                       onClick={() => setExpanded((v) => !v)}
                       className="text-[12px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
@@ -444,7 +472,7 @@ export default function InvestorFeed() {
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
-                  {CURRENT_USER.role === "investor" ? (
+                  {user?.role === "investor" ? (
                     <button
                       onClick={() => setActiveModal("invest")}
                       className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
@@ -475,7 +503,14 @@ export default function InvestorFeed() {
         >
           <RailButton
             icon={HiHeart}
-            label={pitch.likes.length + (liked[pitch._id] ? 1 : 0)}
+            label={(() => {
+              const base =
+                pitch.likeCount ??
+                (Array.isArray(pitch.likes) ? pitch.likes.length : 0);
+              if (liked[pitch._id] && !pitch.isLiked) return base + 1;
+              if (!liked[pitch._id] && pitch.isLiked) return base - 1;
+              return base;
+            })()}
             active={liked[pitch._id]}
             activeClass="text-red-400"
             onClick={toggleLike}
@@ -483,19 +518,29 @@ export default function InvestorFeed() {
           />
           <RailButton
             icon={HiChatAlt2}
-            label={pitch.comments + (comments[pitch._id]?.length || 0)}
+            label={
+              (pitch.commentCount || pitch.comments || 0) +
+              (localCommentCount[pitch._id] || 0)
+            }
             onClick={() => setActiveModal("comments")}
             title="Comments"
           />
           <RailButton
             icon={HiBookmark}
-            label={pitch.saves.length + (saved[pitch._id] ? 1 : 0)}
+            label={(() => {
+              const base =
+                pitch.saveCount ??
+                (Array.isArray(pitch.saves) ? pitch.saves.length : 0);
+              if (saved[pitch._id] && !pitch.isSaved) return base + 1;
+              if (!saved[pitch._id] && pitch.isSaved) return base - 1;
+              return base;
+            })()}
             active={saved[pitch._id]}
             activeClass="text-gold"
             onClick={toggleSave}
             title="Save"
           />
-          {CURRENT_USER.role === "investor" && (
+          {user?.role === "investor" && (
             <RailButton
               icon={HiCurrencyDollar}
               onClick={() => setActiveModal("invest")}
@@ -531,11 +576,11 @@ export default function InvestorFeed() {
       <CommentsPanel
         open={activeModal === "comments"}
         onClose={() => setActiveModal(null)}
-        comments={comments[pitch._id] || []}
-        onAdd={(c) =>
-          setComments((p) => ({
+        videoId={pitch._id}
+        onCommentAdded={() =>
+          setLocalCommentCount((p) => ({
             ...p,
-            [pitch._id]: [...(p[pitch._id] || []), c],
+            [pitch._id]: (p[pitch._id] || 0) + 1,
           }))
         }
       />
@@ -630,6 +675,27 @@ function ShareModal({ open, onClose, pitch }) {
     toast.success("Link copied");
     onClose();
   };
+  const nativeShare = () => {
+    if (navigator.share) {
+      navigator
+        .share({
+          title: pitch.title,
+          text: pitch.description?.slice(0, 100),
+          url,
+        })
+        .then(() => onClose())
+        .catch(() => {});
+    } else {
+      copy();
+    }
+  };
+  const shareLinks = {
+    WhatsApp: `https://wa.me/?text=${encodeURIComponent(`${pitch.title} ${url}`)}`,
+    Twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(pitch.title)}&url=${encodeURIComponent(url)}`,
+    LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    Email: `mailto:?subject=${encodeURIComponent(pitch.title)}&body=${encodeURIComponent(`Check this pitch: ${url}`)}`,
+    Telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(pitch.title)}`,
+  };
   return (
     <Modal open={open} onClose={onClose} title="Share pitch">
       <p className="text-sm text-gray-300 mb-3">{pitch.title}</p>
@@ -643,17 +709,24 @@ function ShareModal({ open, onClose, pitch }) {
         </button>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {["WhatsApp", "Twitter", "LinkedIn", "Email", "Telegram", "More"].map(
-          (s) => (
-            <button
-              key={s}
-              onClick={() => toast.info(`Share to ${s}`)}
-              className="px-3 py-2 bg-dark-bg/60 border border-gold/15 hover:border-gold/40 rounded-xl text-sm font-semibold"
-            >
-              {s}
-            </button>
-          ),
-        )}
+        {Object.entries(shareLinks).map(([label, href]) => (
+          <a
+            key={label}
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            onClick={onClose}
+            className="px-3 py-2 bg-dark-bg/60 border border-gold/15 hover:border-gold/40 rounded-xl text-sm font-semibold text-center"
+          >
+            {label}
+          </a>
+        ))}
+        <button
+          onClick={nativeShare}
+          className="px-3 py-2 bg-dark-bg/60 border border-gold/15 hover:border-gold/40 rounded-xl text-sm font-semibold"
+        >
+          More
+        </button>
       </div>
     </Modal>
   );
@@ -676,6 +749,14 @@ function ReportModal({ open, onClose, pitch }) {
           <button
             key={r}
             onClick={() => {
+              reportService
+                .create({
+                  reportedVideo: pitch._id,
+                  reportedUser: pitch.founderId?._id || pitch.founderId,
+                  type: r.toLowerCase().replace(/\s+/g, "_"),
+                  description: `Reported pitch "${pitch.title}" as: ${r}`,
+                })
+                .catch(() => {});
               onClose();
               toast.success(`Reported as "${r}". We'll review within 24h.`);
             }}
@@ -692,7 +773,28 @@ function ReportModal({ open, onClose, pitch }) {
 function InvestModal({ open, onClose, pitch, onSubmit }) {
   const [amount, setAmount] = useState("");
   const [terms, setTerms] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const valid = Number(amount) > 0;
+
+  const handleSubmit = async () => {
+    if (!valid) return;
+    setSubmitting(true);
+    try {
+      await investmentService.expressInterest({
+        videoId: pitch._id,
+        amount: Number(amount),
+        equity: pitch.equityOffered || 0,
+        terms: terms.trim(),
+      });
+      onSubmit?.();
+    } catch (err) {
+      // If already expressed interest, still treat as success
+      onSubmit?.();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Modal open={open} onClose={onClose} title="Express investment interest">
       <p className="text-sm text-gray-300 mb-4">
@@ -728,15 +830,15 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
           />
         </div>
         <button
-          disabled={!valid}
-          onClick={onSubmit}
+          disabled={!valid || submitting}
+          onClick={handleSubmit}
           className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg transition-all ${
-            valid
+            valid && !submitting
               ? "bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-gold/30"
               : "bg-dark-bg/60 text-gray-500 cursor-not-allowed"
           }`}
         >
-          Send interest
+          {submitting ? "Sending…" : "Send interest"}
         </button>
       </div>
     </Modal>
@@ -769,7 +871,7 @@ function DetailsModal({ open, onClose, pitch }) {
         <Detail label="Asking" value={formatINR(pitch.askAmount)} />
         <Detail label="Equity" value={`${pitch.equityOffered}%`} />
         <Detail label="Duration" value={`${pitch.duration}s`} />
-        <Detail label="Views" value={pitch.views.toLocaleString()} />
+        <Detail label="Views" value={(pitch.views || 0).toLocaleString()} />
       </div>
     </Modal>
   );

@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   HiUser,
-  HiAtSymbol,
-  HiMail,
   HiLockClosed,
   HiBell,
   HiShieldCheck,
@@ -16,6 +15,7 @@ import Confirm from "../../components/ui/Confirm";
 import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../services/userService";
+import { authService } from "../../services/authService";
 
 const TABS = [
   { value: "account", label: "Account", icon: HiUser },
@@ -66,11 +66,14 @@ function AccountTab() {
   const { user, refreshUser } = useAuth();
   const toast = useToast();
   const avatarRef = useRef(null);
+  const isFounder = user?.role === "founder";
   const [data, setData] = useState({
     name: user?.name || "",
-    username: user?.username || "",
-    email: user?.email || "",
     bio: user?.bio || "",
+    companyName: user?.companyName || "",
+    industry: user?.industry || "",
+    website: user?.website || "",
+    linkedIn: user?.linkedIn || "",
   });
   const [saving, setSaving] = useState(false);
   const handle = (e) =>
@@ -127,21 +130,59 @@ function AccountTab() {
         value={data.name}
         onChange={handle}
       />
-      <FormField
-        label="Username"
-        name="username"
-        icon={HiAtSymbol}
-        value={data.username}
-        onChange={handle}
-      />
-      <FormField
-        label="Email"
-        name="email"
-        icon={HiMail}
-        type="email"
-        value={data.email}
-        onChange={handle}
-      />
+      {/* Username & email are read-only (unique, verified) */}
+      <div>
+        <label className="block text-sm font-semibold mb-1.5 text-gray-300">
+          Username
+        </label>
+        <div className="px-4 py-3 bg-[#FAFAF7] border border-[#1B5E3F]/10 rounded-xl text-[#0A1F14]/60 text-sm">
+          @{user?.username || "user"}{" "}
+          <span className="text-xs text-[#0A1F14]/40">· cannot be changed</span>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold mb-1.5 text-gray-300">
+          Email
+        </label>
+        <div className="px-4 py-3 bg-[#FAFAF7] border border-[#1B5E3F]/10 rounded-xl text-[#0A1F14]/60 text-sm">
+          {user?.email}{" "}
+          {user?.isEmailVerified && (
+            <span className="text-xs text-emerald-600">· verified</span>
+          )}
+        </div>
+      </div>
+
+      {isFounder && (
+        <>
+          <FormField
+            label="Company name"
+            name="companyName"
+            value={data.companyName}
+            onChange={handle}
+          />
+          <FormField
+            label="Industry"
+            name="industry"
+            value={data.industry}
+            onChange={handle}
+          />
+          <FormField
+            label="Website"
+            name="website"
+            value={data.website}
+            onChange={handle}
+            placeholder="https://yourcompany.com"
+          />
+          <FormField
+            label="LinkedIn"
+            name="linkedIn"
+            value={data.linkedIn}
+            onChange={handle}
+            placeholder="linkedin.com/in/you"
+          />
+        </>
+      )}
+
       <div>
         <label className="block text-sm font-semibold mb-2 text-gray-300">
           Bio
@@ -161,10 +202,14 @@ function AccountTab() {
         onClick={async () => {
           setSaving(true);
           try {
-            await userService.updateProfile({
-              name: data.name,
-              bio: data.bio,
-            });
+            const payload = { name: data.name, bio: data.bio };
+            if (isFounder) {
+              payload.companyName = data.companyName;
+              payload.industry = data.industry;
+              payload.website = data.website;
+              payload.linkedIn = data.linkedIn;
+            }
+            await userService.updateProfile(payload);
             await refreshUser();
             toast.success("Profile saved ✓");
           } catch (err) {
@@ -182,6 +227,50 @@ function AccountTab() {
 }
 
 function SecurityTab() {
+  const toast = useToast();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [pw, setPw] = useState({ current: "", new: "", confirm: "" });
+  const [saving, setSaving] = useState(false);
+  const handle = (e) =>
+    setPw((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  const submit = async () => {
+    if (!pw.current || !pw.new || !pw.confirm) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+    if (pw.new.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+    if (pw.new !== pw.confirm) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (pw.new === pw.current) {
+      toast.error("New password must be different from current password");
+      return;
+    }
+    setSaving(true);
+    try {
+      await authService.changePassword({
+        oldPassword: pw.current,
+        newPassword: pw.new,
+      });
+      toast.success("Password changed. Please log in again.");
+      // Server clears the session cookies → force re-login
+      setTimeout(async () => {
+        await logout();
+        navigate("/login", { replace: true });
+      }, 1200);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to change password");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <h3 className="text-lg font-bold">Security</h3>
@@ -191,6 +280,8 @@ function SecurityTab() {
         icon={HiLockClosed}
         type="password"
         placeholder="••••••••"
+        value={pw.current}
+        onChange={handle}
       />
       <FormField
         label="New password"
@@ -198,6 +289,8 @@ function SecurityTab() {
         icon={HiLockClosed}
         type="password"
         placeholder="At least 8 characters"
+        value={pw.new}
+        onChange={handle}
       />
       <FormField
         label="Confirm new password"
@@ -205,40 +298,109 @@ function SecurityTab() {
         icon={HiLockClosed}
         type="password"
         placeholder="Repeat new password"
+        value={pw.confirm}
+        onChange={handle}
       />
-      <SaveButton label="Change password" />
+      <motion.button
+        whileHover={{ scale: 1.01, y: -2 }}
+        whileTap={{ scale: 0.99 }}
+        disabled={saving}
+        onClick={submit}
+        className={`px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30 ${saving ? "opacity-60" : ""}`}
+      >
+        {saving ? "Changing…" : "Change password"}
+      </motion.button>
 
       <div className="pt-6 border-t border-gold/10 space-y-3">
-        <h4 className="font-bold">Active sessions</h4>
-        <SessionRow device="Chrome on Windows" location="Mumbai" current />
-        <SessionRow device="iOS App" location="Bangalore" />
+        <h4 className="font-bold">This device</h4>
+        <SessionRow device={getCurrentDevice()} current />
+        <p className="text-xs text-gray-400">
+          Changing your password signs out all other devices.
+        </p>
       </div>
     </div>
   );
 }
 
+// Parse a friendly "Browser on OS" label from the user agent.
+function getCurrentDevice() {
+  if (typeof navigator === "undefined") return "This device";
+  const ua = navigator.userAgent;
+  let browser = "Browser";
+  if (/edg/i.test(ua)) browser = "Edge";
+  else if (/chrome|crios/i.test(ua)) browser = "Chrome";
+  else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
+  else if (/safari/i.test(ua)) browser = "Safari";
+
+  let os = "";
+  if (/windows/i.test(ua)) os = "Windows";
+  else if (/android/i.test(ua)) os = "Android";
+  else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
+  else if (/mac os/i.test(ua)) os = "macOS";
+  else if (/linux/i.test(ua)) os = "Linux";
+
+  return os ? `${browser} on ${os}` : browser;
+}
+
+const NOTIF_PREFS = [
+  { key: "likes", label: "When an investor likes my pitch" },
+  { key: "saves", label: "When an investor saves my pitch" },
+  { key: "messages", label: "New messages" },
+  { key: "investmentInterest", label: "Investment interest received" },
+  { key: "weeklyDigest", label: "Weekly digest email" },
+  { key: "pitchExpiry", label: "Pitch expiry reminders" },
+];
+
 function NotificationsTab() {
+  const { user, refreshUser } = useAuth();
+  const toast = useToast();
+  const [prefs, setPrefs] = useState(() => {
+    const stored = user?.notificationPrefs || {};
+    const init = {};
+    NOTIF_PREFS.forEach((p) => {
+      init[p.key] = stored[p.key] !== undefined ? stored[p.key] : true;
+    });
+    return init;
+  });
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key) => setPrefs((p) => ({ ...p, [key]: !p[key] }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await userService.updateProfile({ notificationPrefs: prefs });
+      await refreshUser();
+      toast.success("Notification preferences saved ✓");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <h3 className="text-lg font-bold mb-2">Notification preferences</h3>
-      {[
-        "When an investor likes my pitch",
-        "When an investor saves my pitch",
-        "New messages",
-        "Investment interest received",
-        "Weekly digest email",
-        "Pitch expiry reminders",
-      ].map((label) => (
+      {NOTIF_PREFS.map(({ key, label }) => (
         <label
-          key={label}
+          key={key}
           className="flex items-center justify-between gap-2 p-3 hover:bg-dark-bg/40 rounded-xl cursor-pointer"
         >
           <span className="text-sm text-gray-300">{label}</span>
-          <ToggleSwitch defaultOn />
+          <ToggleSwitch on={prefs[key]} onToggle={() => toggle(key)} />
         </label>
       ))}
       <div className="pt-4">
-        <SaveButton />
+        <motion.button
+          whileHover={{ scale: 1.01, y: -2 }}
+          whileTap={{ scale: 0.99 }}
+          disabled={saving}
+          onClick={save}
+          className={`px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30 ${saving ? "opacity-60" : ""}`}
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </motion.button>
       </div>
     </div>
   );
@@ -246,17 +408,78 @@ function NotificationsTab() {
 
 function PrivacyTab() {
   const toast = useToast();
+  const { user, logout, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const prefs = user?.privacyPrefs || {};
+  const [investorsOnly, setInvestorsOnly] = useState(
+    prefs.investorsOnly ?? false,
+  );
+  const [openToConnect, setOpenToConnect] = useState(
+    user?.openToConnect ?? true,
+  );
+  const [dataMatching, setDataMatching] = useState(prefs.dataMatching ?? false);
+
+  const persist = async (payload, label) => {
+    try {
+      await userService.updateProfile(payload);
+      await refreshUser();
+      toast.success(label || "Setting saved");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not save setting");
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await userService.deleteAccount();
+      toast.success("Your account has been deleted");
+      await logout();
+      navigate("/", { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete account");
+      setDeleting(false);
+      setConfirmDel(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold">Privacy</h3>
-      <Checkbox checked onChange={() => toast.info("Setting saved")}>
+      <Checkbox
+        checked={investorsOnly}
+        onChange={() => {
+          const next = !investorsOnly;
+          setInvestorsOnly(next);
+          persist({ privacyPrefs: { ...prefs, investorsOnly: next } });
+        }}
+      >
         Show my profile to verified investors only
       </Checkbox>
-      <Checkbox checked onChange={() => toast.info("Setting saved")}>
+      <Checkbox
+        checked={openToConnect}
+        onChange={() => {
+          const next = !openToConnect;
+          setOpenToConnect(next);
+          persist(
+            { openToConnect: next },
+            next ? "You're open to new connections" : "New connections paused",
+          );
+        }}
+      >
         Open to new connections
       </Checkbox>
-      <Checkbox checked={false} onChange={() => toast.info("Setting saved")}>
+      <Checkbox
+        checked={dataMatching}
+        onChange={() => {
+          const next = !dataMatching;
+          setDataMatching(next);
+          persist({ privacyPrefs: { ...prefs, dataMatching: next } });
+        }}
+      >
         Allow my data to be used for matching algorithms
       </Checkbox>
 
@@ -276,37 +499,29 @@ function PrivacyTab() {
 
       <Confirm
         open={confirmDel}
-        onClose={() => setConfirmDel(false)}
-        onConfirm={() => toast.warn("Account deletion requested")}
+        onClose={() => !deleting && setConfirmDel(false)}
+        onConfirm={handleDelete}
         title="Delete your account?"
         message="This action is permanent. All your data, pitches, chats, and investments will be removed."
-        confirmLabel="Delete account"
+        confirmLabel={deleting ? "Deleting…" : "Delete account"}
         destructive
       />
     </div>
   );
 }
 
-function SaveButton({ label = "Save changes" }) {
-  const toast = useToast();
-  return (
-    <motion.button
-      whileHover={{ scale: 1.01, y: -2 }}
-      whileTap={{ scale: 0.99 }}
-      onClick={() => toast.success(`${label} ✓`)}
-      className="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30"
-    >
-      {label}
-    </motion.button>
-  );
-}
-
-function ToggleSwitch({ defaultOn }) {
-  const [on, setOn] = useState(defaultOn);
+function ToggleSwitch({ on: controlledOn, onToggle, defaultOn }) {
+  const [internalOn, setInternalOn] = useState(defaultOn);
+  const isControlled = controlledOn !== undefined;
+  const on = isControlled ? controlledOn : internalOn;
+  const handle = () => {
+    if (isControlled) onToggle?.();
+    else setInternalOn((v) => !v);
+  };
   return (
     <button
       type="button"
-      onClick={() => setOn((v) => !v)}
+      onClick={handle}
       className={`w-11 h-6 rounded-full transition-colors relative ${
         on ? "bg-gold" : "bg-gray-700"
       }`}
@@ -325,7 +540,7 @@ function SessionRow({ device, location, current }) {
     <div className="flex items-center justify-between p-3 bg-dark-bg/40 rounded-xl">
       <div>
         <p className="font-semibold text-sm">{device}</p>
-        <p className="text-xs text-gray-400">{location}</p>
+        {location && <p className="text-xs text-gray-400">{location}</p>}
       </div>
       {current ? (
         <span className="text-xs text-emerald-400 font-bold">

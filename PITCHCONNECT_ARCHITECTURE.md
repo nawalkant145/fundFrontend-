@@ -2225,3 +2225,53 @@ v2 (later) — wire to real backend:
 
 _Last updated: June 2026_
 _v2 features locked in: Posts, Follow, Subscription paywall, Boost-a-pitch_
+
+---
+
+## 26. Pitch Visibility Control
+
+### Overview
+
+When uploading a pitch, the founder can choose who sees it:
+
+- **Everyone** (default) — visible to both investors AND other founders in their feed
+- **Investors only** — hidden from other founders' feeds, only investors can see it
+
+This protects unique ideas from being copied by competing founders.
+
+### Schema addition (Video model)
+
+```javascript
+visibility: {
+  type: String,
+  enum: ["everyone", "investors-only"],
+  default: "everyone",
+}
+```
+
+### Feed query logic
+
+```javascript
+// In video.service.js → getFeed()
+const query = { status: "active", founderId: { $ne: userId } };
+
+// If the requesting user is a founder, exclude "investors-only" pitches
+if (user.role === "founder") {
+  query.visibility = { $ne: "investors-only" };
+}
+// Investors see everything (both "everyone" and "investors-only")
+```
+
+### Frontend
+
+- Upload Pitch page: radio toggle — "Everyone" | "Investors only"
+- Pitch card: small shield icon or "Investors only" badge if restricted
+- My Studio: shows visibility setting on each pitch tile
+- Edit pitch: can change visibility after upload
+
+### Rules
+
+- Default = "everyone" (most founders want maximum exposure)
+- Only applies to pitches, NOT posts (posts are always visible to everyone)
+- Founder can change visibility anytime from My Studio
+- Admin can override visibility

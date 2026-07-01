@@ -31,12 +31,13 @@ import Confirm from "../../components/ui/Confirm";
 import { useToast } from "../../components/ui/Toast";
 import ProUpgradeModal from "../../components/monetization/ProUpgradeModal";
 import { canStartCall } from "../../lib/auth";
+import { useCall } from "../../context/CallContext";
 import { chatService } from "../../services/chatService";
-import {
-  MOCK_CHATS,
-  MOCK_MESSAGES,
-  CURRENT_USER,
-} from "../../constants/mockData";
+import { userService } from "../../services/userService";
+import { reportService } from "../../services/reportService";
+import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
+import { MOCK_CHATS } from "../../constants/mockData";
 
 /**
  * Instagram-style split-view inbox.
@@ -47,6 +48,7 @@ export default function MessagesPage() {
   const { chatId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const [chats, setChats] = useState(MOCK_CHATS);
   const [query, setQuery] = useState("");
   const [confirming, setConfirming] = useState(null);
@@ -66,7 +68,7 @@ export default function MessagesPage() {
   const activeChat = chats.find((c) => c._id === chatId);
 
   const filtered = chats.filter((c) => {
-    const other = CURRENT_USER.role === "founder" ? c.investorId : c.founderId;
+    const other = user?.role === "founder" ? c.investorId : c.founderId;
     if (
       query &&
       !`${other.name} ${c.lastMessage}`
@@ -89,7 +91,7 @@ export default function MessagesPage() {
           {/* Header */}
           <div className="px-4 sm:px-6 pt-5 pb-3 border-b border-gold/10 flex items-center justify-between">
             <h2 className="text-xl font-black flex items-center gap-1">
-              {CURRENT_USER.username || "messages"}
+              {user?.username || "messages"}
             </h2>
             <button
               className="p-2 hover:bg-card-bg rounded-lg"
@@ -129,7 +131,7 @@ export default function MessagesPage() {
             ) : (
               filtered.map((c) => {
                 const other =
-                  CURRENT_USER.role === "founder" ? c.investorId : c.founderId;
+                  user?.role === "founder" ? c.investorId : c.founderId;
                 const isActive = chatId === c._id;
                 return (
                   <Link
@@ -198,7 +200,10 @@ export default function MessagesPage() {
         open={!!confirming}
         onClose={() => setConfirming(null)}
         onConfirm={() => {
-          setChats((p) => p.filter((x) => x._id !== confirming._id));
+          const id = confirming._id;
+          chatService.deleteChat(id).catch(() => {});
+          setChats((p) => p.filter((x) => x._id !== id));
+          setConfirming(null);
           toast.success("Chat deleted");
           navigate("/app/messages");
         }}
@@ -234,20 +239,72 @@ function EmptyState() {
 function ActiveChat({ chat, onBack, onConfirmDelete }) {
   const toast = useToast();
   const navigate = useNavigate();
-  const other =
-    CURRENT_USER.role === "founder" ? chat.investorId : chat.founderId;
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const { user } = useAuth();
+  const { socket } = useSocket() || {};
+  const { startCall } = useCall();
+  const other = user?.role === "founder" ? chat.investorId : chat.founderId;
+  const [messages, setMessages] = useState([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [text, setText] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [callPaywall, setCallPaywall] = useState(false);
+  const [typing, setTyping] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const endRef = useRef(null);
+  const typingTimeout = useRef(null);
 
+  // Fetch real messages on mount / chat change
+  useEffect(() => {
+    setLoadingMsgs(true);
+    chatService
+      .getMessages(chat._id, { limit: 50 })
+      .then((res) => {
+        const data = res?.data?.data || res?.data;
+        const msgs = data?.messages || data || [];
+        // API returns newest first; reverse for display
+        setMessages([...msgs].reverse());
+      })
+      .catch(() => setMessages([]))
+      .finally(() => setLoadingMsgs(false));
+  }, [chat._id]);
+
+  // Join socket room for real-time messages
+  useEffect(() => {
+    if (!socket || !chat._id) return;
+    socket.emit("join_chat", { chatId: chat._id });
+    socket.emit("mark_read", { chatId: chat._id });
+
+    const handleNewMsg = (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+    const handleTyping = ({ userId }) => {
+      if (userId !== user?._id) setTyping(true);
+    };
+    const handleStopTyping = () => setTyping(false);
+
+    socket.on("new_message", handleNewMsg);
+    socket.on("user_typing", handleTyping);
+    socket.on("user_stop_typing", handleStopTyping);
+
+    return () => {
+      socket.emit("leave_chat", { chatId: chat._id });
+      socket.off("new_message", handleNewMsg);
+      socket.off("user_typing", handleTyping);
+      socket.off("user_stop_typing", handleStopTyping);
+    };
+  }, [socket, chat._id, user?._id]);
+
+  // Mark messages as read
+  useEffect(() => {
+    if (chat._id) chatService.markRead(chat._id).catch(() => {});
+  }, [chat._id, messages.length]);
+
+  // Auto scroll
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, typing]);
 
   const handleStartCall = (kind) => {
     const check = canStartCall();
@@ -255,38 +312,74 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
       setCallPaywall(true);
       return;
     }
-    navigate(`/app/call/${kind}/${chat._id}`);
+    if (!other?._id) {
+      toast.error("Cannot identify who to call");
+      return;
+    }
+    startCall({
+      receiverId: other._id,
+      name: other.name,
+      avatar: other.avatar,
+      type: kind,
+    });
   };
 
   const send = (e) => {
     e?.preventDefault();
     if (!text.trim()) return;
-    setMessages((m) => [
-      ...m,
-      {
-        _id: `m_${Date.now()}`,
-        senderId: "u_self",
-        text: text.trim(),
-        createdAt: "now",
-      },
-    ]);
+    // Send via socket (real-time — the server broadcasts back via "new_message")
+    if (socket) {
+      socket.emit(
+        "send_message",
+        { chatId: chat._id, text: text.trim(), type: "text" },
+        (res) => {
+          if (!res?.ok) {
+            // Fallback: use REST API
+            chatService
+              .sendMessage(chat._id, { text: text.trim() })
+              .catch(() => {});
+          }
+        },
+      );
+    } else {
+      // No socket — use REST
+      chatService
+        .sendMessage(chat._id, { text: text.trim() })
+        .then((res) => {
+          const data = res?.data?.data;
+          const msg = data?.message || data;
+          if (msg) setMessages((prev) => [...prev, msg]);
+        })
+        .catch(() => {});
+    }
     setText("");
+    // Stop typing indicator
+    if (socket) socket.emit("stop_typing", { chatId: chat._id });
+  };
+
+  // Typing indicator
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    if (socket && e.target.value.trim()) {
+      socket.emit("typing", { chatId: chat._id });
+      clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => {
+        socket.emit("stop_typing", { chatId: chat._id });
+      }, 2000);
+    }
   };
 
   const sendFile = (file, kind) => {
     if (!file) return;
-    setMessages((m) => [
-      ...m,
-      {
-        _id: `m_${Date.now()}`,
-        senderId: "u_self",
-        type: kind,
-        fileUrl: file.name,
-        text: "",
-        createdAt: "now",
-      },
-    ]);
-    toast.success(`${kind === "image" ? "Image" : "File"} sent`);
+    chatService
+      .uploadAttachment(chat._id, file)
+      .then((res) => {
+        const data = res?.data?.data;
+        const msg = data?.message || data;
+        if (msg) setMessages((prev) => [...prev, msg]);
+        toast.success(`${kind === "image" ? "Image" : "File"} sent`);
+      })
+      .catch(() => toast.error("Failed to send file"));
   };
 
   const menuItems = [
@@ -321,7 +414,10 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
     {
       label: "Block",
       icon: HiBan,
-      onClick: () => toast.warn(`${other.name} blocked`),
+      onClick: () => {
+        userService.blockUser(other._id).catch(() => {});
+        toast.warn(`${other.name} blocked`);
+      },
       danger: true,
     },
     {
@@ -419,9 +515,17 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
         {messages.map((m, i) => {
-          const isMe = m.senderId === "u_self";
+          const isMe =
+            (m.senderId?._id || m.senderId || "").toString() ===
+            user?._id?.toString();
           const prev = messages[i - 1];
-          const showAvatar = !isMe && (!prev || prev.senderId !== m.senderId);
+          const prevSender = (
+            prev?.senderId?._id ||
+            prev?.senderId ||
+            ""
+          ).toString();
+          const curSender = (m.senderId?._id || m.senderId || "").toString();
+          const showAvatar = !isMe && prevSender !== curSender;
           return (
             <motion.div
               key={m._id}
@@ -461,6 +565,25 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
             </motion.div>
           );
         })}
+        {typing && (
+          <div className="flex items-center gap-2 pl-9 text-xs text-gray-400">
+            <span className="flex gap-0.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              />
+            </span>
+            typing…
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -509,7 +632,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
           </button>
           <input
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             placeholder="Message…"
             className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 focus:outline-none py-2"
           />
@@ -573,6 +696,13 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
               <button
                 key={r}
                 onClick={() => {
+                  reportService
+                    .create({
+                      reportedUser: other?._id,
+                      type: r.toLowerCase().replace(/[\s/]+/g, "_"),
+                      description: `Reported ${other?.name || "user"} as: ${r}`,
+                    })
+                    .catch(() => {});
                   setReporting(false);
                   toast.success(`Reported as "${r}". We'll review within 24h.`);
                 }}

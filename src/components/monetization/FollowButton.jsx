@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { HiCheck, HiPlus } from "react-icons/hi";
-import { isFollowing, toggleFollow } from "../../lib/auth";
+import { userService } from "../../services/userService";
+import { useAuth } from "../../context/AuthContext";
 
 /**
- * One-click follow button. Optimistic UI, persists in localStorage.
+ * One-click follow button — calls real API (POST /user/follow/:userId).
+ * Optimistic UI. Reads initial state from the API on mount.
  *
  * Variants:
  *   - "default" — full pill button
@@ -16,19 +18,47 @@ export default function FollowButton({
   variant = "default",
   className = "",
   onChange,
+  initialFollowing, // optional pre-known state to avoid an API call
 }) {
-  const [following, setFollowing] = useState(false);
+  const { user } = useAuth();
+  const [following, setFollowing] = useState(initialFollowing ?? false);
+  const [loaded, setLoaded] = useState(initialFollowing != null);
 
+  // Check follow status on mount (if not pre-provided)
   useEffect(() => {
-    setFollowing(isFollowing(userId));
-  }, [userId]);
+    if (!userId || initialFollowing != null) return;
+    // Check from the logged-in user's following list (stored on user obj)
+    if (user?.following && Array.isArray(user.following)) {
+      const isF = user.following.some(
+        (id) => (id._id || id).toString() === userId,
+      );
+      setFollowing(isF);
+      setLoaded(true);
+      return;
+    }
+    userService
+      .checkFollowing(userId)
+      .then((res) => {
+        const data = res?.data?.data ?? res?.data;
+        setFollowing(!!data?.isFollowing);
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, [userId, initialFollowing, user]);
+
+  // Don't render follow button for yourself
+  if (!userId || userId === user?._id) return null;
 
   const handleClick = (e) => {
     e?.stopPropagation();
     e?.preventDefault();
-    const next = toggleFollow(userId);
+    const next = !following;
     setFollowing(next);
     onChange?.(next);
+    userService.follow(userId).catch(() => {
+      // Revert on error
+      setFollowing(!next);
+    });
   };
 
   const baseClasses = {

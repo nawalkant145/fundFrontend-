@@ -14,18 +14,16 @@ import { IoRocketSharp } from "react-icons/io5";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { useToast } from "../../components/ui/Toast";
-import {
-  getSubscription,
-  isPro,
-  activatePro,
-  cancelPro,
-  getRole,
-} from "../../lib/auth";
-import { getPlanForRole, CURRENT_USER } from "../../constants/mockData";
+import { getSubscription, isPro, getRole } from "../../lib/auth";
+import { getPlanForRole } from "../../constants/mockData";
+import { subscriptionService } from "../../services/subscriptionService";
+import { openRazorpayCheckout } from "../../lib/razorpay";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SubscriptionPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user, refreshUser } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const sub = getSubscription();
   const pro = isPro();
@@ -36,20 +34,59 @@ export default function SubscriptionPage() {
 
   const handleSubscribe = async () => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 900));
-    activatePro();
-    setSubmitting(false);
-    toast?.success(
-      isInvestor
-        ? "Unlimited chats and calls unlocked 🎉"
-        : "Pitch boosts and analytics unlocked 🎉",
-    );
-    navigate("/app");
+    try {
+      const res = await subscriptionService.createOrder();
+      const data = res?.data?.data || {};
+
+      // Dev fallback — backend activated without a gateway
+      if (data.activated) {
+        await refreshUser();
+        toast?.success(
+          isInvestor
+            ? "Unlimited chats and calls unlocked 🎉"
+            : "Pitch boosts and analytics unlocked 🎉",
+        );
+        navigate("/app");
+        return;
+      }
+
+      const payment = await openRazorpayCheckout({
+        keyId: data.keyId,
+        order: data.order,
+        name: "EXPGLO FUND",
+        description: `${plan.name} subscription`,
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+      });
+
+      await subscriptionService.verifyPayment(data.subscription._id, payment);
+      await refreshUser();
+      toast?.success(
+        isInvestor
+          ? "Unlimited chats and calls unlocked 🎉"
+          : "Pitch boosts and analytics unlocked 🎉",
+      );
+      navigate("/app");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message || err?.message || "Payment failed";
+      if (msg !== "Payment cancelled") toast?.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleCancel = () => {
-    cancelPro();
-    toast?.info("Subscription cancelled — perks end at next billing cycle.");
+  const handleCancel = async () => {
+    try {
+      await subscriptionService.cancel();
+      await refreshUser();
+      toast?.info("Subscription cancelled — you're back on the Free plan.");
+    } catch (err) {
+      toast?.error(err?.response?.data?.message || "Could not cancel");
+    }
   };
 
   return (

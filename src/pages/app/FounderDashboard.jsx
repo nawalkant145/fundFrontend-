@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -16,18 +17,58 @@ import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import StatCard from "../../components/dashboard/StatCard";
-import {
-  CURRENT_USER,
-  MOCK_PITCHES,
-  formatINR,
-} from "../../constants/mockData";
+import { videoService } from "../../services/videoService";
+import { notificationService } from "../../services/notificationService";
+import { useAuth } from "../../context/AuthContext";
+import { formatINR } from "../../constants/mockData";
 
 export default function FounderDashboard() {
-  const myPitch = MOCK_PITCHES[0];
+  const { user } = useAuth();
+  const [pitches, setPitches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activity, setActivity] = useState([]);
+
+  useEffect(() => {
+    videoService
+      .getMyPitches()
+      .then((res) => {
+        const data = res?.data?.data;
+        const list = data?.videos || data || [];
+        setPitches(list);
+      })
+      .catch(() => setPitches([]))
+      .finally(() => setLoading(false));
+
+    notificationService
+      .list({ limit: 5 })
+      .then((res) => {
+        const data = res?.data?.data;
+        const list = data?.notifications || data || [];
+        setActivity(list);
+      })
+      .catch(() => setActivity([]));
+  }, []);
+
+  // Aggregate stats across all the founder's pitches
+  const totals = pitches.reduce(
+    (acc, p) => {
+      acc.views += p.views || 0;
+      acc.likes += Array.isArray(p.likes) ? p.likes.length : p.likeCount || 0;
+      acc.saves += Array.isArray(p.saves) ? p.saves.length : p.saveCount || 0;
+      return acc;
+    },
+    { views: 0, likes: 0, saves: 0 },
+  );
+
+  // Active pitch = first one with status "active", else the most recent
+  const activePitch =
+    pitches.find((p) => p.status === "active") || pitches[0] || null;
+
+  const verificationLevel = user?.verificationLevel || 0;
 
   return (
     <DashboardShell
-      title={`Welcome back, ${CURRENT_USER.name.split(" ")[0]}`}
+      title={`Welcome back, ${(user?.name || "Founder").split(" ")[0]}`}
       subtitle="Here's what's happening with your pitch today."
     >
       {/* Stats grid */}
@@ -35,30 +76,27 @@ export default function FounderDashboard() {
         <StatCard
           icon={HiEye}
           label="Total views"
-          value="4,200"
+          value={totals.views.toLocaleString()}
           accent="gold"
-          trend={12}
         />
         <StatCard
           icon={HiHeart}
           label="Likes"
-          value="312"
+          value={totals.likes.toLocaleString()}
           accent="green"
-          trend={8}
         />
         <StatCard
           icon={HiBookmark}
           label="Saves"
-          value="89"
+          value={totals.saves.toLocaleString()}
           accent="blue"
-          trend={4}
         />
         <StatCard
-          icon={HiCurrencyDollar}
-          label="Active deals"
-          value="3"
+          icon={HiVideoCamera}
+          label="Pitches"
+          value={pitches.length}
           accent="gold"
-          hint="₹17.5L proposed"
+          hint={activePitch ? "1 live" : "none live"}
         />
       </div>
 
@@ -70,46 +108,75 @@ export default function FounderDashboard() {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold">Your Active Pitch</h3>
-            <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold rounded-full">
-              ● Live
-            </span>
+            {activePitch && (
+              <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 text-xs font-bold rounded-full">
+                ● Live
+              </span>
+            )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <img
-              src={myPitch.thumbnailUrl}
-              alt={myPitch.title}
-              className="w-full sm:w-48 h-32 sm:h-48 object-cover rounded-xl border border-gold/15"
-            />
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xl font-bold mb-1">{myPitch.title}</h4>
-              <p className="text-sm text-gray-400 mb-4">
-                {myPitch.description}
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-7 h-7 rounded-full border-[3px] border-gold/20 border-t-gold animate-spin" />
+            </div>
+          ) : !activePitch ? (
+            <div className="text-center py-10">
+              <p className="text-gray-400 mb-4">
+                You don't have an active pitch yet.
               </p>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <MiniStat label="Asking" value={formatINR(myPitch.askAmount)} />
-                <MiniStat label="Equity" value={`${myPitch.equityOffered}%`} />
-                <MiniStat label="Stage" value={myPitch.fundingStage} />
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Link to="/app/analytics">
-                  <motion.button
-                    className="px-4 py-2 bg-gold text-dark-navy text-sm font-bold rounded-lg flex items-center gap-1"
-                    whileHover={{ scale: 1.03 }}
-                  >
-                    Analytics <HiArrowRight />
-                  </motion.button>
-                </Link>
-                <Link to="/app/my-pitches">
-                  <motion.button
-                    className="px-4 py-2 border-2 border-gold/30 hover:border-gold text-sm font-bold rounded-lg"
-                    whileHover={{ scale: 1.03 }}
-                  >
-                    Edit
-                  </motion.button>
-                </Link>
+              <Link to="/app/upload">
+                <motion.button
+                  className="px-5 py-2.5 bg-gold text-dark-navy text-sm font-bold rounded-lg inline-flex items-center gap-1"
+                  whileHover={{ scale: 1.03 }}
+                >
+                  <HiUpload className="w-4 h-4" /> Upload your first pitch
+                </motion.button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4">
+              <img
+                src={activePitch.thumbnailUrl || activePitch.coverUrl}
+                alt={activePitch.title}
+                className="w-full sm:w-48 h-32 sm:h-48 object-cover rounded-xl border border-gold/15"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xl font-bold mb-1">{activePitch.title}</h4>
+                <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+                  {activePitch.description}
+                </p>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <MiniStat
+                    label="Asking"
+                    value={formatINR(activePitch.askAmount)}
+                  />
+                  <MiniStat
+                    label="Equity"
+                    value={`${activePitch.equityOffered}%`}
+                  />
+                  <MiniStat label="Stage" value={activePitch.fundingStage} />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Link to="/app/analytics">
+                    <motion.button
+                      className="px-4 py-2 bg-gold text-dark-navy text-sm font-bold rounded-lg flex items-center gap-1"
+                      whileHover={{ scale: 1.03 }}
+                    >
+                      Analytics <HiArrowRight />
+                    </motion.button>
+                  </Link>
+                  <Link to="/app/studio">
+                    <motion.button
+                      className="px-4 py-2 border-2 border-gold/30 hover:border-gold text-sm font-bold rounded-lg"
+                      whileHover={{ scale: 1.03 }}
+                    >
+                      Edit
+                    </motion.button>
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Verification */}
@@ -119,19 +186,21 @@ export default function FounderDashboard() {
             Verification
           </h3>
           <p className="text-xs text-gray-400 mb-4">
-            Level {CURRENT_USER.verificationLevel} of 3
+            Level {verificationLevel} of 3
           </p>
           <div className="space-y-3">
-            <VerifyRow done label="Email verified" />
-            <VerifyRow done label="Phone verified" />
-            <VerifyRow done label="KYC approved" />
+            <VerifyRow done={!!user?.isEmailVerified} label="Email verified" />
+            <VerifyRow done={verificationLevel >= 2} label="Phone verified" />
+            <VerifyRow done={verificationLevel >= 3} label="KYC approved" />
           </div>
-          <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2">
-            <MdVerified className="w-5 h-5 text-emerald-400" />
-            <span className="text-sm font-semibold text-emerald-400">
-              Verified Founder
-            </span>
-          </div>
+          {user?.isVerified && (
+            <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2">
+              <MdVerified className="w-5 h-5 text-emerald-400" />
+              <span className="text-sm font-semibold text-emerald-400">
+                Verified Founder
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -150,14 +219,12 @@ export default function FounderDashboard() {
             icon={HiChatAlt2}
             label="Reply to investors"
             accent="green"
-            badge="2"
           />
           <QuickAction
             to="/app/deals"
             icon={HiCurrencyDollar}
             label="Manage deals"
             accent="gold"
-            badge="3"
           />
           <QuickAction
             to="/app/analytics"
@@ -171,41 +238,55 @@ export default function FounderDashboard() {
       {/* Recent activity */}
       <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6">
         <h3 className="text-lg font-bold mb-4">Recent activity</h3>
-        <div className="space-y-3">
-          <ActivityRow
-            icon={HiHeart}
-            text="Vikram Patel liked your pitch"
-            time="2 min ago"
-            accent="gold"
-          />
-          <ActivityRow
-            icon={HiCurrencyDollar}
-            text="Meera Kapoor expressed interest — ₹50L"
-            time="1 hr ago"
-            accent="green"
-          />
-          <ActivityRow
-            icon={HiUserGroup}
-            text="3 investors viewed your profile"
-            time="3 hr ago"
-            accent="gold"
-          />
-          <ActivityRow
-            icon={HiBookmark}
-            text="2 investors saved your pitch"
-            time="Yesterday"
-            accent="green"
-          />
-          <ActivityRow
-            icon={HiChatAlt2}
-            text="New comment on your pitch"
-            time="2 days ago"
-            accent="gold"
-          />
-        </div>
+        {activity.length === 0 ? (
+          <p className="text-sm text-gray-400 py-4 text-center">
+            No recent activity yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {activity.map((n) => (
+              <ActivityRow
+                key={n._id}
+                icon={iconForType(n.type)}
+                text={n.title || n.body || "New activity"}
+                time={formatTimeAgo(n.createdAt)}
+                accent="gold"
+              />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardShell>
   );
+}
+
+function iconForType(type) {
+  switch (type) {
+    case "like":
+      return HiHeart;
+    case "save":
+      return HiBookmark;
+    case "comment":
+      return HiChatAlt2;
+    case "follow":
+    case "match":
+      return HiUserGroup;
+    default:
+      return HiCurrencyDollar;
+  }
+}
+
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return "";
+  const diff = Math.max(0, Date.now() - new Date(dateStr).getTime());
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Yesterday";
+  return `${days} days ago`;
 }
 
 function MiniStat({ label, value }) {

@@ -16,21 +16,21 @@ import {
   HiChevronRight,
   HiVolumeUp,
   HiVolumeOff,
+  HiX,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import FollowButton from "../../components/monetization/FollowButton";
 import ProUpgradeModal from "../../components/monetization/ProUpgradeModal";
+import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import { useToast } from "../../components/ui/Toast";
+import { FeedSkeleton } from "../../components/ui/PageLoader";
+import { useAuth } from "../../context/AuthContext";
 import { videoService } from "../../services/videoService";
-import {
-  MOCK_PITCHES,
-  MOCK_POSTS,
-  MOCK_BOOSTS,
-  CURRENT_USER,
-  formatINR,
-} from "../../constants/mockData";
+import { postService } from "../../services/postService";
+import { chatService } from "../../services/chatService";
+import { MOCK_PITCHES, MOCK_POSTS, formatINR } from "../../constants/mockData";
 import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
 
 /**
@@ -44,12 +44,22 @@ import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
 export default function LinearFeed() {
   const role = getRole() || "investor";
   const isFounder = role === "founder";
+  const { user } = useAuth();
+  const userId = user?._id;
 
   const [paywall, setPaywall] = useState(false);
   const [realPitches, setRealPitches] = useState(null);
+  const [realPosts, setRealPosts] = useState(null);
+  const [feedLoading, setFeedLoading] = useState(true);
 
-  // Fetch real pitches on mount; fall back to mock data if API fails
+  // Fetch real pitches + posts on mount; fall back to mock data if API fails
   useEffect(() => {
+    let loaded = 0;
+    const done = () => {
+      loaded++;
+      if (loaded >= 2) setFeedLoading(false);
+    };
+
     videoService
       .getFeed({ limit: 20 })
       .then((res) => {
@@ -57,7 +67,18 @@ export default function LinearFeed() {
         const videos = data?.videos || data;
         if (videos?.length > 0) setRealPitches(videos);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(done);
+
+    postService
+      .getFeed({ limit: 20 })
+      .then((res) => {
+        const data = res?.data?.data;
+        const posts = data?.posts || data;
+        if (posts?.length > 0) setRealPosts(posts);
+      })
+      .catch(() => {})
+      .finally(done);
   }, []);
 
   // Disable browser scroll-restoration so refresh always lands at the top
@@ -87,32 +108,38 @@ export default function LinearFeed() {
     const ownId = isFounder ? "f_1" : null;
     const pitchSource = realPitches || MOCK_PITCHES;
 
-    const boostedPitchIds = new Set(
-      MOCK_BOOSTS.filter((b) => b.status === "active").map((b) => b.pitchId),
-    );
-
     const pitchEntries = pitchSource
       .filter((p) => {
         const fId = p.founderId?._id || p.founderId;
         return fId !== ownId;
       })
-      .map((p) => ({
-        kind: "pitch",
-        id: p._id,
-        ts: new Date(p.createdAt).getTime(),
-        boosted: boostedPitchIds.has(p._id),
-        data: p,
-      }));
+      .map((p) => {
+        const boosted =
+          !!p.isBoosted &&
+          (!p.boostedUntil || new Date(p.boostedUntil) > new Date());
+        return {
+          kind: "pitch",
+          id: p._id,
+          ts: new Date(p.createdAt).getTime(),
+          boosted,
+          data: p,
+        };
+      });
 
-    const postEntries = MOCK_POSTS.filter((p) => p.authorId._id !== ownId).map(
-      (p) => ({
+    const postSource = realPosts || MOCK_POSTS;
+
+    const postEntries = postSource
+      .filter((p) => {
+        const aId = p.authorId?._id || p.authorId;
+        return aId !== ownId;
+      })
+      .map((p) => ({
         kind: "post",
         id: p._id,
         ts: new Date(p.createdAt).getTime(),
         boosted: false,
         data: p,
-      }),
-    );
+      }));
 
     const merged = [...pitchEntries, ...postEntries].sort((a, b) => {
       // Boosted always first
@@ -123,7 +150,7 @@ export default function LinearFeed() {
     });
 
     return merged;
-  }, [isFounder, realPitches]);
+  }, [isFounder, realPitches, realPosts]);
 
   return (
     <DashboardShell>
@@ -136,7 +163,10 @@ export default function LinearFeed() {
           >
             <div className="flex items-center gap-3">
               <img
-                src={CURRENT_USER.avatar}
+                src={
+                  user?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
+                }
                 alt=""
                 className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
               />
@@ -150,30 +180,36 @@ export default function LinearFeed() {
           </Link>
         )}
 
-        <div className="space-y-5 sm:space-y-6">
-          <AnimatePresence>
-            {items.map((item, idx) =>
-              item.kind === "pitch" ? (
-                <PitchFeedCard
-                  key={item.id}
-                  pitch={item.data}
-                  boosted={item.boosted}
-                  isFounder={isFounder}
-                  muted={muted}
-                  onToggleMuted={() => setMutedPersistent(!muted)}
-                  onChatBlocked={() => setPaywall(true)}
-                />
-              ) : (
-                <PostFeedCard
-                  key={item.id}
-                  post={item.data}
-                  isFounder={isFounder}
-                  onChatBlocked={() => setPaywall(true)}
-                />
-              ),
-            )}
-          </AnimatePresence>
-        </div>
+        {feedLoading ? (
+          <FeedSkeleton count={3} />
+        ) : (
+          <div className="space-y-5 sm:space-y-6">
+            <AnimatePresence>
+              {items.map((item, idx) =>
+                item.kind === "pitch" ? (
+                  <PitchFeedCard
+                    key={item.id}
+                    pitch={item.data}
+                    boosted={item.boosted}
+                    isFounder={isFounder}
+                    userId={userId}
+                    muted={muted}
+                    onToggleMuted={() => setMutedPersistent(!muted)}
+                    onChatBlocked={() => setPaywall(true)}
+                  />
+                ) : (
+                  <PostFeedCard
+                    key={item.id}
+                    post={item.data}
+                    isFounder={isFounder}
+                    userId={userId}
+                    onChatBlocked={() => setPaywall(true)}
+                  />
+                ),
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       <ProUpgradeModal
@@ -190,17 +226,64 @@ function PitchFeedCard({
   pitch,
   boosted,
   isFounder,
+  userId,
   muted,
   onToggleMuted,
   onChatBlocked,
 }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(() => !!pitch.isLiked);
+  const [saved, setSaved] = useState(() => !!pitch.isSaved);
+  const [likeCount, setLikeCount] = useState(() =>
+    typeof pitch.likeCount === "number"
+      ? pitch.likeCount
+      : Array.isArray(pitch.likes)
+        ? pitch.likes.length
+        : pitch.likes || 0,
+  );
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const inViewRef = useRef(false);
+  const viewLoggedRef = useRef(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [commentCount, setCommentCount] = useState(
+    () => pitch.commentCount || pitch.comments || 0,
+  );
+
+  const toggleLike = () => {
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
+    videoService
+      .like(pitch._id)
+      .then((res) => {
+        const d = res?.data?.data;
+        if (d && typeof d.totalLikes === "number") setLikeCount(d.totalLikes);
+        if (d && typeof d.liked === "boolean") setLiked(d.liked);
+      })
+      .catch(() => {
+        // revert on failure
+        setLiked(!next);
+        setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+      });
+  };
+
+  const toggleSave = () => {
+    const next = !saved;
+    setSaved(next);
+    videoService.save(pitch._id).catch(() => setSaved(!next));
+  };
+
+  // Log a view once when this pitch first comes into view (real pitches only)
+  const logViewOnce = () => {
+    if (viewLoggedRef.current) return;
+    const id = pitch._id;
+    if (!id || !/^[a-f0-9]{24}$/i.test(id)) return; // skip mock ids
+    viewLoggedRef.current = true;
+    videoService.logView(id, {}).catch(() => {});
+  };
 
   // Sync muted DOM property (React doesn't do this reliably)
   useEffect(() => {
@@ -231,8 +314,10 @@ function PitchFeedCard({
       ([entry]) => {
         const visible = entry.isIntersecting && entry.intersectionRatio >= 0.4;
         inViewRef.current = visible;
-        if (visible) play();
-        else pause();
+        if (visible) {
+          play();
+          logViewOnce();
+        } else pause();
       },
       { threshold: [0, 0.4, 0.8] },
     );
@@ -286,9 +371,21 @@ function PitchFeedCard({
       onChatBlocked();
       return;
     }
-    if (check.isFreeChat) consumeFreeChat();
-    toast?.success(`Chat opened with ${pitch.founderId.name}`);
-    navigate("/app/messages");
+    chatService
+      .startChat(pitch.founderId._id)
+      .then((res) => {
+        if (check.isFreeChat) consumeFreeChat();
+        const chat = res?.data?.data?.chat || res?.data?.data;
+        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
+      })
+      .catch((err) => {
+        const msg = err?.response?.data?.message || "";
+        if (err?.response?.status === 403 && /upgrade|pro/i.test(msg)) {
+          onChatBlocked();
+        } else {
+          toast?.error(msg || "Could not start chat");
+        }
+      });
   };
 
   return (
@@ -397,19 +494,23 @@ function PitchFeedCard({
         <div className="flex items-center gap-1">
           <ActionBtn
             active={liked}
-            onClick={() => setLiked((v) => !v)}
+            onClick={toggleLike}
             iconOff={HiOutlineHeart}
             iconOn={HiHeart}
             activeColor="text-red-500"
           />
           <ActionBtn
+            iconOff={HiChatAlt2}
+            onClick={() => setShowComments(true)}
+          />
+          <ActionBtn iconOff={HiShare} onClick={() => setShowShare(true)} />
+          <ActionBtn
             active={saved}
-            onClick={() => setSaved((v) => !v)}
+            onClick={toggleSave}
             iconOff={HiOutlineBookmark}
             iconOn={HiBookmark}
             activeColor="text-[#1B5E3F]"
           />
-          <ActionBtn iconOff={HiShare} />
         </div>
         <button
           onClick={startChat}
@@ -421,21 +522,75 @@ function PitchFeedCard({
 
       {/* Stats */}
       <div className="px-4 pb-4 text-xs text-[#0A1F14]/65 font-semibold">
-        {(pitch.likes.length + (liked ? 1 : 0)).toLocaleString()} likes ·{" "}
-        {pitch.comments} comments · {pitch.views.toLocaleString()} views
+        {likeCount.toLocaleString()} likes ·{" "}
+        <button
+          onClick={() => setShowComments(true)}
+          className="hover:underline"
+        >
+          {commentCount} comments
+        </button>{" "}
+        · {(pitch.views || 0).toLocaleString()} views
       </div>
+
+      <CommentsPanel
+        open={showComments}
+        onClose={() => setShowComments(false)}
+        videoId={pitch._id}
+        onCommentAdded={() => setCommentCount((c) => c + 1)}
+      />
+      <ShareSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        title={pitch.title}
+        url={`${window.location.origin}/pitch/${pitch._id}`}
+      />
     </motion.article>
   );
 }
 
 // ─── POST CARD ───────────────────────────────────
-function PostFeedCard({ post, isFounder, onChatBlocked }) {
+function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(() => !!post.isLiked);
+  const [saved, setSaved] = useState(() => !!post.isSaved);
+  const [likeCount, setLikeCount] = useState(() =>
+    typeof post.likeCount === "number"
+      ? post.likeCount
+      : Array.isArray(post.likes)
+        ? post.likes.length
+        : post.likes || 0,
+  );
   const [imgIdx, setImgIdx] = useState(0);
   const [showFullCaption, setShowFullCaption] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [commentCount, setCommentCount] = useState(
+    () => post.commentCount || 0,
+  );
+
+  const toggleLike = () => {
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
+    postService
+      .like(post._id)
+      .then((res) => {
+        const d = res?.data?.data;
+        if (d && typeof d.count === "number") setLikeCount(d.count);
+        if (d && typeof d.liked === "boolean") setLiked(d.liked);
+      })
+      .catch(() => {
+        setLiked(!next);
+        setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+      });
+  };
+
+  const toggleSave = () => {
+    const next = !saved;
+    setSaved(next);
+    postService.save(post._id).catch(() => setSaved(!next));
+  };
 
   const captionLong = post.caption?.length > 220;
   const captionToShow =
@@ -451,9 +606,21 @@ function PostFeedCard({ post, isFounder, onChatBlocked }) {
       onChatBlocked();
       return;
     }
-    if (check.isFreeChat) consumeFreeChat();
-    toast?.success(`Chat opened with ${post.authorId.name}`);
-    navigate("/app/messages");
+    chatService
+      .startChat(post.authorId._id)
+      .then((res) => {
+        if (check.isFreeChat) consumeFreeChat();
+        const chat = res?.data?.data?.chat || res?.data?.data;
+        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
+      })
+      .catch((err) => {
+        const msg = err?.response?.data?.message || "";
+        if (err?.response?.status === 403 && /upgrade|pro/i.test(msg)) {
+          onChatBlocked();
+        } else {
+          toast?.error(msg || "Could not start chat");
+        }
+      });
   };
 
   return (
@@ -586,18 +753,19 @@ function PostFeedCard({ post, isFounder, onChatBlocked }) {
         <div className="flex items-center gap-1">
           <ActionBtn
             active={liked}
-            onClick={() => setLiked((v) => !v)}
+            onClick={toggleLike}
             iconOff={HiOutlineHeart}
             iconOn={HiHeart}
             activeColor="text-red-500"
           />
-          <Link to={`/app/post/${post._id}`}>
-            <ActionBtn iconOff={HiChatAlt2} />
-          </Link>
-          <ActionBtn iconOff={HiShare} />
+          <ActionBtn
+            iconOff={HiChatAlt2}
+            onClick={() => setShowComments(true)}
+          />
+          <ActionBtn iconOff={HiShare} onClick={() => setShowShare(true)} />
           <ActionBtn
             active={saved}
-            onClick={() => setSaved((v) => !v)}
+            onClick={toggleSave}
             iconOff={HiOutlineBookmark}
             iconOn={HiBookmark}
             activeColor="text-[#1B5E3F]"
@@ -613,9 +781,27 @@ function PostFeedCard({ post, isFounder, onChatBlocked }) {
 
       {/* Stats */}
       <div className="px-4 pb-4 text-xs text-[#0A1F14]/65 font-semibold">
-        {(post.likes + (liked ? 1 : 0)).toLocaleString()} likes ·{" "}
-        {post.commentCount} comments
+        {likeCount.toLocaleString()} likes ·{" "}
+        <button
+          onClick={() => setShowComments(true)}
+          className="hover:underline"
+        >
+          {commentCount} comments
+        </button>
       </div>
+
+      <CommentsPanel
+        open={showComments}
+        onClose={() => setShowComments(false)}
+        postId={post._id}
+        onCommentAdded={() => setCommentCount((c) => c + 1)}
+      />
+      <ShareSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        title={post.caption?.slice(0, 80) || "Check out this post"}
+        url={`${window.location.origin}/app/post/${post._id}`}
+      />
     </motion.article>
   );
 }
@@ -639,5 +825,100 @@ function ActionBtn({
     >
       <Icon className="w-6 h-6" />
     </button>
+  );
+}
+
+// ─── Instagram-style share sheet (bottom drawer on mobile, centered on desktop)
+function ShareSheet({ open, onClose, title, url }) {
+  const toast = useToast();
+  if (!open) return null;
+
+  const copy = () => {
+    navigator.clipboard?.writeText(url);
+    toast.success("Link copied");
+    onClose();
+  };
+
+  const nativeShare = () => {
+    if (navigator.share) {
+      navigator
+        .share({ title, url })
+        .then(() => onClose())
+        .catch(() => {});
+    } else {
+      copy();
+    }
+  };
+
+  const links = {
+    WhatsApp: `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
+    Twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+    LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    Telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+    Email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Check this out: ${url}`)}`,
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/50 z-[80] flex items-end md:items-center justify-center"
+      >
+        <motion.div
+          initial={{ y: "100%", opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 30, stiffness: 320 }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-5 shadow-2xl"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-[#0A1F14]">Share</h3>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-gray-400 hover:text-gray-700"
+            >
+              <HiX className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl p-3 mb-4 flex items-center gap-2">
+            <span className="text-xs text-[#0A1F14]/65 truncate flex-1">
+              {url}
+            </span>
+            <button
+              onClick={copy}
+              className="px-3 py-1.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white rounded-lg text-xs font-bold flex-shrink-0"
+            >
+              Copy
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(links).map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                onClick={onClose}
+                className="px-3 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 hover:border-[#1B5E3F]/35 rounded-xl text-xs font-semibold text-center text-[#0A1F14] transition-colors"
+              >
+                {label}
+              </a>
+            ))}
+            <button
+              onClick={nativeShare}
+              className="px-3 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 hover:border-[#1B5E3F]/35 rounded-xl text-xs font-semibold text-[#0A1F14] transition-colors"
+            >
+              More…
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

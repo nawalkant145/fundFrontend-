@@ -34,4 +34,10 @@ export const userService = {
   blockUser: (userId) => api.post(`/user/block/${userId}`),
   unblockUser: (userId) => api.delete(`/user/block/${userId}`),
   deleteAccount: () => api.delete("/user/account"),
+
+  // Follow system
+  follow: (userId) => api.post(`/user/follow/${userId}`),
+  getFollowers: (userId) => api.get(`/user/followers/${userId}`),
+  getFollowing: (userId) => api.get(`/user/following/${userId}`),
+  checkFollowing: (userId) => api.get(`/user/following-check/${userId}`),
 };

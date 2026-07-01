@@ -11,6 +11,10 @@ export const adminService = {
   editUser: (id, data) => api.put(`/admin/users/${id}`, data),
   banUser: (id, reason) => api.put(`/admin/users/${id}/ban`, { reason }),
   unbanUser: (id) => api.put(`/admin/users/${id}/unban`),
+  suspendUser: (id, days, reason) =>
+    api.put(`/admin/users/${id}/suspend`, { days, reason }),
+  unsuspendUser: (id) => api.put(`/admin/users/${id}/unsuspend`),
+  impersonateUser: (id) => api.post(`/admin/users/${id}/impersonate`),
   resetUserPassword: (id, newPassword) =>
     api.put(`/admin/users/${id}/reset-password`, { newPassword }),
   promoteToAdmin: (id) => api.put(`/admin/users/${id}/promote`),
@@ -21,10 +25,16 @@ export const adminService = {
   listVideos: (params) => api.get("/admin/videos", { params }),
   getPendingVideos: () => api.get("/admin/videos/pending"),
   approveVideo: (id) => api.put(`/admin/videos/${id}/approve`),
-  rejectVideo: (id, reason) => api.put(`/admin/videos/${id}/reject`, { reason }),
+  rejectVideo: (id, reason) =>
+    api.put(`/admin/videos/${id}/reject`, { reason }),
   boostVideo: (id, days) => api.post(`/admin/videos/${id}/boost`, { days }),
   removeBoost: (id) => api.delete(`/admin/videos/${id}/boost`),
   deleteVideo: (id) => api.delete(`/admin/videos/${id}`),
+
+  // Trash (soft-deleted content)
+  listTrash: (params) => api.get("/admin/trash", { params }),
+  restoreVideo: (id) => api.put(`/admin/videos/${id}/restore`),
+  purgeVideo: (id) => api.delete(`/admin/videos/${id}/purge`),
 
   // KYC
   getPendingDocuments: () => api.get("/admin/documents/pending"),
@@ -46,6 +56,11 @@ export const adminService = {
   listInvestments: (params) => api.get("/admin/investments", { params }),
   refundInvestment: (id, reason) =>
     api.post(`/admin/investments/${id}/refund`, { reason }),
+  freezeInvestment: (id, reason) =>
+    api.put(`/admin/investments/${id}/freeze`, { reason }),
+  unfreezeInvestment: (id) => api.put(`/admin/investments/${id}/unfreeze`),
+  getSuspiciousActivity: () => api.get("/admin/investments/suspicious"),
+  exportInvestmentsUrl: () => "/admin/investments/export",
 
   // Calls / Chats
   listCalls: (params) => api.get("/admin/calls", { params }),
@@ -58,4 +73,15 @@ export const adminService = {
 
   // Audit
   getAuditLogs: (params) => api.get("/admin/audit", { params }),
+  getAuditActions: () => api.get("/admin/audit/actions"),
+  auditExportUrl: () => "/admin/audit/export",
+
+  // Moderation queue (auto-flagged content)
+  listFlags: (params) => api.get("/admin/moderation", { params }),
+  resolveFlag: (id, action) =>
+    api.put(`/admin/moderation/${id}/resolve`, { action }),
+
+  // Platform settings
+  getSettings: () => api.get("/admin/settings"),
+  updateSettings: (data) => api.put("/admin/settings", data),
 };

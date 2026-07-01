@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { HiBell } from "react-icons/hi";
 import Sidebar from "./Sidebar";
 import BottomBar from "./BottomBar";
+import UploadProgressBar from "./UploadProgressBar";
 import { useAuth } from "../../context/AuthContext";
-import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { useNotifications } from "../../context/NotificationContext";
 
 /**
  * Standard dashboard layout — light premium theme.
@@ -24,7 +25,7 @@ export default function DashboardShell({
 }) {
   const { user } = useAuth();
   const resolvedMode = mode || user?.role || "founder";
-  const unread = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
+  const unread = useNotifications().unreadCount;
 
   return (
     <div
@@ -39,6 +40,7 @@ export default function DashboardShell({
 
       <Sidebar mode={resolvedMode} />
       <BottomBar mode={resolvedMode} />
+      <UploadProgressBar />
 
       {/* Mobile top header — logo + notification bell (Instagram-style) */}
       {!hideMobileHeader && (

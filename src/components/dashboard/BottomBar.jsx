@@ -18,8 +18,8 @@ import {
   HiPlay,
   HiBookmark,
 } from "react-icons/hi";
-import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 /**
  * Instagram-style mobile bottom tab bar.
@@ -59,7 +59,7 @@ export default function BottomBar({ mode }) {
         ? ADMIN_TABS
         : FOUNDER_TABS;
 
-  const unread = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
+  const unread = useNotifications().unreadCount;
 
   // Immersive routes — the swipeable Pitch player. Here the bar floats as a
   // translucent dark overlay on top of the video, exactly like Instagram

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiArrowLeft,
-  HiArrowRight,
   HiHeart,
+  HiOutlineHeart,
   HiBookmark,
+  HiOutlineBookmark,
   HiChatAlt2,
   HiShare,
-  HiX,
   HiChevronLeft,
   HiChevronRight,
   HiLink,
@@ -17,52 +17,131 @@ import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import FollowButton from "../../components/monetization/FollowButton";
-import { MOCK_POSTS } from "../../constants/mockData";
+import CommentsPanel from "../../components/dashboard/CommentsPanel";
+import { postService } from "../../services/postService";
+import { useToast } from "../../components/ui/Toast";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * Instagram-style post detail page.
- * - Carousel of images with arrows + dots + keyboard nav
- * - Caption, link, hashtags, like / save / comment / share row
- * - Prev/next post navigation across the same author's posts
+ * Carousel + caption + real like / save / comment / share.
  */
 export default function PostDetailPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
+  const { user } = useAuth();
 
-  const post = MOCK_POSTS.find((p) => p._id === postId) || MOCK_POSTS[0];
-  const authorPosts = MOCK_POSTS.filter(
-    (p) => p.authorId._id === post.authorId._id,
-  );
-  const idx = authorPosts.findIndex((p) => p._id === post._id);
-  const prevPost = idx > 0 ? authorPosts[idx - 1] : null;
-  const nextPost = idx < authorPosts.length - 1 ? authorPosts[idx + 1] : null;
-
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [imgIdx, setImgIdx] = useState(0);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [showComments, setShowComments] = useState(false);
 
-  // Reset image index when navigating between posts
+  // Fetch the post
   useEffect(() => {
+    setLoading(true);
     setImgIdx(0);
-  }, [postId]);
+    postService
+      .getById(postId)
+      .then((res) => {
+        const data = res?.data?.data;
+        const p = data?.post || data || null;
+        setPost(p);
+        if (p) {
+          const uid = user?._id;
+          setLiked(
+            !!(
+              uid &&
+              Array.isArray(p.likes) &&
+              p.likes.some((id) => (id._id || id).toString() === uid)
+            ),
+          );
+          setSaved(
+            !!(
+              uid &&
+              Array.isArray(p.saves) &&
+              p.saves.some((id) => (id._id || id).toString() === uid)
+            ),
+          );
+          setLikeCount(Array.isArray(p.likes) ? p.likes.length : p.likes || 0);
+          setCommentCount(p.commentCount || 0);
+        }
+      })
+      .catch(() => setPost(null))
+      .finally(() => setLoading(false));
+  }, [postId, user?._id]);
 
-  // Keyboard nav
+  // Keyboard nav for image carousel
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") navigate(-1);
-      if (e.key === "ArrowLeft") {
-        if (post.images?.length > 1 && imgIdx > 0) setImgIdx(imgIdx - 1);
-        else if (prevPost) navigate(`/app/post/${prevPost._id}`);
-      }
-      if (e.key === "ArrowRight") {
-        if (post.images?.length > 1 && imgIdx < post.images.length - 1)
-          setImgIdx(imgIdx + 1);
-        else if (nextPost) navigate(`/app/post/${nextPost._id}`);
-      }
+      if (!post?.images?.length) return;
+      if (e.key === "ArrowLeft" && imgIdx > 0) setImgIdx(imgIdx - 1);
+      if (e.key === "ArrowRight" && imgIdx < post.images.length - 1)
+        setImgIdx(imgIdx + 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [imgIdx, post, prevPost, nextPost, navigate]);
+  }, [imgIdx, post, navigate]);
+
+  const toggleLike = () => {
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
+    postService
+      .like(postId)
+      .then((res) => {
+        const d = res?.data?.data;
+        if (d && typeof d.count === "number") setLikeCount(d.count);
+        if (d && typeof d.liked === "boolean") setLiked(d.liked);
+      })
+      .catch(() => {
+        setLiked(!next);
+        setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+      });
+  };
+
+  const toggleSave = () => {
+    const next = !saved;
+    setSaved(next);
+    postService.save(postId).catch(() => setSaved(!next));
+  };
+
+  const share = async () => {
+    const url = `${window.location.origin}/app/post/${postId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Check out this post", url });
+        return;
+      } catch {
+        /* fall through to copy */
+      }
+    }
+    navigator.clipboard?.writeText(url);
+    toast.success("Link copied");
+  };
+
+  if (loading) {
+    return (
+      <DashboardShell title="Post">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 rounded-full border-[3px] border-[#1B5E3F]/20 border-t-[#1B5E3F] animate-spin" />
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  if (!post) {
+    return (
+      <DashboardShell title="Post">
+        <div className="text-center py-20 text-gray-400">Post not found.</div>
+      </DashboardShell>
+    );
+  }
 
   const isText = post.type === "text" || !post.images?.length;
   const totalImgs = post.images?.length || 0;
@@ -71,7 +150,6 @@ export default function PostDetailPage() {
     <DashboardShell noPad>
       <div className="min-h-[100dvh] bg-[#FAFAF7] py-6 sm:py-8 px-3 sm:px-4">
         <div className="max-w-6xl mx-auto">
-          {/* Back */}
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0A1F14]/65 hover:text-[#0F4A2E] mb-4 transition-colors"
@@ -143,9 +221,8 @@ export default function PostDetailPage() {
               )}
             </div>
 
-            {/* RIGHT — author + caption + actions + comments */}
+            {/* RIGHT — author + caption + actions */}
             <div className="flex flex-col">
-              {/* Author */}
               <div className="flex items-center gap-3 p-5 border-b border-[#1B5E3F]/10">
                 <img
                   src={post.authorId.avatar}
@@ -163,10 +240,11 @@ export default function PostDetailPage() {
                     @{post.authorId.username} · {post.authorId.companyName}
                   </p>
                 </div>
-                <FollowButton userId={post.authorId._id} variant="outline" />
+                {post.authorId._id !== user?._id && (
+                  <FollowButton userId={post.authorId._id} variant="outline" />
+                )}
               </div>
 
-              {/* Caption */}
               {!isText && post.caption && (
                 <div className="p-5 border-b border-[#1B5E3F]/10">
                   <p className="text-sm text-[#0A1F14]/85 whitespace-pre-wrap leading-relaxed">
@@ -193,41 +271,57 @@ export default function PostDetailPage() {
               {/* Actions */}
               <div className="p-5 border-b border-[#1B5E3F]/10 flex items-center gap-3">
                 <button
-                  onClick={() => setLiked((v) => !v)}
+                  onClick={toggleLike}
                   className={`p-2 rounded-full transition-colors ${
                     liked
                       ? "text-red-500"
                       : "text-[#0A1F14]/65 hover:text-red-500"
                   }`}
                 >
-                  <HiHeart className="w-7 h-7" />
+                  {liked ? (
+                    <HiHeart className="w-7 h-7" />
+                  ) : (
+                    <HiOutlineHeart className="w-7 h-7" />
+                  )}
                 </button>
-                <Link
-                  to="#comments"
+                <button
+                  onClick={() => setShowComments(true)}
                   className="p-2 text-[#0A1F14]/65 hover:text-[#0F4A2E]"
                 >
                   <HiChatAlt2 className="w-7 h-7" />
-                </Link>
-                <button className="p-2 text-[#0A1F14]/65 hover:text-[#0F4A2E]">
+                </button>
+                <button
+                  onClick={share}
+                  className="p-2 text-[#0A1F14]/65 hover:text-[#0F4A2E]"
+                >
                   <HiShare className="w-7 h-7" />
                 </button>
                 <button
-                  onClick={() => setSaved((v) => !v)}
+                  onClick={toggleSave}
                   className={`ml-auto p-2 rounded-full transition-colors ${
                     saved
                       ? "text-[#1B5E3F]"
                       : "text-[#0A1F14]/65 hover:text-[#1B5E3F]"
                   }`}
                 >
-                  <HiBookmark className="w-7 h-7" />
+                  {saved ? (
+                    <HiBookmark className="w-7 h-7" />
+                  ) : (
+                    <HiOutlineBookmark className="w-7 h-7" />
+                  )}
                 </button>
               </div>
 
               {/* Stats */}
               <div className="px-5 py-3 text-sm">
                 <p className="font-bold text-[#0A1F14]">
-                  {(post.likes + (liked ? 1 : 0)).toLocaleString()} likes ·{" "}
-                  {post.commentCount} comments
+                  {likeCount.toLocaleString()} likes ·{" "}
+                  <button
+                    onClick={() => setShowComments(true)}
+                    className="hover:underline"
+                  >
+                    {commentCount} comments
+                  </button>
                 </p>
                 <p className="text-xs text-[#0A1F14]/55">
                   {new Date(post.createdAt).toLocaleDateString(undefined, {
@@ -238,45 +332,26 @@ export default function PostDetailPage() {
                 </p>
               </div>
 
-              {/* Comment input */}
-              <div className="mt-auto p-4 border-t border-[#1B5E3F]/10 flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Add a comment…"
-                  className="flex-1 px-4 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full text-sm focus:outline-none focus:border-[#1B5E3F]/40"
-                />
-                <button className="px-4 py-2 rounded-full text-sm font-bold text-[#1B5E3F]">
-                  Post
+              {/* Open comments */}
+              <div className="mt-auto p-4 border-t border-[#1B5E3F]/10">
+                <button
+                  onClick={() => setShowComments(true)}
+                  className="w-full px-4 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full text-sm text-[#0A1F14]/55 text-left hover:border-[#1B5E3F]/30 transition-colors"
+                >
+                  Add a comment…
                 </button>
               </div>
             </div>
           </div>
-
-          {/* Prev / next nav */}
-          <div className="flex items-center justify-between mt-4 text-sm">
-            {prevPost ? (
-              <Link
-                to={`/app/post/${prevPost._id}`}
-                className="inline-flex items-center gap-1.5 font-bold text-[#0A1F14]/65 hover:text-[#0F4A2E]"
-              >
-                <HiArrowLeft className="w-4 h-4" /> Previous post
-              </Link>
-            ) : (
-              <span />
-            )}
-            {nextPost ? (
-              <Link
-                to={`/app/post/${nextPost._id}`}
-                className="inline-flex items-center gap-1.5 font-bold text-[#0A1F14]/65 hover:text-[#0F4A2E]"
-              >
-                Next post <HiArrowRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <span />
-            )}
-          </div>
         </div>
       </div>
+
+      <CommentsPanel
+        open={showComments}
+        onClose={() => setShowComments(false)}
+        postId={postId}
+        onCommentAdded={() => setCommentCount((c) => c + 1)}
+      />
     </DashboardShell>
   );
 }

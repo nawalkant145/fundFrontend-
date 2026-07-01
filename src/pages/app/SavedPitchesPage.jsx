@@ -12,7 +12,7 @@ import {
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import PitchCard from "../../components/dashboard/PitchCard";
 import { videoService } from "../../services/videoService";
-import { MOCK_PITCHES, MOCK_POSTS } from "../../constants/mockData";
+import { postService } from "../../services/postService";
 
 /**
  * Saved Studio (replaces "Saved Pitches" for investors).
@@ -22,8 +22,10 @@ export default function SavedPitchesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "posts" ? "posts" : "pitches";
   const [tab, setTab] = useState(initialTab);
-  const [savedPitches, setSavedPitches] = useState(MOCK_PITCHES.slice(0, 3));
-  const savedPosts = MOCK_POSTS.slice(0, 2);
+  const [savedPitches, setSavedPitches] = useState([]);
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   // Fetch real saved pitches
   useEffect(() => {
@@ -32,9 +34,20 @@ export default function SavedPitchesPage() {
       .then((res) => {
         const data = res?.data?.data;
         const videos = data?.videos || data || [];
-        if (videos.length > 0) setSavedPitches(videos);
+        setSavedPitches(videos);
       })
-      .catch(() => {});
+      .catch(() => setSavedPitches([]))
+      .finally(() => setSavedLoading(false));
+
+    postService
+      .getSaved()
+      .then((res) => {
+        const data = res?.data?.data;
+        const posts = data?.posts || data || [];
+        setSavedPosts(posts);
+      })
+      .catch(() => setSavedPosts([]))
+      .finally(() => setPostsLoading(false));
   }, []);
 
   const switchTab = (next) => {
@@ -68,7 +81,11 @@ export default function SavedPitchesPage() {
       </div>
 
       {tab === "pitches" ? (
-        savedPitches.length === 0 ? (
+        savedLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 rounded-full border-[3px] border-[#1B5E3F]/15 border-t-[#1B5E3F] animate-spin" />
+          </div>
+        ) : savedPitches.length === 0 ? (
           <Empty
             icon={HiBookmark}
             title="No saved pitches yet"
@@ -81,6 +98,10 @@ export default function SavedPitchesPage() {
             ))}
           </div>
         )
+      ) : postsLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 rounded-full border-[3px] border-[#1B5E3F]/15 border-t-[#1B5E3F] animate-spin" />
+        </div>
       ) : savedPosts.length === 0 ? (
         <Empty
           icon={HiBookmark}

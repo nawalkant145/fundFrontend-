@@ -1,5 +1,6 @@
 import Sidebar from "./Sidebar";
 import BottomBar from "./BottomBar";
+import UploadProgressBar from "./UploadProgressBar";
 import { useAuth } from "../../context/AuthContext";
 
 /**
@@ -18,6 +19,7 @@ export default function FeedShell({ children, mode }) {
     >
       <Sidebar mode={resolvedMode} />
       <BottomBar mode={resolvedMode} />
+      <UploadProgressBar />
 
       <div className="absolute inset-0 md:left-[72px] z-10 bg-black text-white">
         <main className="relative w-full h-full overflow-hidden">

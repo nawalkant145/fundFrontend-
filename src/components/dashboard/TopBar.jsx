@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiMenu, HiSearch, HiBell } from "react-icons/hi";
-import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 export default function TopBar({ onMenuClick, title, subtitle }) {
   const { user } = useAuth();
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
+  const unreadCount = useNotifications().unreadCount;
 
   return (
     <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-xl border-b border-[#1B5E3F]/10">
@@ -60,8 +60,11 @@ export default function TopBar({ onMenuClick, title, subtitle }) {
           {/* Avatar */}
           <Link to="/app/profile">
             <motion.img
-              src={CURRENT_USER.avatar}
-              alt={CURRENT_USER.name}
+              src={
+                user?.avatar ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
+              }
+              alt={user?.name || "Profile"}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/40 transition-colors cursor-pointer"
               whileHover={{ scale: 1.05 }}
             />

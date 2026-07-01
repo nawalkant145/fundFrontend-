@@ -17,7 +17,7 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
 import { notificationService } from "../../services/notificationService";
-import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
+import { useNotifications } from "../../context/NotificationContext";
 
 const ICONS = {
   like: { icon: HiHeart, cls: "bg-red-500/15 text-red-400" },
@@ -52,7 +52,8 @@ const FILTERS = [
 
 export default function NotificationsPage() {
   const toast = useToast();
-  const [items, setItems] = useState(MOCK_NOTIFICATIONS);
+  const { refreshUnread } = useNotifications();
+  const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("all");
 
   // Fetch real notifications on mount
@@ -62,9 +63,9 @@ export default function NotificationsPage() {
       .then((res) => {
         const data = res?.data?.data;
         const list = data?.notifications || data || [];
-        if (list.length > 0) setItems(list);
+        setItems(list);
       })
-      .catch(() => {});
+      .catch(() => setItems([]));
   }, []);
 
   const filtered = items.filter((n) => {
@@ -75,15 +76,21 @@ export default function NotificationsPage() {
 
   const markRead = (id) => {
     setItems((p) => p.map((x) => (x._id === id ? { ...x, isRead: true } : x)));
+    notificationService.markRead(id).catch(() => {});
+    refreshUnread();
   };
 
   const markAllRead = () => {
     setItems((p) => p.map((x) => ({ ...x, isRead: true })));
+    notificationService.markAllRead().catch(() => {});
+    refreshUnread();
     toast.success("All notifications marked read");
   };
 
   const remove = (id) => {
     setItems((p) => p.filter((x) => x._id !== id));
+    notificationService.remove(id).catch(() => {});
+    refreshUnread();
     toast.success("Notification deleted");
   };
 

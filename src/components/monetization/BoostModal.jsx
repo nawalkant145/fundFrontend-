@@ -9,26 +9,70 @@ import {
 import Modal from "../ui/Modal";
 import { BOOST_TIERS } from "../../constants/mockData";
 import { useToast } from "../ui/Toast";
+import { useAuth } from "../../context/AuthContext";
+import { boostService } from "../../services/boostService";
+import { openRazorpayCheckout } from "../../lib/razorpay";
 
 /**
  * Modal that lets a founder buy a boost for their pitch.
- * 3 tier cards (Mini / Pro / Mega), mock-pay flow.
+ * 3 tier cards (Mini / Pro / Mega) → real Razorpay checkout.
+ * In dev (no gateway keys), the backend activates the boost immediately.
  */
 export default function BoostModal({ open, onClose, pitch, onBoosted }) {
   const [selected, setSelected] = useState("pro");
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
+  const { user } = useAuth();
 
   const tier = BOOST_TIERS.find((t) => t.id === selected);
 
   const handlePay = async () => {
+    if (!pitch?._id) {
+      toast?.error("No pitch selected to boost");
+      return;
+    }
     setSubmitting(true);
-    // Mock the Razorpay flow
-    await new Promise((r) => setTimeout(r, 900));
-    setSubmitting(false);
-    toast?.success(`${tier.name} activated for ${tier.duration}`);
-    onBoosted?.({ pitchId: pitch?._id, tier: tier.id });
-    onClose();
+    try {
+      // 1. Create the boost order on the server
+      const res = await boostService.createOrder({
+        videoId: pitch._id,
+        tier: selected,
+      });
+      const data = res?.data?.data || {};
+
+      // 2. Dev fallback — backend activated it without a gateway
+      if (data.activated) {
+        toast?.success(`${tier.name} activated for ${tier.duration}`);
+        onBoosted?.(data.boost);
+        onClose();
+        return;
+      }
+
+      // 3. Open the real Razorpay checkout
+      const payment = await openRazorpayCheckout({
+        keyId: data.keyId,
+        order: data.order,
+        name: "EXPGLO FUND",
+        description: `${tier.name} · ${pitch.title || "Pitch"}`,
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+      });
+
+      // 4. Verify the signature server-side, then mark active
+      await boostService.verifyPayment(data.boost._id, payment);
+      toast?.success(`${tier.name} activated for ${tier.duration}`);
+      onBoosted?.(data.boost);
+      onClose();
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message || err?.message || "Boost payment failed";
+      if (msg !== "Payment cancelled") toast?.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

@@ -42,6 +42,7 @@ export default function LoginPage() {
       const data = await login({
         identifier: formData.identifier,
         password: formData.password,
+        remember: formData.remember,
       });
       const role = data.user?.role || userType;
       navigate(role === "admin" ? "/admin" : from, { replace: true });

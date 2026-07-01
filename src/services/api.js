@@ -23,7 +23,9 @@ const api = axios.create({
 // ─── Request interceptor — attach access token ─────────
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("expglo:accessToken");
+    const token =
+      localStorage.getItem("expglo:accessToken") ||
+      sessionStorage.getItem("expglo:accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -48,17 +50,29 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const url = originalRequest?.url || "";
 
-    // Don't auto-refresh on auth routes (login, register, OTP, etc.)
-    // These are expected to return 401 for wrong credentials — let the
-    // calling code handle the error directly.
-    const isAuthRoute = originalRequest.url?.includes("/auth/");
+    // Routes that should NEVER trigger an auto-refresh — they're expected
+    // to return 401 for bad credentials / unverified state. Note: /auth/me
+    // is deliberately NOT in this list, so an expired access token on page
+    // load triggers a silent refresh (keeps "Remember me" sessions alive).
+    const noRefreshRoutes = [
+      "/auth/login",
+      "/auth/register",
+      "/auth/refresh-token",
+      "/auth/send-pre-register-otp",
+      "/auth/verify-pre-register-otp",
+      "/auth/check-availability",
+      "/auth/forgot-password",
+      "/auth/reset-password",
+    ];
+    const skipRefresh = noRefreshRoutes.some((r) => url.includes(r));
 
-    // If 401 and not already retrying and NOT an auth route
+    // If 401 and not already retrying and refresh is allowed for this route
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !isAuthRoute
+      !skipRefresh
     ) {
       if (isRefreshing) {
         // Queue this request until refresh completes
@@ -83,7 +97,13 @@ api.interceptors.response.use(
         );
 
         const newToken = data.data?.accessToken || data.accessToken;
-        localStorage.setItem("expglo:accessToken", newToken);
+        // Store in the same storage the user originally used
+        const remembered = localStorage.getItem("expglo:remember") === "1";
+        if (remembered) {
+          localStorage.setItem("expglo:accessToken", newToken);
+        } else {
+          sessionStorage.setItem("expglo:accessToken", newToken);
+        }
         api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
         processQueue(null, newToken);
 
@@ -91,10 +111,16 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // Refresh failed — clear tokens and redirect to login
+        // Refresh failed — session is truly gone. Clear tokens.
         localStorage.removeItem("expglo:accessToken");
-        localStorage.removeItem("expglo:auth");
-        window.location.href = "/login";
+        localStorage.removeItem("expglo:remember");
+        sessionStorage.removeItem("expglo:accessToken");
+        // Only hard-redirect if the user is on a protected (/app or /admin)
+        // page. On public pages, let them keep browsing as a guest.
+        const path = window.location.pathname;
+        if (path.startsWith("/app") || path.startsWith("/admin")) {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

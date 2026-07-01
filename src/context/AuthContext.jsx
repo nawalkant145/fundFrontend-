@@ -1,16 +1,60 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { authService } from "../services/authService";
 import { userService } from "../services/userService";
+import { syncSubscriptionFromUser } from "../lib/auth";
 
 const AuthContext = createContext(null);
+
+const TOKEN_KEY = "expglo:accessToken";
+const REMEMBER_KEY = "expglo:remember";
+
+/**
+ * Get the token from whichever storage it lives in.
+ * - If "remember me" was checked → localStorage
+ * - If not → sessionStorage
+ * We check both on boot since we don't know yet which was used.
+ */
+function getStoredToken() {
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+
+/**
+ * Store token in the appropriate storage based on remember preference.
+ */
+function storeToken(token, remember) {
+  if (remember) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(REMEMBER_KEY, "1");
+    sessionStorage.removeItem(TOKEN_KEY);
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, token);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REMEMBER_KEY);
+  }
+}
+
+/**
+ * Clear token from both storages.
+ */
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REMEMBER_KEY);
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user on mount (if token exists)
+  // Load user on mount (if token exists in either storage)
   useEffect(() => {
-    const token = localStorage.getItem("expglo:accessToken");
+    const token = getStoredToken();
     if (token) {
       fetchUser();
     } else {
@@ -22,9 +66,11 @@ export function AuthProvider({ children }) {
     try {
       const res = await authService.getMe();
       const payload = res.data.data || res.data;
-      setUser(payload.user || payload);
+      const u = payload.user || payload;
+      setUser(u);
+      syncSubscriptionFromUser(u);
     } catch {
-      localStorage.removeItem("expglo:accessToken");
+      clearToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -32,17 +78,20 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (credentials) => {
-    const res = await authService.login(credentials);
+    const { remember = true, ...loginData } = credentials;
+    const res = await authService.login(loginData);
     const payload = res.data.data; // { user, accessToken, refreshToken }
-    localStorage.setItem("expglo:accessToken", payload.accessToken);
+    storeToken(payload.accessToken, remember);
     setUser(payload.user);
+    syncSubscriptionFromUser(payload.user);
     return payload;
   };
 
   const register = async (formData) => {
     const res = await authService.register(formData);
     const payload = res.data.data; // { user, accessToken, refreshToken }
-    localStorage.setItem("expglo:accessToken", payload.accessToken);
+    // Registration always remembers (new user just signed up)
+    storeToken(payload.accessToken, true);
     setUser(payload.user);
     return payload;
   };
@@ -53,7 +102,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Even if logout API fails, clear local state
     }
-    localStorage.removeItem("expglo:accessToken");
+    clearToken();
     setUser(null);
   };
 
@@ -61,9 +110,50 @@ export function AuthProvider({ children }) {
     try {
       const res = await userService.getProfile();
       const payload = res.data.data || res.data;
-      setUser(payload.user || payload);
+      const u = payload.user || payload;
+      setUser(u);
+      syncSubscriptionFromUser(u);
     } catch {}
   }, []);
+
+  // ─── Impersonation (admin "view as user") ───────────────
+  const [impersonating, setImpersonating] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem("expglo:impersonating");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const startImpersonation = (token, targetUser) => {
+    // Stash the admin's own token so we can restore it on exit
+    const adminToken =
+      localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    if (adminToken) sessionStorage.setItem("expglo:adminToken", adminToken);
+    // Activate the impersonation token in sessionStorage
+    sessionStorage.setItem(TOKEN_KEY, token);
+    localStorage.removeItem(TOKEN_KEY); // don't let admin token win
+    const info = { name: targetUser?.name, id: targetUser?._id };
+    sessionStorage.setItem("expglo:impersonating", JSON.stringify(info));
+    setImpersonating(info);
+    setUser(targetUser);
+  };
+
+  const stopImpersonation = () => {
+    const adminToken = sessionStorage.getItem("expglo:adminToken");
+    sessionStorage.removeItem("expglo:impersonating");
+    sessionStorage.removeItem("expglo:adminToken");
+    sessionStorage.removeItem(TOKEN_KEY);
+    if (adminToken) {
+      // Restore admin session (admins log in with remember = localStorage)
+      localStorage.setItem(TOKEN_KEY, adminToken);
+      localStorage.setItem(REMEMBER_KEY, "1");
+    }
+    setImpersonating(null);
+    // Reload the admin profile
+    fetchUser();
+  };
 
   const value = {
     user,
@@ -75,13 +165,12 @@ export function AuthProvider({ children }) {
     logout,
     refreshUser,
     setUser,
+    impersonating,
+    startImpersonation,
+    stopImpersonation,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

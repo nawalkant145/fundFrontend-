@@ -15,11 +15,12 @@ import FileDropzone from "../../components/auth/FileDropzone";
 import { FormField } from "../../components/auth/FormField";
 import Select from "../../components/auth/Select";
 import { useToast } from "../../components/ui/Toast";
-import { videoService } from "../../services/videoService";
+import { useUpload } from "../../context/UploadContext";
 import { INDUSTRIES, FUNDING_STAGES } from "../../constants/options";
 
 export default function UploadPitchPage() {
   const toast = useToast();
+  const { startUpload, uploadState } = useUpload();
   const [videoFile, setVideoFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoDuration, setVideoDuration] = useState(0);
@@ -33,9 +34,9 @@ export default function UploadPitchPage() {
     fundingStage: "",
     askAmount: "",
     equityOffered: "",
+    visibility: "everyone", // "everyone" | "investors-only"
   });
   const [submitted, setSubmitted] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   // Build object URL for video preview + auto-grab default frame as cover
   useEffect(() => {
@@ -71,25 +72,25 @@ export default function UploadPitchPage() {
   const submit = async (e) => {
     e.preventDefault();
     if (!valid) return;
-    setUploading(true);
-    try {
-      await videoService.upload(videoFile, {
-        title: data.title,
-        description: data.description,
-        industry: data.industry,
-        fundingStage: data.fundingStage,
-        askAmount: data.askAmount,
-        equityOffered: data.equityOffered,
-      });
-      setUploading(false);
+
+    // Hand off to global upload context — user can navigate away freely
+    const success = await startUpload(videoFile, {
+      title: data.title,
+      description: data.description,
+      industry: data.industry,
+      fundingStage: data.fundingStage,
+      askAmount: data.askAmount,
+      equityOffered: data.equityOffered,
+      visibility: data.visibility,
+    });
+
+    if (success) {
       setSubmitted(true);
-      toast.success("Pitch uploaded — processing video…");
-    } catch (err) {
-      setUploading(false);
-      const msg = err.response?.data?.message || "Upload failed. Try again.";
-      toast.error(msg);
     }
   };
+
+  // Check if another upload is already running
+  const isUploading = uploadState?.status === "uploading";
 
   if (submitted) {
     return (
@@ -288,20 +289,60 @@ export default function UploadPitchPage() {
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gold/10">
-          <p className="text-xs text-gray-400">
-            Your pitch will be reviewed before going live.
+        {/* Visibility toggle */}
+        <div>
+          <label className="block text-sm font-semibold mb-2 text-[#0A1F14]/85">
+            Who can see this pitch?
+          </label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setData((p) => ({ ...p, visibility: "everyone" }))}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                data.visibility === "everyone"
+                  ? "bg-[#1B5E3F] text-white border-[#1B5E3F] shadow-md"
+                  : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40"
+              }`}
+            >
+              🌐 Everyone
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setData((p) => ({ ...p, visibility: "investors-only" }))
+              }
+              className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                data.visibility === "investors-only"
+                  ? "bg-[#F5B942] text-[#0F4A2E] border-[#F5B942] shadow-md"
+                  : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#F5B942]/60"
+              }`}
+            >
+              🔒 Investors only
+            </button>
+          </div>
+          <p className="text-xs text-[#0A1F14]/55 mt-1.5">
+            {data.visibility === "investors-only"
+              ? "Only investors will see this pitch. Other founders won't see it in their feed."
+              : "Both investors and other founders can see this pitch."}
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#1B5E3F]/10">
+          <p className="text-xs text-[#0A1F14]/55">
+            {isUploading
+              ? "Your pitch is uploading in the background — you can leave this page!"
+              : "Your pitch will be reviewed before going live."}
           </p>
           <motion.button
             type="submit"
-            disabled={!valid || uploading}
+            disabled={!valid || isUploading}
             className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30 flex items-center justify-center gap-2 ${
-              !valid || uploading ? "opacity-50 cursor-not-allowed" : ""
+              !valid || isUploading ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            whileHover={valid && !uploading ? { scale: 1.02, y: -2 } : {}}
-            whileTap={valid && !uploading ? { scale: 0.98 } : {}}
+            whileHover={valid && !isUploading ? { scale: 1.02, y: -2 } : {}}
+            whileTap={valid && !isUploading ? { scale: 0.98 } : {}}
           >
-            {uploading ? (
+            {isUploading ? (
               <>
                 <span className="w-5 h-5 rounded-full border-2 border-dark-navy/30 border-t-dark-navy animate-spin" />
                 Uploading…

@@ -20,11 +20,12 @@ import {
   HiCollection,
   HiPlay,
   HiBookmark,
+  HiTrash,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
-import { MOCK_NOTIFICATIONS } from "../../constants/mockData";
 import { isPro } from "../../lib/auth";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 const founderNav = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
@@ -55,8 +56,13 @@ const adminNav = [
   { to: "/admin/users", label: "Users", icon: HiUsers },
   { to: "/admin/pitches", label: "Pitches", icon: HiVideoCamera },
   { to: "/admin/kyc", label: "KYC Queue", icon: HiShieldCheck },
+  { to: "/admin/moderation", label: "Moderation", icon: HiSparkles },
+  { to: "/admin/investments", label: "Investments", icon: HiCurrencyDollar },
   { to: "/admin/reports", label: "Reports", icon: HiFlag },
   { to: "/admin/audit", label: "Audit Log", icon: HiClipboardList },
+  { to: "/admin/trash", label: "Trash", icon: HiTrash },
+  { to: "/admin/broadcast", label: "Broadcast", icon: HiBell },
+  { to: "/admin/settings", label: "Settings", icon: HiCog },
 ];
 
 /**
@@ -69,6 +75,7 @@ export default function Sidebar({ mode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const role = mode || user?.role || "founder";
   const items =
     role === "investor"
@@ -77,7 +84,7 @@ export default function Sidebar({ mode }) {
         ? adminNav
         : founderNav;
 
-  const unread = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
+  const unread = unreadCount;
 
   const isActive = (item) =>
     item.end

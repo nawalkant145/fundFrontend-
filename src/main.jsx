@@ -6,6 +6,9 @@ import App from "./App.jsx";
 import { ToastProvider } from "./components/ui/Toast.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { SocketProvider } from "./context/SocketContext.jsx";
+import { UploadProvider } from "./context/UploadContext.jsx";
+import { NotificationProvider } from "./context/NotificationContext.jsx";
+import { CallProvider } from "./context/CallContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -13,7 +16,13 @@ createRoot(document.getElementById("root")).render(
       <AuthProvider>
         <SocketProvider>
           <ToastProvider>
-            <App />
+            <NotificationProvider>
+              <UploadProvider>
+                <CallProvider>
+                  <App />
+                </CallProvider>
+              </UploadProvider>
+            </NotificationProvider>
           </ToastProvider>
         </SocketProvider>
       </AuthProvider>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -16,14 +17,21 @@ import {
   HiCog,
   HiLogout,
   HiChevronRight,
+  HiVideoCamera,
+  HiPhotograph,
+  HiPlay,
+  HiHeart,
+  HiEye,
 } from "react-icons/hi";
 import { FaLinkedin } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
+import FollowListModal from "../../components/dashboard/FollowListModal";
 import { useAuth } from "../../context/AuthContext";
+import { videoService } from "../../services/videoService";
+import { postService } from "../../services/postService";
 
-// Menu items shown on mobile only (sidebar items that don't fit bottom bar)
 const FOUNDER_MENU = [
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
@@ -47,6 +55,31 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const role = user?.role || "founder";
   const menu = role === "investor" ? INVESTOR_MENU : FOUNDER_MENU;
+  const isFounder = role === "founder";
+
+  const [pitches, setPitches] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [tab, setTab] = useState("pitches");
+  const [followModal, setFollowModal] = useState(null); // "followers" | "following"
+
+  // Founders show their own pitches + posts
+  useEffect(() => {
+    if (!isFounder) return;
+    videoService
+      .getMyPitches()
+      .then((res) => {
+        const data = res?.data?.data;
+        setPitches(data?.videos || data || []);
+      })
+      .catch(() => setPitches([]));
+    postService
+      .getMyPosts()
+      .then((res) => {
+        const data = res?.data?.data;
+        setPosts(data?.posts || data || []);
+      })
+      .catch(() => setPosts([]));
+  }, [isFounder]);
 
   if (!user) return null;
 
@@ -93,6 +126,36 @@ export default function ProfilePage() {
             </Link>
           </div>
 
+          {/* Follower / following counts */}
+          <div className="flex gap-6 mt-4">
+            {isFounder && (
+              <button className="text-left">
+                <span className="font-black text-[#0A1F14]">
+                  {pitches.length}
+                </span>{" "}
+                <span className="text-[#0A1F14]/55 text-sm">pitches</span>
+              </button>
+            )}
+            <button
+              onClick={() => setFollowModal("followers")}
+              className="text-left hover:opacity-70 transition-opacity"
+            >
+              <span className="font-black text-[#0A1F14]">
+                {user.followersCount || 0}
+              </span>{" "}
+              <span className="text-[#0A1F14]/55 text-sm">followers</span>
+            </button>
+            <button
+              onClick={() => setFollowModal("following")}
+              className="text-left hover:opacity-70 transition-opacity"
+            >
+              <span className="font-black text-[#0A1F14]">
+                {user.followingCount || 0}
+              </span>{" "}
+              <span className="text-[#0A1F14]/55 text-sm">following</span>
+            </button>
+          </div>
+
           {/* Quick info chips */}
           <div className="flex flex-wrap gap-2 mt-4">
             {user.companyName && (
@@ -112,7 +175,7 @@ export default function ProfilePage() {
         {/* Stats */}
         <div className="lg:col-span-2 grid grid-cols-3 gap-4">
           <MiniStat label="Total views" value={user.totalPitchViews || 0} />
-          <MiniStat label="Connections" value={user.followersCount || 0} />
+          <MiniStat label="Followers" value={user.followersCount || 0} />
           <MiniStat
             label="Level"
             value={`${user.verificationLevel || 0} / 3`}
@@ -143,7 +206,97 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Mobile-only menu — sidebar items that don't fit the bottom bar */}
+      {/* Content grid — founders only */}
+      {isFounder && (
+        <div className="mb-6">
+          <div className="border-b border-[#1B5E3F]/12 mb-4 flex">
+            <TabBtn
+              active={tab === "pitches"}
+              onClick={() => setTab("pitches")}
+              icon={HiVideoCamera}
+              label="Pitches"
+              count={pitches.length}
+            />
+            <TabBtn
+              active={tab === "posts"}
+              onClick={() => setTab("posts")}
+              icon={HiPhotograph}
+              label="Posts"
+              count={posts.length}
+            />
+          </div>
+
+          {tab === "pitches" ? (
+            pitches.length === 0 ? (
+              <EmptyGrid
+                title="No pitches yet"
+                cta="Upload a pitch"
+                to="/app/upload"
+              />
+            ) : (
+              <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                {pitches.map((p) => (
+                  <Link
+                    key={p._id}
+                    to={`/app/pitch?pitch=${p._id}`}
+                    className="relative aspect-[3/4] rounded-lg overflow-hidden bg-black group"
+                  >
+                    <img
+                      src={p.coverUrl || p.thumbnailUrl}
+                      alt={p.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                      <HiPlay className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] font-bold text-white">
+                      <span className="flex items-center gap-0.5">
+                        <HiHeart className="w-3 h-3" />
+                        {p.likeCount ??
+                          (Array.isArray(p.likes) ? p.likes.length : 0)}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <HiEye className="w-3 h-3" />
+                        {p.views || 0}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )
+          ) : posts.length === 0 ? (
+            <EmptyGrid
+              title="No posts yet"
+              cta="Create a post"
+              to="/app/post/new"
+            />
+          ) : (
+            <div className="grid grid-cols-3 gap-1 sm:gap-2">
+              {posts.map((p) => (
+                <Link
+                  key={p._id}
+                  to={`/app/post/${p._id}`}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-[#FAFAF7] group"
+                >
+                  {p.images?.[0] ? (
+                    <img
+                      src={p.images[0]}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full p-3 flex items-center text-xs text-[#0A1F14]/85">
+                      <span className="line-clamp-6">{p.caption}</span>
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile-only menu */}
       <div className="md:hidden mt-8">
         <h3 className="text-base font-bold mb-3 text-[#0A1F14]">Menu</h3>
         <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden divide-y divide-[#1B5E3F]/8">
@@ -178,7 +331,48 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Followers / Following modal */}
+      <FollowListModal
+        open={!!followModal}
+        onClose={() => setFollowModal(null)}
+        userId={user._id}
+        mode={followModal}
+      />
     </DashboardShell>
+  );
+}
+
+function TabBtn({ active, onClick, icon: Icon, label, count }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 sm:flex-none px-6 py-3 inline-flex items-center justify-center gap-2 text-sm font-bold transition-colors relative ${
+        active ? "text-[#0F4A2E]" : "text-[#0A1F14]/55 hover:text-[#0F4A2E]"
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {label}
+      <span className="text-xs px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#0A1F14]/55">
+        {count}
+      </span>
+      {active && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1B5E3F]" />
+      )}
+    </button>
+  );
+}
+
+function EmptyGrid({ title, cta, to }) {
+  return (
+    <div className="text-center py-12 bg-[#FAFAF7] border border-[#1B5E3F]/10 rounded-2xl">
+      <p className="font-bold text-[#0A1F14] mb-3">{title}</p>
+      <Link to={to}>
+        <button className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white">
+          {cta}
+        </button>
+      </Link>
+    </div>
   );
 }
 

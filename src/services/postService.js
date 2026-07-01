@@ -16,6 +16,7 @@ export const postService = {
   },
   getFeed: (params) => api.get("/post/feed", { params }),
   getMyPosts: () => api.get("/post/my-posts"),
+  getSaved: () => api.get("/post/saved"),
   getById: (id) => api.get(`/post/${id}`),
   update: (id, data) => api.put(`/post/${id}`, data),
   remove: (id) => api.delete(`/post/${id}`),

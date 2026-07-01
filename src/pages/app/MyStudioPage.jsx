@@ -19,14 +19,9 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import BoostModal from "../../components/monetization/BoostModal";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
+import { boostService } from "../../services/boostService";
 import { useAuth } from "../../context/AuthContext";
-import {
-  CURRENT_USER,
-  MOCK_PITCHES,
-  MOCK_POSTS,
-  MOCK_BOOSTS,
-  formatINR,
-} from "../../constants/mockData";
+import { formatINR } from "../../constants/mockData";
 
 /**
  * Combined "My Studio" page — replaces "My Pitches".
@@ -43,7 +38,7 @@ export default function MyStudioPage() {
   const [myPitches, setMyPitches] = useState([]);
   const [pitchesLoading, setPitchesLoading] = useState(true);
 
-  useEffect(() => {
+  const loadPitches = () => {
     videoService
       .getMyPitches()
       .then((res) => {
@@ -55,6 +50,10 @@ export default function MyStudioPage() {
         setMyPitches([]);
       })
       .finally(() => setPitchesLoading(false));
+  };
+
+  useEffect(() => {
+    loadPitches();
   }, []);
 
   // Fetch real posts
@@ -70,8 +69,23 @@ export default function MyStudioPage() {
       .catch(() => setMyPosts([]));
   }, []);
 
+  // Fetch the founder's currently-active boosts
+  const [boosts, setBoosts] = useState([]);
+  const loadBoosts = () => {
+    boostService
+      .getActiveBoosts()
+      .then((res) => {
+        const data = res?.data?.data;
+        setBoosts(data?.boosts || []);
+      })
+      .catch(() => setBoosts([]));
+  };
+  useEffect(() => {
+    loadBoosts();
+  }, []);
+
   const activeBoost = (pitchId) =>
-    MOCK_BOOSTS.find((b) => b.pitchId === pitchId && b.status === "active");
+    boosts.find((b) => (b.videoId?._id || b.videoId) === pitchId);
 
   const switchTab = (next) => {
     setTab(next);
@@ -83,28 +97,29 @@ export default function MyStudioPage() {
       {/* Profile header */}
       <div className="flex flex-col sm:flex-row items-center gap-5 mb-6 sm:mb-8">
         <img
-          src={user?.avatar || CURRENT_USER.avatar}
-          alt={user?.name || CURRENT_USER.name}
+          src={
+            user?.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
+          }
+          alt={user?.name || "User"}
           className="w-20 h-20 sm:w-24 sm:h-24 rounded-full ring-4 ring-[#1B5E3F]/15 object-cover"
         />
         <div className="flex-1 text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-black text-[#0A1F14] inline-flex items-center gap-2 leading-tight">
-            {user?.name || CURRENT_USER.name}
-            {(user?.isVerified || CURRENT_USER.isVerified) && (
+            {user?.name || "User"}
+            {user?.isVerified && (
               <MdVerified className="w-6 h-6 text-[#F5B942]" />
             )}
           </h1>
           <p className="text-sm text-[#0A1F14]/65">
-            @{user?.username || CURRENT_USER.username || "you"} ·{" "}
-            <span className="capitalize">
-              {user?.role || CURRENT_USER.role || "founder"}
-            </span>
+            @{user?.username || "you"} ·{" "}
+            <span className="capitalize">{user?.role || "founder"}</span>
           </p>
           <div className="flex justify-center sm:justify-start gap-5 mt-3 text-sm">
             <Stat label="Pitches" value={myPitches.length} />
             <Stat label="Posts" value={myPosts.length} />
-            <Stat label="Followers" value="1,240" />
-            <Stat label="Following" value="89" />
+            <Stat label="Followers" value={user?.followersCount ?? 0} />
+            <Stat label="Following" value={user?.followingCount ?? 0} />
           </div>
         </div>
         <div className="flex gap-2">
@@ -143,7 +158,11 @@ export default function MyStudioPage() {
 
       {/* Tab content */}
       {tab === "pitches" ? (
-        myPitches.length ? (
+        pitchesLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 rounded-full border-[3px] border-[#1B5E3F]/15 border-t-[#1B5E3F] animate-spin" />
+          </div>
+        ) : myPitches.length ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {myPitches.map((p) => (
               <PitchTile
@@ -182,7 +201,11 @@ export default function MyStudioPage() {
         open={!!boostFor}
         onClose={() => setBoostFor(null)}
         pitch={boostFor}
-        onBoosted={() => setBoostFor(null)}
+        onBoosted={() => {
+          setBoostFor(null);
+          loadBoosts();
+          loadPitches();
+        }}
       />
     </DashboardShell>
   );
@@ -248,7 +271,7 @@ function PitchTile({ pitch, boost, onBoost }) {
             </span>
             <span className="text-xs font-bold text-white drop-shadow inline-flex items-center gap-1">
               <HiEye className="w-3.5 h-3.5" />
-              {pitch.views.toLocaleString()}
+              {(pitch.views || 0).toLocaleString()}
             </span>
           </div>
           {boost && (
@@ -267,13 +290,15 @@ function PitchTile({ pitch, boost, onBoost }) {
         </p>
         <div className="flex items-center gap-3 text-xs text-[#0A1F14]/65 mt-3">
           <span className="inline-flex items-center gap-1">
-            <HiHeart className="w-3.5 h-3.5" /> {pitch.likes.length}
+            <HiHeart className="w-3.5 h-3.5" />{" "}
+            {pitch.likeCount ?? (pitch.likes?.length || 0)}
           </span>
           <span className="inline-flex items-center gap-1">
-            <HiBookmark className="w-3.5 h-3.5" /> {pitch.saves.length}
+            <HiBookmark className="w-3.5 h-3.5" />{" "}
+            {pitch.saveCount ?? (pitch.saves?.length || 0)}
           </span>
           <span className="inline-flex items-center gap-1">
-            <HiChatAlt2 className="w-3.5 h-3.5" /> {pitch.comments}
+            <HiChatAlt2 className="w-3.5 h-3.5" /> {pitch.commentCount || 0}
           </span>
           <span className="ml-auto font-bold text-[#0F4A2E]">
             {formatINR(pitch.askAmount)}
@@ -323,10 +348,11 @@ function PostTile({ post }) {
       {/* Hover overlay */}
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white text-sm font-bold">
         <span className="inline-flex items-center gap-1">
-          <HiHeart className="w-4 h-4" /> {post.likes}
+          <HiHeart className="w-4 h-4" />{" "}
+          {Array.isArray(post.likes) ? post.likes.length : post.likes || 0}
         </span>
         <span className="inline-flex items-center gap-1">
-          <HiChatAlt2 className="w-4 h-4" /> {post.commentCount}
+          <HiChatAlt2 className="w-4 h-4" /> {post.commentCount || 0}
         </span>
       </div>
       {post.images?.length > 1 && (

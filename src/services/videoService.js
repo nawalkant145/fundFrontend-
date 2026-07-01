@@ -11,6 +11,21 @@ export const videoService = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  // Upload with progress callback (used by the global UploadContext)
+  uploadWithProgress: (formData, { onProgress, signal } = {}) => {
+    return api.post("/video/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      signal,
+      timeout: 5 * 60 * 1000, // 5 min timeout for large videos
+      onUploadProgress: (e) => {
+        if (e.total) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          onProgress?.(pct);
+        }
+      },
+    });
+  },
   getFeed: (params) => api.get("/video/feed", { params }),
   getTrending: (params) => api.get("/video/trending", { params }),
   search: (params) => api.get("/video/search", { params }),
@@ -22,6 +37,7 @@ export const videoService = {
   notInterested: (id) => api.post(`/video/${id}/not-interested`),
   logView: (id, data) => api.post(`/video/${id}/view`, data),
   getMyPitches: () => api.get("/video/my-pitches"),
+  getUserPitches: (userId) => api.get(`/video/user/${userId}`),
   getSaved: () => api.get("/video/saved"),
   getAnalytics: (id) => api.get(`/video/${id}/analytics`),
   renew: (id) => api.post(`/video/${id}/renew`),

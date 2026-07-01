@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -14,7 +14,8 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import Modal from "../../components/ui/Modal";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
-import { MOCK_DEALS, formatINR } from "../../constants/mockData";
+import { investmentService } from "../../services/investmentService";
+import { formatINR } from "../../constants/mockData";
 
 const stages = ["interested", "negotiating", "agreed", "completed"];
 const stageColor = {
@@ -26,12 +27,26 @@ const stageColor = {
 
 export default function DealsPage() {
   const toast = useToast();
-  const [deals, setDeals] = useState(MOCK_DEALS);
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [stageDeal, setStageDeal] = useState(null);
   const [detailDeal, setDetailDeal] = useState(null);
 
+  useEffect(() => {
+    investmentService
+      .getMyDeals()
+      .then((res) => {
+        const data = res?.data?.data || res?.data;
+        const list = data?.deals || data?.investments || data || [];
+        setDeals(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setDeals([]))
+      .finally(() => setLoading(false));
+  }, []);
+
   const updateStage = (id, stage) => {
     setDeals((d) => d.map((x) => (x._id === id ? { ...x, stage } : x)));
+    investmentService.updateStage(id, stage).catch(() => {});
     toast.success(`Stage updated to ${stage}`);
   };
 
@@ -54,16 +69,30 @@ export default function DealsPage() {
         })}
       </div>
 
-      <div className="space-y-3">
-        {deals.map((d) => (
-          <DealRow
-            key={d._id}
-            deal={d}
-            onView={() => setDetailDeal(d)}
-            onUpdateStage={() => setStageDeal(d)}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 rounded-full border-[3px] border-gold/20 border-t-gold animate-spin" />
+        </div>
+      ) : deals.length === 0 ? (
+        <div className="text-center py-20">
+          <HiCurrencyDollar className="w-12 h-12 text-gold/40 mx-auto mb-4" />
+          <p className="text-gray-400 mb-1">No deals yet.</p>
+          <p className="text-sm text-gray-500">
+            When investors express interest, their deals appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {deals.map((d) => (
+            <DealRow
+              key={d._id}
+              deal={d}
+              onView={() => setDetailDeal(d)}
+              onUpdateStage={() => setStageDeal(d)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Stage update modal */}
       <Modal
@@ -74,7 +103,7 @@ export default function DealsPage() {
         {stageDeal && (
           <div className="space-y-3">
             <p className="text-sm text-gray-300 mb-4">
-              {stageDeal.investorId.name} —{" "}
+              {stageDeal.investorId?.name || "Investor"} —{" "}
               <span className="text-gold font-bold">
                 {formatINR(stageDeal.amount)}
               </span>
@@ -112,19 +141,27 @@ export default function DealsPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img
-                src={detailDeal.investorId.avatar}
-                alt={detailDeal.investorId.name}
+                src={
+                  detailDeal.investorId?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(detailDeal.investorId?.name || "Investor")}&background=1B5E3F&color=fff`
+                }
+                alt={detailDeal.investorId?.name || "Investor"}
                 className="w-14 h-14 rounded-full border-2 border-gold/40"
               />
               <div>
-                <p className="font-bold">{detailDeal.investorId.name}</p>
+                <p className="font-bold">
+                  {detailDeal.investorId?.name || "Investor"}
+                </p>
                 <p className="text-xs text-gray-400">Investor</p>
               </div>
             </div>
             <Field label="Amount" value={formatINR(detailDeal.amount)} />
-            <Field label="Equity offered" value={`${detailDeal.equity}%`} />
-            <Field label="Stage" value={detailDeal.stage} />
-            <Field label="Status" value={detailDeal.status} />
+            <Field
+              label="Equity offered"
+              value={`${detailDeal.equity ?? 0}%`}
+            />
+            <Field label="Stage" value={detailDeal.stage || "—"} />
+            <Field label="Status" value={detailDeal.status || "—"} />
             <Field label="Last updated" value={detailDeal.updatedAt} />
             <div className="flex gap-2 pt-2">
               <Link to="/app/messages" className="flex-1">
@@ -177,17 +214,20 @@ function DealRow({ deal, onView, onUpdateStage }) {
     >
       <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-wrap">
         <img
-          src={deal.investorId.avatar}
-          alt={deal.investorId.name}
+          src={
+            deal.investorId?.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(deal.investorId?.name || "Investor")}&background=1B5E3F&color=fff`
+          }
+          alt={deal.investorId?.name || "Investor"}
           className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-gold/30 flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <p className="font-bold text-sm sm:text-base">
-              {deal.investorId.name}
+              {deal.investorId?.name || "Investor"}
             </p>
             <span
-              className={`px-2.5 py-0.5 text-[10px] uppercase font-bold rounded-full border ${stageColor[deal.stage]}`}
+              className={`px-2.5 py-0.5 text-[10px] uppercase font-bold rounded-full border ${stageColor[deal.stage] || stageColor.interested}`}
             >
               {deal.stage}
             </span>
@@ -198,8 +238,7 @@ function DealRow({ deal, onView, onUpdateStage }) {
             )}
           </div>
           <p className="text-xs sm:text-sm text-gray-400">
-            {formatINR(deal.amount)} for {deal.equity}% equity ·{" "}
-            {deal.updatedAt}
+            {formatINR(deal.amount)} for {deal.equity ?? 0}% equity
           </p>
         </div>
         <div className="flex gap-2 items-center w-full sm:w-auto sm:justify-end overflow-x-auto">
@@ -208,11 +247,6 @@ function DealRow({ deal, onView, onUpdateStage }) {
               <HiChatAlt2 className="w-4 h-4" /> Chat
             </button>
           </Link>
-          {deal.stage === "agreed" && deal.status === "pending" && (
-            <button className="px-3 py-2 bg-gold/20 text-gold rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
-              <HiExclamationCircle className="w-4 h-4" /> Pay
-            </button>
-          )}
           {deal.stage !== "completed" && (
             <button
               onClick={onUpdateStage}

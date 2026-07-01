@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   HiCheck,
@@ -14,22 +14,35 @@ import DropdownMenu from "../../components/ui/DropdownMenu";
 import Modal from "../../components/ui/Modal";
 import Confirm from "../../components/ui/Confirm";
 import { useToast } from "../../components/ui/Toast";
-import { MOCK_PITCHES, formatINR } from "../../constants/mockData";
+import { adminService } from "../../services/adminService";
+import { formatINR } from "../../constants/mockData";
 
 export default function AdminPitchesPage() {
   const toast = useToast();
-  const [pitches, setPitches] = useState(
-    MOCK_PITCHES.map((p) => ({ ...p, status: "active" })),
-  );
+  const [pitches, setPitches] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [previewing, setPreviewing] = useState(null);
   const [rejecting, setRejecting] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [boosting, setBoosting] = useState(null);
 
+  useEffect(() => {
+    adminService
+      .listVideos({ limit: 50 })
+      .then((res) => {
+        const data = res?.data?.data || res?.data;
+        const list = data?.videos || data || [];
+        setPitches(list);
+      })
+      .catch(() => setPitches([]))
+      .finally(() => setLoading(false));
+  }, []);
+
   const approve = (id) => {
     setPitches((p) =>
       p.map((x) => (x._id === id ? { ...x, status: "active" } : x)),
     );
+    adminService.approveVideo(id).catch(() => {});
     toast.success("Pitch approved");
   };
   const reject = (id, reason) => {
@@ -40,10 +53,12 @@ export default function AdminPitchesPage() {
           : x,
       ),
     );
+    adminService.rejectVideo(id, reason).catch(() => {});
     toast.warn("Pitch rejected");
   };
   const remove = (id) => {
     setPitches((p) => p.filter((x) => x._id !== id));
+    adminService.deleteVideo(id).catch(() => {});
     toast.success("Pitch removed");
   };
   const boost = (id, days) => {
@@ -52,6 +67,7 @@ export default function AdminPitchesPage() {
         x._id === id ? { ...x, isBoosted: true, boostedDays: days } : x,
       ),
     );
+    adminService.boostVideo(id, days).catch(() => {});
     toast.success(`Boosted for ${days} days`);
   };
 
@@ -62,103 +78,114 @@ export default function AdminPitchesPage() {
       subtitle="Approve, reject, boost or remove pitches."
     >
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pitches.map((p) => (
-          <motion.div
-            key={p._id}
-            className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden"
-            whileHover={{ y: -3 }}
-          >
-            <div className="relative">
-              <img
-                src={p.thumbnailUrl}
-                alt={p.title}
-                className="w-full h-44 object-cover"
-              />
-              <button
-                onClick={() => setPreviewing(p)}
-                className="absolute inset-0 flex items-center justify-center bg-dark-navy/40 hover:bg-dark-navy/60 transition-colors group"
-              >
-                <div className="w-12 h-12 rounded-full bg-gold flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <HiPlay className="w-6 h-6 text-dark-navy ml-0.5" />
-                </div>
-              </button>
-              {p.isBoosted && (
-                <span className="absolute top-2 left-2 px-2 py-0.5 bg-gold text-dark-navy text-[10px] font-black rounded-full uppercase">
-                  Boosted
-                </span>
-              )}
-              <div className="absolute top-2 right-2">
-                <DropdownMenu
-                  triggerClass="p-1.5 rounded-full bg-dark-navy/80 backdrop-blur text-white hover:bg-dark-navy"
-                  items={[
-                    {
-                      label: "Preview",
-                      icon: HiEye,
-                      onClick: () => setPreviewing(p),
-                    },
-                    {
-                      label: "Approve",
-                      icon: HiCheck,
-                      onClick: () => approve(p._id),
-                    },
-                    {
-                      label: "Boost",
-                      icon: HiLightningBolt,
-                      onClick: () => setBoosting(p),
-                    },
-                    { divider: true },
-                    {
-                      label: "Reject",
-                      icon: HiX,
-                      onClick: () => setRejecting(p),
-                      danger: true,
-                    },
-                    {
-                      label: "Delete pitch",
-                      icon: HiTrash,
-                      onClick: () => setDeleting(p),
-                      danger: true,
-                    },
-                  ]}
+        {loading ? (
+          <div className="col-span-full flex items-center justify-center py-20">
+            <div className="w-8 h-8 rounded-full border-[3px] border-gold/20 border-t-gold animate-spin" />
+          </div>
+        ) : pitches.length === 0 ? (
+          <div className="col-span-full text-center py-20 text-gray-400">
+            No pitches found.
+          </div>
+        ) : (
+          pitches.map((p) => (
+            <motion.div
+              key={p._id}
+              className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl overflow-hidden"
+              whileHover={{ y: -3 }}
+            >
+              <div className="relative">
+                <img
+                  src={p.thumbnailUrl}
+                  alt={p.title}
+                  className="w-full h-44 object-cover"
                 />
-              </div>
-            </div>
-            <div className="p-4">
-              <p className="font-bold mb-1 line-clamp-1">{p.title}</p>
-              <p className="text-xs text-gray-400 mb-2 line-clamp-2">
-                {p.description}
-              </p>
-              <p className="text-xs text-gold font-bold mb-3">
-                {p.founderId.companyName} · {p.industry}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Btn
-                  icon={HiEye}
-                  label="View"
+                <button
                   onClick={() => setPreviewing(p)}
-                />
-                <Btn
-                  icon={HiCheck}
-                  label="Approve"
-                  accent="green"
-                  onClick={() => approve(p._id)}
-                />
-                <Btn
-                  icon={HiX}
-                  label="Reject"
-                  accent="red"
-                  onClick={() => setRejecting(p)}
-                />
-                <Btn
-                  icon={HiLightningBolt}
-                  label="Boost"
-                  accent="gold"
-                  onClick={() => setBoosting(p)}
-                />
+                  className="absolute inset-0 flex items-center justify-center bg-dark-navy/40 hover:bg-dark-navy/60 transition-colors group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-gold flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <HiPlay className="w-6 h-6 text-dark-navy ml-0.5" />
+                  </div>
+                </button>
+                {p.isBoosted && (
+                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-gold text-dark-navy text-[10px] font-black rounded-full uppercase">
+                    Boosted
+                  </span>
+                )}
+                <div className="absolute top-2 right-2">
+                  <DropdownMenu
+                    triggerClass="p-1.5 rounded-full bg-dark-navy/80 backdrop-blur text-white hover:bg-dark-navy"
+                    items={[
+                      {
+                        label: "Preview",
+                        icon: HiEye,
+                        onClick: () => setPreviewing(p),
+                      },
+                      {
+                        label: "Approve",
+                        icon: HiCheck,
+                        onClick: () => approve(p._id),
+                      },
+                      {
+                        label: "Boost",
+                        icon: HiLightningBolt,
+                        onClick: () => setBoosting(p),
+                      },
+                      { divider: true },
+                      {
+                        label: "Reject",
+                        icon: HiX,
+                        onClick: () => setRejecting(p),
+                        danger: true,
+                      },
+                      {
+                        label: "Delete pitch",
+                        icon: HiTrash,
+                        onClick: () => setDeleting(p),
+                        danger: true,
+                      },
+                    ]}
+                  />
+                </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+              <div className="p-4">
+                <p className="font-bold mb-1 line-clamp-1">{p.title}</p>
+                <p className="text-xs text-gray-400 mb-2 line-clamp-2">
+                  {p.description}
+                </p>
+                <p className="text-xs text-gold font-bold mb-3">
+                  {p.founderId?.companyName || p.founderId?.name || "Unknown"} ·{" "}
+                  {p.industry}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Btn
+                    icon={HiEye}
+                    label="View"
+                    onClick={() => setPreviewing(p)}
+                  />
+                  <Btn
+                    icon={HiCheck}
+                    label="Approve"
+                    accent="green"
+                    onClick={() => approve(p._id)}
+                  />
+                  <Btn
+                    icon={HiX}
+                    label="Reject"
+                    accent="red"
+                    onClick={() => setRejecting(p)}
+                  />
+                  <Btn
+                    icon={HiLightningBolt}
+                    label="Boost"
+                    accent="gold"
+                    onClick={() => setBoosting(p)}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
 
       {/* Preview */}
@@ -183,7 +210,10 @@ export default function AdminPitchesPage() {
               {previewing.description}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Detail label="Founder" value={previewing.founderId.name} />
+              <Detail
+                label="Founder"
+                value={previewing.founderId?.name || "Unknown"}
+              />
               <Detail label="Asking" value={formatINR(previewing.askAmount)} />
               <Detail label="Equity" value={`${previewing.equityOffered}%`} />
               <Detail label="Industry" value={previewing.industry} />

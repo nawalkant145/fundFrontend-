@@ -1,6 +1,8 @@
 // Tiny static auth + monetization helpers, all backed by localStorage.
 // When backend wires up, replace these reads/writes with real API + tokens.
 
+import { userService } from "../services/userService";
+
 const KEY = "expglo:auth";
 const SUB_KEY = "expglo:sub";
 const FOLLOW_KEY = "expglo:follows";
@@ -139,6 +141,38 @@ export function cancelPro() {
   );
 }
 
+// Sync the client-side gating cache from the server's user.subscription.
+// Called after login / profile refresh so isPro() and the chat quota
+// reflect the real, server-enforced subscription state.
+export function syncSubscriptionFromUser(user) {
+  if (!user) return;
+  const serverSub = user.subscription || {};
+  const isProNow =
+    serverSub.plan === "pro" &&
+    serverSub.status === "active" &&
+    serverSub.expiresAt &&
+    new Date(serverSub.expiresAt) > new Date();
+
+  const current = getSubscription();
+  localStorage.setItem(
+    SUB_KEY,
+    JSON.stringify({
+      ...current,
+      plan: isProNow ? "pro" : "free",
+      status: isProNow
+        ? "active"
+        : current.status === "active"
+          ? "expired"
+          : current.status,
+      startedAt: serverSub.startedAt || current.startedAt,
+      expiresAt: serverSub.expiresAt || current.expiresAt,
+      // Server is the source of truth for the chat counter
+      freeChatsUsedThisMonth:
+        user.freeChatsUsedThisMonth ?? current.freeChatsUsedThisMonth ?? 0,
+    }),
+  );
+}
+
 // Returns { allowed, reason, freeRemaining }
 // Founders never gated — they message investors freely.
 // Investors hit the free-chat counter, then the paywall.
@@ -199,6 +233,8 @@ export function canStartCall(role = null) {
 }
 
 // ─── Follow / Following ──────────────────────────
+// These now delegate to the API. The localStorage cache is kept as a
+// fast optimistic read so the UI doesn't flicker on mount.
 
 function readFollowSet() {
   try {
@@ -226,12 +262,16 @@ export function follow(userId) {
   const set = readFollowSet();
   set.add(userId);
   writeFollowSet(set);
+  // Fire real API call in background
+  userService.follow(userId).catch(() => {});
 }
 
 export function unfollow(userId) {
   const set = readFollowSet();
   set.delete(userId);
   writeFollowSet(set);
+  // Fire real API call in background (toggle off)
+  userService.follow(userId).catch(() => {});
 }
 
 export function toggleFollow(userId) {
