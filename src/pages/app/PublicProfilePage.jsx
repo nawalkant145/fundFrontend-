@@ -78,16 +78,18 @@ export default function PublicProfilePage() {
       try {
         await chatService.startChat(userId);
         navigate("/app/messages");
-      } catch {
-        toast.error("Could not start chat");
+      } catch (err) {
+        const msg = err?.response?.data?.message || "Could not start chat";
+        toast.error(msg);
       }
     } else {
       // I'm an investor messaging a founder
       try {
         await chatService.startChat(userId);
         navigate("/app/messages");
-      } catch {
-        toast.error("Could not start chat");
+      } catch (err) {
+        const msg = err?.response?.data?.message || "Could not start chat";
+        toast.error(msg);
       }
     }
   };
