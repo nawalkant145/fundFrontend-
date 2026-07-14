@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiMenu, HiX } from "react-icons/hi";
+import { HiMenu, HiX, HiUser, HiCog, HiLogout } from "react-icons/hi";
 import { useAuth } from "../../context/AuthContext";
+import DropdownMenu from "../ui/DropdownMenu";
 
 
 /**
@@ -14,6 +15,7 @@ export default function PublicNav() {
   const [scrolled, setScrolled] = useState(false);
   const { pathname, hash } = useLocation();
   const { isLoggedIn, role, logout, loading, user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -96,28 +98,39 @@ export default function PublicNav() {
           {loading ? (
             <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
           ) : isLoggedIn ? (
-            <>
-              <Link
-                to={role === "admin" ? "/admin" : "/app"}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
-              >
+            <DropdownMenu
+              align="right"
+              triggerClass="flex items-center p-1 rounded-full hover:bg-black/5 transition-all"
+              trigger={
                 <img
                   src={
                     user?.avatar ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
                   }
                   alt={user?.name || "Profile"}
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/40 transition-colors"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/40 transition-colors cursor-pointer"
                 />
-                <span>{role === "admin" ? "Admin Panel" : "Go to App"}</span>
-              </Link>
-              <button
-                onClick={logout}
-                className="px-5 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md shadow-[#1B5E3F]/20 transition-all"
-              >
-                Log out
-              </button>
-            </>
+              }
+              items={[
+                {
+                  label: role === "admin" ? "Admin Panel" : "Go to App",
+                  icon: HiUser,
+                  onClick: () => navigate(role === "admin" ? "/admin" : "/app"),
+                },
+                {
+                  label: "Settings",
+                  icon: HiCog,
+                  onClick: () => navigate(role === "admin" ? "/admin/settings" : "/app/settings"),
+                },
+                { divider: true },
+                {
+                  label: "Log out",
+                  icon: HiLogout,
+                  danger: true,
+                  onClick: logout,
+                },
+              ]}
+            />
           ) : (
             <>
               <Link
@@ -182,27 +195,44 @@ export default function PublicNav() {
                   <div className="w-full h-10 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
                 ) : isLoggedIn ? (
                   <>
-                    <Link
-                      to={role === "admin" ? "/admin" : "/app"}
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-center gap-2 w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
-                    >
+                    <div className="flex items-center gap-3 px-2 py-1.5 mb-2">
                       <img
                         src={
                           user?.avatar ||
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
                         }
                         alt={user?.name || "Profile"}
-                        className="w-6 h-6 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
                       />
-                      <span>{role === "admin" ? "Admin Panel" : "Go to App"}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#0A1F14] truncate">
+                          {user?.name || "User"}
+                        </p>
+                        <p className="text-xs text-[#0A1F14]/50 truncate">
+                          {user?.email || ""}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      to={role === "admin" ? "/admin" : "/app"}
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
+                    >
+                      {role === "admin" ? "Admin Panel" : "Go to App"}
+                    </Link>
+                    <Link
+                      to={role === "admin" ? "/admin/settings" : "/app/settings"}
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
+                    >
+                      Settings
                     </Link>
                     <button
                       onClick={() => {
                         logout();
                         setMenuOpen(false);
                       }}
-                      className="block w-full text-center px-4 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full"
+                      className="block w-full text-center px-4 py-2.5 bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white text-sm font-bold rounded-full transition-all"
                     >
                       Log out
                     </button>
