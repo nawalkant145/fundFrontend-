@@ -154,7 +154,7 @@ export default function LinearFeed() {
 
   return (
     <DashboardShell>
-      <div className="max-w-[520px] mx-auto">
+      <div className="w-full max-w-[520px] mx-auto">
         {/* Composer for founders */}
         {isFounder && (
           <Link
@@ -490,8 +490,8 @@ function PitchFeedCard({
       </Link>
 
       {/* Actions */}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-1">
+      <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <ActionBtn
             active={liked}
             onClick={toggleLike}
@@ -512,12 +512,14 @@ function PitchFeedCard({
             activeColor="text-[#1B5E3F]"
           />
         </div>
-        <button
-          onClick={startChat}
-          className="px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all"
-        >
-          <HiChatAlt2 className="w-3.5 h-3.5" /> Message
-        </button>
+        {!isFounder && (
+          <button
+            onClick={startChat}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all flex-shrink-0"
+          >
+            <HiChatAlt2 className="w-3.5 h-3.5" /> Message
+          </button>
+        )}
       </div>
 
       {/* Stats */}

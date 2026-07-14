@@ -2,14 +2,24 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiX } from "react-icons/hi";
 
+const SIZE_MAP = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-2xl",
+  "2xl": "max-w-4xl",
+};
+
 export default function Modal({
   open,
   onClose,
   title,
   children,
-  maxWidth = "max-w-lg",
+  maxWidth,
+  size,
   hideClose = false,
 }) {
+  const widthClass = maxWidth || SIZE_MAP[size] || "max-w-lg";
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
@@ -37,7 +47,7 @@ export default function Modal({
             exit={{ y: 30, scale: 0.96, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
             data-light-app="true"
-            className={`w-full ${maxWidth} bg-white border border-[#1B5E3F]/15 rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[90vh]`}
+            className={`w-full ${widthClass} bg-white border border-[#1B5E3F]/15 rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[90vh]`}
           >
             {(title || !hideClose) && (
               <div className="flex items-center justify-between p-5 border-b border-[#1B5E3F]/10 flex-shrink-0">

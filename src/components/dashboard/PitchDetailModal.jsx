@@ -78,9 +78,9 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
 
   return (
     <Modal open={open} onClose={onClose} size="xl">
-      <div className="grid lg:grid-cols-[1fr_420px]">
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_380px]">
         {/* Video / thumbnail */}
-        <div className="relative bg-black aspect-[4/5] lg:aspect-auto min-h-[400px] lg:min-h-[600px]">
+        <div className="relative bg-black aspect-[4/5] lg:aspect-auto lg:min-h-[600px]">
           <img
             src={pitch.thumbnailUrl}
             alt={pitch.title}
@@ -112,7 +112,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
         </div>
 
         {/* Side panel */}
-        <div className="flex flex-col h-[600px] lg:h-[700px]">
+        <div className="flex flex-col max-h-[60vh] lg:max-h-[700px] lg:h-[700px] overflow-hidden">
           {/* Founder header */}
           <div className="p-4 border-b border-gold/10 flex items-center gap-3">
             <img

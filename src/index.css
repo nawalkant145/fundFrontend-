@@ -289,13 +289,11 @@ img {
   .shorts-feed-stage {
     flex: 0 0 auto;
     align-self: center;
-    width: auto;
-    /* Fill the full viewport height — Instagram parity */
-    height: 100vh;
-    height: 100dvh;
+    aspect-ratio: 9 / 16;
+    width: min(calc(100vh * 9 / 16), calc(100dvh * 9 / 16), calc(100vw - 200px));
+    height: auto;
     max-height: 100vh;
     max-height: 100dvh;
-    aspect-ratio: 9 / 16;
     border-radius: 0;
     border-width: 0;
   }
