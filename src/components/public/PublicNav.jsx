@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiMenu, HiX } from "react-icons/hi";
+import { useAuth } from "../../context/AuthContext";
+
 
 /**
  * Shared frosted-glass navbar for public pages (Home, Courses, etc.)
@@ -11,6 +13,7 @@ export default function PublicNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname, hash } = useLocation();
+  const { isLoggedIn, role, logout, loading } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -90,17 +93,38 @@ export default function PublicNav() {
         </div>
 
         <div className="hidden sm:flex items-center gap-2">
-          <Link
-            to="/login"
-            className="px-4 py-2 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
-          >
-            Log in
-          </Link>
-          <Link to="/signup">
-            <button className="px-5 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md shadow-[#1B5E3F]/20 transition-all">
-              Sign up free
-            </button>
-          </Link>
+          {loading ? (
+            <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
+          ) : isLoggedIn ? (
+            <>
+              <Link
+                to={role === "admin" ? "/admin" : "/app"}
+                className="px-4 py-2 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
+              >
+                {role === "admin" ? "Admin Panel" : "Go to App"}
+              </Link>
+              <button
+                onClick={logout}
+                className="px-5 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md shadow-[#1B5E3F]/20 transition-all"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
+              >
+                Log in
+              </Link>
+              <Link to="/signup">
+                <button className="px-5 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md shadow-[#1B5E3F]/20 transition-all">
+                  Sign up free
+                </button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -146,20 +170,45 @@ export default function PublicNav() {
                 ),
               )}
               <div className="pt-3 border-t border-[#1B5E3F]/10 space-y-2">
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full"
-                >
-                  Sign up free
-                </Link>
+                {loading ? (
+                  <div className="w-full h-10 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
+                ) : isLoggedIn ? (
+                  <>
+                    <Link
+                      to={role === "admin" ? "/admin" : "/app"}
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
+                    >
+                      {role === "admin" ? "Admin Panel" : "Go to App"}
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setMenuOpen(false);
+                      }}
+                      className="block w-full text-center px-4 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full"
+                    >
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      to="/signup"
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-center px-4 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full"
+                    >
+                      Sign up free
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
