@@ -13,7 +13,7 @@ export default function PublicNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname, hash } = useLocation();
-  const { isLoggedIn, role, logout, loading } = useAuth();
+  const { isLoggedIn, role, logout, loading, user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -99,9 +99,17 @@ export default function PublicNav() {
             <>
               <Link
                 to={role === "admin" ? "/admin" : "/app"}
-                className="px-4 py-2 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
               >
-                {role === "admin" ? "Admin Panel" : "Go to App"}
+                <img
+                  src={
+                    user?.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
+                  }
+                  alt={user?.name || "Profile"}
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/40 transition-colors"
+                />
+                <span>{role === "admin" ? "Admin Panel" : "Go to App"}</span>
               </Link>
               <button
                 onClick={logout}
@@ -177,9 +185,17 @@ export default function PublicNav() {
                     <Link
                       to={role === "admin" ? "/admin" : "/app"}
                       onClick={() => setMenuOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
+                      className="flex items-center justify-center gap-2 w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
                     >
-                      {role === "admin" ? "Admin Panel" : "Go to App"}
+                      <img
+                        src={
+                          user?.avatar ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
+                        }
+                        alt={user?.name || "Profile"}
+                        className="w-6 h-6 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
+                      />
+                      <span>{role === "admin" ? "Admin Panel" : "Go to App"}</span>
                     </Link>
                     <button
                       onClick={() => {
