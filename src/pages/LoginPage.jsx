@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   HiArrowRight,
   HiCheckCircle,
 } from "react-icons/hi";
+import { useState, useEffect } from "react";
 import { IoRocketSharp } from "react-icons/io5";
 import { FcGoogle } from "react-icons/fc";
 import { FaLinkedin } from "react-icons/fa";
@@ -28,6 +29,12 @@ export default function LoginPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+    useEffect(() => {
+    const preSelectedRole = location.state?.role;
+    if (preSelectedRole && (preSelectedRole === "founder" || preSelectedRole === "investor")) {
+      setUserType(preSelectedRole);
+    }
+  }, [location.state]);
 
   // Redirect to the page they were trying to visit before being redirected to login
   const from = location.state?.from?.pathname || "/app";
@@ -96,7 +103,7 @@ export default function LoginPage() {
             <RoleCard
               role="investor"
               title="Investor"
-              icon={<HiTrendingUp className="w-7 h-7 text-[#F5B942]" />}
+             icon={<HiTrendingUp className="w-7 h-7 text-[#0F4A2E]" />}
               description="Discover promising startups. Back the next big thing."
               accent="green"
               onClick={() => setUserType("investor")}
@@ -195,6 +202,7 @@ export default function LoginPage() {
           Don't have an account?{" "}
           <Link
             to="/signup"
+            state={{ role: userType }}
             className="text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors"
           >
             Sign up for free
@@ -313,10 +321,11 @@ function Divider({ children }) {
   );
 }
 
-function SocialButton({ icon, children }) {
+function SocialButton({ icon, children, onClick }) {
   return (
     <motion.button
       type="button"
+      onClick={onClick}
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.98 }}
       className="py-3 px-4 bg-white border border-[#1B5E3F]/15 rounded-full hover:border-[#1B5E3F]/40 hover:shadow-md transition-all font-bold text-sm flex items-center justify-center gap-2 text-[#0A1F14]"

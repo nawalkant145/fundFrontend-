@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 import {
   HiVideoCamera,
@@ -89,6 +89,7 @@ function Marquee({ items }) {
 }
 
 export default function HomePage() {
+    const navigate = useNavigate();
   const industries = [
     "Fintech",
     "HealthTech",
@@ -261,7 +262,7 @@ function Hero() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5"
           >
-            <Link to="/signup">
+              <Link to="/signup" state={{ role: "founder" }}>
               <motion.button
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.97 }}

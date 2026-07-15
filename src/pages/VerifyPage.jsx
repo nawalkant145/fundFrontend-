@@ -158,7 +158,6 @@ export default function VerifyPage() {
 
             <OtpInput value={emailOtp} onChange={setEmailOtp} />
 
-            {devEmailOtp && <DevOtpBanner otp={devEmailOtp} />}
 
             {error && (
               <p className="text-center text-sm text-red-500 font-semibold">
@@ -199,7 +198,7 @@ export default function VerifyPage() {
 
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} />
 
-            {devPhoneOtp && <DevOtpBanner otp={devPhoneOtp} />}
+         
 
             {error && (
               <p className="text-center text-sm text-red-500 font-semibold">

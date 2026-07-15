@@ -629,7 +629,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+        className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-shadow"
     >
       {/* Author row */}
       <div className="flex items-center gap-3 p-4">
@@ -639,7 +639,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
           className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
         />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm inline-flex items-center gap-1 truncate">
+<p className="font-bold text-sm inline-flex items-center gap-1 truncate cursor-pointer">
             {post.authorId.name}
             {post.authorId.isVerified && (
               <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
@@ -649,7 +649,8 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
             {post.authorId.companyName} · @{post.authorId.username}
           </p>
         </div>
-        <FollowButton userId={post.authorId._id} variant="outline" />
+ <FollowButton userId={post.authorId._id} variant="outline" 
+        />
       </div>
 
       {/* Caption (LinkedIn-style, before images) */}
@@ -775,7 +776,8 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         </div>
         <button
           onClick={startChat}
-          className="px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all"
+    className="px-4 py-2 rounded-full text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all"
+          style={{ color: "white" }}
         >
           <HiChatAlt2 className="w-3.5 h-3.5" /> Message
         </button>

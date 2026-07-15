@@ -94,7 +94,7 @@ export default function PublicNav() {
           })}
         </div>
 
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2">
           {loading ? (
             <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
           ) : isLoggedIn ? (
