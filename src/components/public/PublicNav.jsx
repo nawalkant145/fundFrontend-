@@ -152,7 +152,7 @@ export default function PublicNav() {
                   : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
               }`}
             >
-              Sign up
+              Sign Up Free
             </Link>
           </div>
             </>
@@ -271,7 +271,7 @@ export default function PublicNav() {
                             : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
                         }`}
                       >
-                        Sign up
+                        Sign Up Free
                       </Link>
                     </div>
                   </>
