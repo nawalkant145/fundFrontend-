@@ -68,7 +68,7 @@ export default function FounderProfileModal({
             className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-gold/40 object-cover flex-shrink-0"
           />
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-black flex items-center gap-1 mb-0.5">
+           <h2 className="text-xl font-bold text-white flex items-center gap-1 mb-0.5">
               {founder.name}
               {founder.isVerified && (
                 <MdVerified className="w-5 h-5 text-gold flex-shrink-0" />
@@ -123,7 +123,7 @@ export default function FounderProfileModal({
             className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
               isFollowing
                 ? "bg-transparent border-2 border-white/30 text-white"
-                : "bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30"
+                    : "bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30 shadow-md"
             }`}
           >
             {isFollowing ? "Following" : "Follow"}
@@ -193,7 +193,7 @@ function Stat({ icon: Icon, label, value }) {
   return (
     <div className="text-center bg-dark-bg/40 rounded-xl p-2.5">
       <Icon className="w-4 h-4 mx-auto text-gold mb-1" />
-      <p className="font-black text-base">
+       <p className="font-black text-base text-white">
         {value > 999 ? `${(value / 1000).toFixed(1)}k` : value}
       </p>
       <p className="text-[10px] text-gray-400 uppercase tracking-wide font-bold">

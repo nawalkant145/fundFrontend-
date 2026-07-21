@@ -72,10 +72,10 @@ export default function FollowButton({
 
   const stateClasses = following
     ? variant === "outline"
-      ? "bg-white border-[#1B5E3F]/25 text-[#0F4A2E]"
+      ? "bg-white border-[#1B5E3F]/25 text-white"
       : "bg-white/15 text-white border border-white/40 backdrop-blur-sm"
     : variant === "outline"
-      ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white border-transparent shadow-md shadow-[#1B5E3F]/25"
+      ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white border-transparent shadow-md shadow-[#1B5E3F]/25 !text-white hover:from-[#2D7A4F] hover:to-[#1B5E3F] hover:shadow-[#1B5E3F]/40"
       : "bg-[#F5B942] text-[#0F4A2E]";
 
   return (

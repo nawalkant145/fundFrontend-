@@ -94,7 +94,7 @@ export default function PublicNav() {
           })}
         </div>
 
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           {loading ? (
             <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
           ) : isLoggedIn ? (
@@ -133,17 +133,28 @@ export default function PublicNav() {
             />
           ) : (
             <>
-              <Link
-                to="/login"
-                className="px-4 py-2 text-sm font-bold text-[#0A1F14]/75 hover:text-[#1B5E3F] transition-colors"
-              >
-                Log in
-              </Link>
-              <Link to="/signup">
-                <button className="px-5 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md shadow-[#1B5E3F]/20 transition-all">
-                  Sign up free
-                </button>
-              </Link>
+             <div className="inline-flex bg-[#FAFAF7] rounded-full p-1 border border-[#1B5E3F]/10">
+            <Link
+              to="/login"
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                pathname === "/login"
+                  ? "bg-[#1B5E3F] text-white shadow-md"
+                  : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
+              }`}
+            >
+              Log in
+            </Link>
+            <Link
+              to="/signup"
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                pathname === "/signup"
+                  ? "bg-[#1B5E3F] text-white shadow-md"
+                  : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
+              }`}
+            >
+              Sign up
+            </Link>
+          </div>
             </>
           )}
         </div>
@@ -239,20 +250,30 @@ export default function PublicNav() {
                   </>
                 ) : (
                   <>
-                    <Link
-                      to="/login"
-                      onClick={() => setMenuOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 border border-[#1B5E3F]/15 text-sm font-bold rounded-full text-[#0F4A2E] bg-white"
-                    >
-                      Log in
-                    </Link>
-                    <Link
-                      to="/signup"
-                      onClick={() => setMenuOpen(false)}
-                      className="block w-full text-center px-4 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full"
-                    >
-                      Sign up free
-                    </Link>
+                    <div className="inline-flex bg-[#FAFAF7] rounded-full p-1 border border-[#1B5E3F]/10 w-full">
+                      <Link
+                        to="/login"
+                        onClick={() => setMenuOpen(false)}
+                        className={`flex-1 text-center px-4 py-2.5 rounded-full text-sm font-bold transition-all ${
+                          pathname === "/login"
+                            ? "bg-[#1B5E3F] text-white shadow-md"
+                            : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
+                        }`}
+                      >
+                        Log in
+                      </Link>
+                      <Link
+                        to="/signup"
+                        onClick={() => setMenuOpen(false)}
+                        className={`flex-1 text-center px-4 py-2.5 rounded-full text-sm font-bold transition-all ${
+                          pathname === "/signup"
+                            ? "bg-[#1B5E3F] text-white shadow-md"
+                            : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
+                        }`}
+                      >
+                        Sign up
+                      </Link>
+                    </div>
                   </>
                 )}
               </div>
