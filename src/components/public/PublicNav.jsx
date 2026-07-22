@@ -97,7 +97,7 @@ export default function PublicNav() {
         <div className="hidden sm:flex items-center gap-2">
           {loading ? (
             <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
-          ) : isLoggedIn ? (
+          ) : isLoggedIn && pathname !== "/verify" ? (
             <DropdownMenu
               align="right"
               triggerClass="flex items-center p-1 rounded-full hover:bg-black/5 transition-all"
@@ -147,7 +147,7 @@ export default function PublicNav() {
             <Link
               to="/signup"
               className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                pathname === "/signup"
+                pathname === "/signup" || pathname === "/verify"
                   ? "bg-[#1B5E3F] text-white shadow-md"
                   : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
               }`}
@@ -204,7 +204,7 @@ export default function PublicNav() {
               <div className="pt-3 border-t border-[#1B5E3F]/10 space-y-2">
                 {loading ? (
                   <div className="w-full h-10 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
-                ) : isLoggedIn ? (
+                ) : isLoggedIn && pathname !== "/verify" ? (
                   <>
                     <div className="flex items-center gap-3 px-2 py-1.5 mb-2">
                       <img
@@ -266,7 +266,7 @@ export default function PublicNav() {
                         to="/signup"
                         onClick={() => setMenuOpen(false)}
                         className={`flex-1 text-center px-4 py-2.5 rounded-full text-sm font-bold transition-all ${
-                          pathname === "/signup"
+                          pathname === "/signup" || pathname === "/verify"
                             ? "bg-[#1B5E3F] text-white shadow-md"
                             : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
                         }`}

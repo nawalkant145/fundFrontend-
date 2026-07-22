@@ -21,9 +21,9 @@ const RESEND_SECONDS = 30;
 export default function VerifyPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { register, refreshUser } = useAuth();
-  const email = location.state?.email || "you@example.com";
-  const phone = location.state?.phone || "";
+  const { user, register, refreshUser } = useAuth();
+  const email = location.state?.email || user?.email || "you@example.com";
+  const phone = location.state?.phone || user?.phone || "";
   const registerData = location.state?.registerData || null;
 
   const [step, setStep] = useState(0);
@@ -62,7 +62,7 @@ export default function VerifyPage() {
       await authService.verifyPreRegisterOtp(email, emailOtp);
 
       // Now create the account (email is verified)
-      if (registerData) {
+      if (registerData && !user) {
         await register(registerData);
       }
 
