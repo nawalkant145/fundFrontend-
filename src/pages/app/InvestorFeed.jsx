@@ -29,7 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { videoService } from "../../services/videoService";
 import { investmentService } from "../../services/investmentService";
 import { reportService } from "../../services/reportService";
-import { MOCK_PITCHES, formatINR } from "../../constants/mockData";
+import { MOCK_PITCHES, ALL_MOCK_PITCHES, formatINR } from "../../constants/mockData";
 import {
   isFollowing,
   follow as followUser,
@@ -43,11 +43,26 @@ export default function InvestorFeed() {
   const { user } = useAuth();
   const userId = user?._id;
 
-  // Pitches array — starts with mock, replaced by real data if API succeeds
-  const [pitches, setPitches] = useState(MOCK_PITCHES);
+  // Tracks the active pitch ID across array replacements.
+  // Initialised from the URL param so the correct pitch is shown on first render.
+  const activePitchRef = useRef(
+    new URLSearchParams(window.location.search).get("pitch") || null,
+  );
+
+  const [pitches, setPitches] = useState(ALL_MOCK_PITCHES);
   const [feedLoaded, setFeedLoaded] = useState(false);
 
-  // Fetch real feed on mount
+  const [idx, setIdx] = useState(() => {
+    const id = activePitchRef.current;
+    if (id) {
+      const i = ALL_MOCK_PITCHES.findIndex((p) => p._id === id);
+      if (i >= 0) return i;
+    }
+    return 0;
+  });
+
+  // Fetch real feed on mount. After the array is replaced we re-anchor idx by
+  // pitch ID so the active pitch never changes unexpectedly.
   useEffect(() => {
     videoService
       .getFeed({ limit: 20 })
@@ -55,10 +70,21 @@ export default function InvestorFeed() {
         const data = res?.data?.data;
         const videos = data?.videos || data;
         if (videos?.length > 0) {
-          setPitches(videos);
+          const merged = [...videos];
+          ALL_MOCK_PITCHES.forEach((mp) => {
+            if (!merged.some((v) => v._id === mp._id)) merged.push(mp);
+          });
+
+          // Re-anchor idx to keep the same pitch visible after array is replaced
+          const activeId = activePitchRef.current;
+          const newIdx = activeId
+            ? Math.max(0, merged.findIndex((p) => p._id === activeId))
+            : 0;
+
+          setPitches(merged);
+          setIdx(newIdx);
           setFeedLoaded(true);
 
-          // Initialize liked/saved from API's isLiked/isSaved booleans
           const likedInit = {};
           const savedInit = {};
           videos.forEach((v) => {
@@ -69,19 +95,10 @@ export default function InvestorFeed() {
           setSaved(savedInit);
         }
       })
-      .catch(() => {
-        // API unavailable — keep mock data
-      });
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [idx, setIdx] = useState(() => {
-    const param = new URLSearchParams(window.location.search).get("pitch");
-    if (param) {
-      const found = pitches.findIndex((p) => p._id === param);
-      if (found >= 0) return found;
-    }
-    return 0;
-  });
   // Remember user's mute choice across sessions — Instagram does this too.
   // First-time users still start muted (browser autoplay policy requires it),
   // but a returning user who unmuted previously gets sound right away.
@@ -104,32 +121,76 @@ export default function InvestorFeed() {
 
   const [direction, setDirection] = useState("down"); // 'up' | 'down' for slide animation
 
-  // React to URL ?pitch=<id> changes (e.g. navigating from Discover/Saved)
+  // React to URL ?pitch=<id> — fires when navigating here from a profile card.
+  // Finds the pitch, jumps to it, then strips the param so normal scrolling works.
   useEffect(() => {
     const param = searchParams.get("pitch");
     if (!param) return;
-    const found = pitches.findIndex((p) => p._id === param);
-    if (found >= 0 && found !== idx) {
-      setDirection(found > idx ? "down" : "up");
-      setIdx(found);
-      setExpanded(false);
-    }
-    // Strip the param so it doesn't keep affecting state
+
+    activePitchRef.current = param;
+
+    // Strip the param immediately so scrolling isn't locked to this pitch
     const next = new URLSearchParams(searchParams);
     next.delete("pitch");
     setSearchParams(next, { replace: true });
-    // eslint-disable-next-line
+
+    const found = pitches.findIndex((p) => p._id === param);
+    if (found >= 0) {
+      setDirection(found > idx ? "down" : "up");
+      setIdx(found);
+      setExpanded(false);
+    } else {
+      // Pitch not in current list — add it
+      const mockMatch = ALL_MOCK_PITCHES.find((p) => p._id === param);
+      if (mockMatch) {
+        setPitches((prev) => {
+          const existing = prev.findIndex((p) => p._id === mockMatch._id);
+          if (existing >= 0) {
+            setDirection(existing > idx ? "down" : "up");
+            setIdx(existing);
+            return prev;
+          }
+          const next2 = [...prev, mockMatch];
+          setIdx(next2.length - 1);
+          return next2;
+        });
+        setExpanded(false);
+      } else if (/^[a-f0-9]{24}$/i.test(param)) {
+        videoService
+          .getById(param)
+          .then((res) => {
+            const video = res?.data?.data;
+            if (!video) return;
+            setPitches((prev) => {
+              const existing = prev.findIndex((p) => p._id === video._id);
+              if (existing >= 0) {
+                setIdx(existing);
+                return prev;
+              }
+              const next2 = [...prev, video];
+              setIdx(next2.length - 1);
+              return next2;
+            });
+            setExpanded(false);
+          })
+          .catch(() => {});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const pitch = pitches[idx];
 
-  // ─── View tracking ────────────────────────────────
+  // Update activePitchRef whenever active pitch changes
+  useEffect(() => {
+    if (pitch?._id) activePitchRef.current = pitch._id;
+  }, [pitch?._id]);
+
   // Log a view when a pitch becomes active (once per pitch per session).
   // Fires after 1.5s on the pitch so quick scroll-throughs don't count.
   const viewedRef = useRef(new Set());
   useEffect(() => {
     if (!pitch?._id) return;
-    // Skip mock pitches (their ids aren't real Mongo ObjectIds)
     const isRealId = /^[a-f0-9]{24}$/i.test(pitch._id);
     if (!isRealId || viewedRef.current.has(pitch._id)) return;
 
@@ -155,18 +216,24 @@ export default function InvestorFeed() {
     }
   };
 
-  // Jump to a specific pitch (used when picking from founder profile)
   const jumpToPitch = (pitchObj) => {
-    const i = pitches.findIndex((p) => p._id === pitchObj._id);
-    if (i >= 0) {
+    if (!pitchObj?._id) return;
+    activePitchRef.current = pitchObj._id;
+    let i = pitches.findIndex((p) => p._id === pitchObj._id);
+    if (i < 0) {
+      setPitches((prev) => {
+        const nextPitches = [...prev, pitchObj];
+        setIdx(nextPitches.length - 1);
+        return nextPitches;
+      });
+      setDirection("down");
+    } else {
       setDirection(i > idx ? "down" : "up");
       setIdx(i);
-      setExpanded(false);
     }
+    setExpanded(false);
     setActiveModal(null);
   };
-
-  // Keyboard navigation
   useEffect(() => {
     const onKey = (e) => {
       if (
@@ -286,7 +353,9 @@ export default function InvestorFeed() {
     const id = pitch._id;
     const wasLiked = liked[id];
     setLiked((p) => ({ ...p, [id]: !wasLiked }));
-    videoService.like(id).catch(() => {});
+    if (id && /^[a-f0-9]{24}$/i.test(id)) {
+      videoService.like(id).catch(() => {});
+    }
   };
 
   // Double-tap on the video — Instagram only LIKES (never unlikes) on double-tap
@@ -294,7 +363,9 @@ export default function InvestorFeed() {
     const id = pitch._id;
     if (!liked[id]) {
       setLiked((p) => ({ ...p, [id]: true }));
-      videoService.like(id).catch(() => {});
+      if (id && /^[a-f0-9]{24}$/i.test(id)) {
+        videoService.like(id).catch(() => {});
+      }
     }
   };
 
@@ -302,7 +373,9 @@ export default function InvestorFeed() {
     const id = pitch._id;
     const wasSaved = saved[id];
     setSaved((p) => ({ ...p, [id]: !wasSaved }));
-    videoService.save(id).catch(() => {});
+    if (id && /^[a-f0-9]{24}$/i.test(id)) {
+      videoService.save(id).catch(() => {});
+    }
   };
 
   const toggleFollow = () => {
@@ -577,6 +650,7 @@ export default function InvestorFeed() {
         open={activeModal === "comments"}
         onClose={() => setActiveModal(null)}
         videoId={pitch._id}
+        totalCount={pitch.commentCount || pitch.comments}
         onCommentAdded={() =>
           setLocalCommentCount((p) => ({
             ...p,

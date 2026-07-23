@@ -8,13 +8,34 @@ import { userService } from "../../services/userService";
 /**
  * Modal listing a user's followers or following.
  * mode: "followers" | "following"
+ * preloadedFollowers / preloadedFollowing: arrays already fetched from the profile API
  */
-export default function FollowListModal({ open, onClose, userId, mode }) {
+export default function FollowListModal({
+  open,
+  onClose,
+  userId,
+  mode,
+  preloadedFollowers = null,
+  preloadedFollowing = null,
+}) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open || !userId || !mode) return;
+
+    // Use preloaded data if available (avoids a second API call)
+    const preloaded = mode === "followers" ? preloadedFollowers : preloadedFollowing;
+    if (preloaded !== null) {
+      // Filter out any non-object entries (raw ObjectIds stored as strings)
+      const validUsers = preloaded.filter(
+        (item) => item && typeof item === "object" && item._id && item.name,
+      );
+      setUsers(validUsers);
+      return;
+    }
+
+    // Fallback: fetch from API
     setLoading(true);
     const fetcher =
       mode === "followers"
@@ -23,17 +44,33 @@ export default function FollowListModal({ open, onClose, userId, mode }) {
     fetcher
       .then((res) => {
         const data = res?.data?.data || res?.data;
-        setUsers(data?.users || data || []);
+        // Backend returns { users, followers, following, list } — handle all shapes
+        const list =
+          (mode === "followers"
+            ? data?.followers || data?.users || data?.list
+            : data?.following || data?.users || data?.list) ||
+          data ||
+          [];
+        const arr = Array.isArray(list) ? list : [];
+        setUsers(
+          arr.filter(
+            (item) => item && typeof item === "object" && item._id && item.name,
+          ),
+        );
       })
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
-  }, [open, userId, mode]);
+  }, [open, userId, mode, preloadedFollowers, preloadedFollowing]);
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={mode === "followers" ? "Followers" : "Following"}
+      title={
+        mode === "followers"
+          ? `Followers (${users.length.toLocaleString()})`
+          : `Following (${users.length.toLocaleString()})`
+      }
       maxWidth="max-w-md"
     >
       {loading ? (

@@ -166,9 +166,9 @@ function PostTile({ post }) {
           <span className="line-clamp-6">{post.caption}</span>
         </div>
       )}
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white text-sm font-bold">
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
         <span className="inline-flex items-center gap-1">
-          <HiHeart className="w-4 h-4" /> {post.likes}
+          <HiHeart className="w-4 h-4 text-red-400" /> {post.likes}
         </span>
         <span className="inline-flex items-center gap-1">
           <HiChatAlt2 className="w-4 h-4" /> {post.commentCount}

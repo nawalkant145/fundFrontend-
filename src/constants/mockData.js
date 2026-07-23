@@ -464,6 +464,36 @@ export const formatINR = (n) => {
   return `₹${n}`;
 };
 
+const FIRST_NAMES = ["Vikram", "Priya", "Arjun", "Sofia", "Marcus", "Ananya", "Rohan", "Devi", "Siddharth", "Neha", "Kabir", "Meera", "Aarav", "Tanvi", "Aditya", "Riya", "Karan", "Kavya", "Varun", "Isha", "Alex", "Sarah", "Michael", "Elena", "Omar", "Chen", "Fatima", "Lucas", "Zoe", "Mateo"];
+const LAST_NAMES = ["Patel", "Rajan", "Nair", "Chen", "Webb", "Sharma", "Mehta", "Deshmukh", "Verma", "Kapoor", "Gupta", "Joshi", "Singhania", "Chopra", "Reddy", "Iyer", "Bose", "Trivedi", "Bhatia", "Malhotra", "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"];
+const COMPANIES = ["Altva Capital", "Surge Ventures", "Peak Equity", "EduForge", "SupplySync", "GreenChain", "NovaMed AI", "Nexus Fund", "Vanguard VC", "Alpha Partners", "Horizon Capital", "Starlight Ventures", "AgriGrow AI", "BioPulse", "Quantum Labs", "Solaris Energy", "CloudNine Systems", "UrbanMobility", "FinFlow", "HealthSphere"];
+const ROLES = ["investor", "founder"];
+
+export const generateMockUsersList = (count, keyPrefix = "m_user") => {
+  const list = [];
+  for (let i = 0; i < count; i++) {
+    const fn = FIRST_NAMES[i % FIRST_NAMES.length];
+    const ln = LAST_NAMES[(i * 3 + Math.floor(i / FIRST_NAMES.length)) % LAST_NAMES.length];
+    const name = `${fn} ${ln}`;
+    const username = `${fn.toLowerCase()}_${ln.toLowerCase()}_${i + 1}`;
+    const role = ROLES[i % 2];
+    const companyName = COMPANIES[i % COMPANIES.length];
+    const avatarIndex = (i % 70) + 1;
+    const isVerified = i % 3 === 0;
+
+    list.push({
+      _id: `${keyPrefix}_${i + 1}`,
+      name,
+      username,
+      avatar: `https://i.pravatar.cc/150?img=${avatarIndex}`,
+      companyName,
+      role,
+      isVerified,
+    });
+  }
+  return list;
+};
+
 // Each founder's other / past pitches — used for the profile modal grid
 export const FOUNDER_PROFILES = {
   f_1: {
@@ -473,6 +503,8 @@ export const FOUNDER_PROFILES = {
     following: 89,
     totalPitches: 4,
     website: "https://novamed.ai",
+    followersList: generateMockUsersList(1240, "f1_follower"),
+    followingList: generateMockUsersList(89, "f1_following"),
     pitches: [
       MOCK_PITCHES[0],
       {
@@ -481,6 +513,7 @@ export const FOUNDER_PROFILES = {
         title: "Series A demo — clinical results",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=600&fit=crop",
+        videoUrl: "/videos/appshowcase.mp4",
         views: 2100,
         likes: Array(160).fill("x"),
       },
@@ -490,6 +523,7 @@ export const FOUNDER_PROFILES = {
         title: "How our edge AI works in 90s",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=400&h=600&fit=crop",
+        videoUrl: "/videos/globalnetwork.mp4",
         views: 980,
         likes: Array(72).fill("x"),
       },
@@ -499,10 +533,12 @@ export const FOUNDER_PROFILES = {
         title: "Customer story — Aayush Hospital",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1551076805-e1869033e561?w=400&h=600&fit=crop",
+        videoUrl: "/videos/herostory.mp4",
         views: 1450,
         likes: Array(110).fill("x"),
       },
     ],
+    // posts will be filtered from MOCK_POSTS by authorId._id === "f_1"
   },
   f_2: {
     bio: "Tokenizing carbon offsets to make climate action verifiable.",
@@ -511,6 +547,8 @@ export const FOUNDER_PROFILES = {
     following: 145,
     totalPitches: 2,
     website: "https://greenchain.io",
+    followersList: generateMockUsersList(3210, "f2_follower"),
+    followingList: generateMockUsersList(145, "f2_following"),
     pitches: [
       MOCK_PITCHES[1],
       {
@@ -519,6 +557,7 @@ export const FOUNDER_PROFILES = {
         title: "How we built our auditor network",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400&h=600&fit=crop",
+        videoUrl: "/videos/investorpov.mp4",
         views: 4300,
         likes: Array(280).fill("x"),
       },
@@ -531,6 +570,8 @@ export const FOUNDER_PROFILES = {
     following: 210,
     totalPitches: 1,
     website: "https://eduforge.in",
+    followersList: generateMockUsersList(540, "f3_follower"),
+    followingList: generateMockUsersList(210, "f3_following"),
     pitches: [MOCK_PITCHES[2]],
   },
   f_4: {
@@ -540,6 +581,8 @@ export const FOUNDER_PROFILES = {
     following: 95,
     totalPitches: 3,
     website: "https://supplysync.com",
+    followersList: generateMockUsersList(1820, "f4_follower"),
+    followingList: generateMockUsersList(95, "f4_following"),
     pitches: [
       MOCK_PITCHES[3],
       {
@@ -548,6 +591,7 @@ export const FOUNDER_PROFILES = {
         title: "Logistics use case — Pune dairy",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&h=600&fit=crop",
+        videoUrl: "/videos/oldvsnew.mp4",
         views: 2700,
         likes: Array(190).fill("x"),
       },
@@ -557,6 +601,7 @@ export const FOUNDER_PROFILES = {
         title: "Onboarding a new SMB in 5 min",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=600&fit=crop",
+        videoUrl: "/pitchvideo.mp4",
         views: 1900,
         likes: Array(140).fill("x"),
       },
@@ -569,9 +614,19 @@ export const FOUNDER_PROFILES = {
     following: 67,
     totalPitches: 1,
     website: "https://farmpulse.app",
+    followersList: generateMockUsersList(980, "f5_follower"),
+    followingList: generateMockUsersList(67, "f5_following"),
     pitches: [MOCK_PITCHES[4]],
   },
 };
+
+// All pitches combined (main feed pitches + extra profile pitches)
+export const ALL_MOCK_PITCHES = [
+  ...MOCK_PITCHES,
+  ...Object.values(FOUNDER_PROFILES)
+    .flatMap((fp) => fp.pitches || [])
+    .filter((p) => !MOCK_PITCHES.some((m) => m._id === p._id)),
+];
 
 // ─── Founder posts (Instagram/LinkedIn-style) ────────────
 export const MOCK_POSTS = [
@@ -695,6 +750,431 @@ export const MOCK_POSTS = [
     createdAt: "2026-05-22",
   },
 ];
+
+// ─── Mock initial comments for demo pitches & posts ───────
+export const MOCK_COMMENTS = {
+  v_1: [
+    {
+      _id: "mc_1",
+      userId: {
+        _id: "i_1",
+        name: "Vikram Patel",
+        username: "vikram_invests",
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Incredible clinical accuracy numbers! What is your strategy for regulatory approval in tier-2/3 cities?",
+      createdAt: "2026-05-23T10:15:00Z",
+      likes: ["u_self"],
+      replyCount: 1,
+      _replies: [
+        {
+          _id: "mc_1_1",
+          userId: {
+            _id: "f_1",
+            name: "Aisha Kamara",
+            username: "aisha_novamed",
+            avatar:
+              "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop",
+            isVerified: true,
+          },
+          text: "@vikram_invests We already secured CDSCO Class B clearance! Happy to share the audit report.",
+          createdAt: "2026-05-23T11:00:00Z",
+          likes: [],
+        },
+      ],
+      _repliesLoaded: true,
+      _repliesOpen: false,
+    },
+    {
+      _id: "mc_2",
+      userId: {
+        _id: "i_2",
+        name: "Meera Kapoor",
+        username: "meera_vc",
+        avatar:
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Love the edge-AI offline capability. Essential for rural connectivity gaps.",
+      createdAt: "2026-05-23T14:30:00Z",
+      likes: ["i_1"],
+      replyCount: 0,
+      _replies: [],
+      _repliesLoaded: true,
+      _repliesOpen: false,
+    },
+    {
+      _id: "mc_3",
+      userId: {
+        _id: "f_2",
+        name: "Rahul Mehta",
+        username: "rahul_greenchain",
+        avatar:
+          "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Super inspiring Aisha! Deployed in 14 clinics already is huge momentum.",
+      createdAt: "2026-05-24T09:20:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+      _repliesLoaded: true,
+      _repliesOpen: false,
+    },
+    {
+      _id: "mc_3b",
+      userId: {
+        _id: "i_3",
+        name: "Arjun Nair",
+        username: "arjun_nair",
+        avatar:
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Would love to discuss your distribution model. Sent you a connect request on EXPGLO!",
+      createdAt: "2026-05-25T11:40:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+    {
+      _id: "mc_3c",
+      userId: {
+        _id: "f_3",
+        name: "Sofia Chen",
+        username: "sofia_eduforge",
+        avatar:
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+        isVerified: false,
+      },
+      text: "Edge AI processing on standard smartphones is game-changing. Kudos!",
+      createdAt: "2026-05-25T16:15:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  v_2: [
+    {
+      _id: "mc_4",
+      userId: {
+        _id: "i_3",
+        name: "Arjun Nair",
+        username: "arjun_nair",
+        avatar:
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Verifiable carbon retirement is the exact missing piece in ESG compliance.",
+      createdAt: "2026-05-19T12:00:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+    {
+      _id: "mc_4b",
+      userId: {
+        _id: "i_1",
+        name: "Vikram Patel",
+        username: "vikram_invests",
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "₹12Cr revenue in year one is impressive traction. How do you verify satellite sensor data?",
+      createdAt: "2026-05-20T14:10:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  v_3: [
+    {
+      _id: "mc_5",
+      userId: {
+        _id: "i_1",
+        name: "Vikram Patel",
+        username: "vikram_invests",
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Adaptive learning in regional languages is huge. Great focus!",
+      createdAt: "2026-05-27T08:10:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+    {
+      _id: "mc_5b",
+      userId: {
+        _id: "i_2",
+        name: "Meera Kapoor",
+        username: "meera_vc",
+        avatar:
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "85% completion rate in EdTech is top decile performance.",
+      createdAt: "2026-05-27T10:00:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  v_4: [
+    {
+      _id: "mc_v4_1",
+      userId: {
+        _id: "i_4",
+        name: "Karan Mehta",
+        username: "karan_m",
+        avatar:
+          "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop",
+        isVerified: false,
+      },
+      text: "₹4,999/mo price point makes it an easy sell for SMBs.",
+      createdAt: "2026-05-16T11:20:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  v_5: [
+    {
+      _id: "mc_v5_1",
+      userId: {
+        _id: "i_1",
+        name: "Vikram Patel",
+        username: "vikram_invests",
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Smartphone soil scanner in 60s is revolutionary for smallholders.",
+      createdAt: "2026-05-21T09:40:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  p_1: [
+    {
+      _id: "mc_6",
+      userId: {
+        _id: "i_1",
+        name: "Vikram Patel",
+        username: "vikram_invests",
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Congrats on the Tamil Nadu deployment! Huge milestone for the team.",
+      createdAt: "2026-05-29T16:00:00Z",
+      likes: ["u_self"],
+      replyCount: 0,
+      _replies: [],
+    },
+    {
+      _id: "mc_6b",
+      userId: {
+        _id: "i_2",
+        name: "Meera Kapoor",
+        username: "meera_vc",
+        avatar:
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Offline edge AI is proving to be the right architectural bet.",
+      createdAt: "2026-05-29T17:30:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  p_2: [
+    {
+      _id: "mc_7",
+      userId: {
+        _id: "i_4",
+        name: "Karan Mehta",
+        username: "karan_m",
+        avatar:
+          "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop",
+        isVerified: false,
+      },
+      text: "Spot on about issuance vs retirement. The market needs transparency.",
+      createdAt: "2026-05-28T18:45:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  p_3: [
+    {
+      _id: "mc_8",
+      userId: {
+        _id: "i_3",
+        name: "Arjun Nair",
+        username: "arjun_nair",
+        avatar:
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "Crossing into paying B2B is the ultimate validation. Congrats Sofia!",
+      createdAt: "2026-05-27T09:15:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  p_4: [
+    {
+      _id: "mc_9",
+      userId: {
+        _id: "i_1",
+        name: "Vikram Patel",
+        username: "vikram_invests",
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+        isVerified: true,
+      },
+      text: "27 cardiac issues caught early — this is why healthcare tech matters.",
+      createdAt: "2026-05-25T10:30:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+  p_5: [
+    {
+      _id: "mc_10",
+      userId: {
+        _id: "i_4",
+        name: "Karan Mehta",
+        username: "karan_m",
+        avatar:
+          "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop",
+        isVerified: false,
+      },
+      text: "The v2 UI looks clean! Just requested beta access.",
+      createdAt: "2026-05-23T14:10:00Z",
+      likes: [],
+      replyCount: 0,
+      _replies: [],
+    },
+  ],
+};
+
+const SAMPLE_USERS = [
+  {
+    _id: "i_1",
+    name: "Vikram Patel",
+    username: "vikram_invests",
+    avatar:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+    isVerified: true,
+  },
+  {
+    _id: "i_2",
+    name: "Meera Kapoor",
+    username: "meera_vc",
+    avatar:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
+    isVerified: true,
+  },
+  {
+    _id: "i_3",
+    name: "Arjun Nair",
+    username: "arjun_nair",
+    avatar:
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+    isVerified: true,
+  },
+  {
+    _id: "i_4",
+    name: "Karan Mehta",
+    username: "karan_m",
+    avatar:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop",
+    isVerified: false,
+  },
+  {
+    _id: "u_sim_1",
+    name: "Priya Sharma",
+    username: "priya_angels",
+    avatar:
+      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop",
+    isVerified: true,
+  },
+  {
+    _id: "u_sim_2",
+    name: "Rohan Gupta",
+    username: "rohan_builds",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop",
+    isVerified: false,
+  },
+  {
+    _id: "u_sim_3",
+    name: "Ananya Roy",
+    username: "ananya_cap",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+    isVerified: true,
+  },
+  {
+    _id: "u_sim_4",
+    name: "Devansh Shah",
+    username: "devansh_s",
+    avatar:
+      "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&fit=crop",
+    isVerified: false,
+  },
+];
+
+const SAMPLE_TEXTS = [
+  "Incredible progress! What is your target CAC for this quarter?",
+  "Love the vision here. Sent you a DM to connect.",
+  "Super solid presentation! How big is the total addressable market in India?",
+  "Great execution so far. Rooting for the team! 🚀",
+  "Interesting approach to solving this bottleneck. Would love to see the pitch deck.",
+  "What is your gross margin percentage at current volume?",
+  "Awesome product update! The UI looks extremely crisp.",
+  "How are you handling customer retention and churn?",
+  "Impressive traction numbers! Are you currently raising Seed or Series A?",
+  "Great traction! Looking forward to seeing where this goes next.",
+  "Very clear value proposition. Kudos to the founders!",
+  "What is your strategy for expansion into tier-2 markets?",
+];
+
+export function getFullMockComments(id, targetCount = 0) {
+  const base = MOCK_COMMENTS[id] || [];
+  const count = typeof targetCount === "number" && targetCount > 0 ? targetCount : base.length;
+  const needed = Math.max(0, count - base.length);
+  if (needed <= 0) return base;
+
+  const generated = Array.from({ length: needed }, (_, i) => {
+    const userObj = SAMPLE_USERS[i % SAMPLE_USERS.length];
+    const textObj = SAMPLE_TEXTS[i % SAMPLE_TEXTS.length];
+    const daysAgo = Math.floor(i / 2) + 1;
+    const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+    return {
+      _id: `gen_${id}_${i}`,
+      userId: userObj,
+      text: textObj,
+      createdAt: date,
+      likes: i % 3 === 0 ? [userObj._id] : [],
+      replyCount: 0,
+      _replies: [],
+    };
+  });
+
+  return [...base, ...generated];
+}
+
 
 // ─── Mock active boosts ─────────────────────────────
 export const MOCK_BOOSTS = [

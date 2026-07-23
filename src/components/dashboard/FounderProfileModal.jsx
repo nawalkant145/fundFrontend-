@@ -12,6 +12,8 @@ import { MdVerified } from "react-icons/md";
 import Modal from "../ui/Modal";
 import { videoService } from "../../services/videoService";
 
+import { FOUNDER_PROFILES, MOCK_PITCHES } from "../../constants/mockData";
+
 /**
  * Instagram-style founder profile preview.
  * Fetches the founder's real active pitches + follower counts.
@@ -29,19 +31,28 @@ export default function FounderProfileModal({
 
   useEffect(() => {
     if (!open || !founder?._id) return;
-    // Only fetch for real (Mongo ObjectId) founders
+
+    const fallbackPitches =
+      FOUNDER_PROFILES[founder._id]?.pitches ||
+      MOCK_PITCHES.filter(
+        (p) => (p.founderId?._id || p.founderId) === founder._id,
+      );
+    setPitches(fallbackPitches);
+
+    // Only fetch from API for real (Mongo ObjectId) founders
     if (!/^[a-f0-9]{24}$/i.test(founder._id)) {
-      setPitches([]);
       return;
     }
+
     setLoading(true);
     videoService
       .getUserPitches(founder._id)
       .then((res) => {
         const data = res?.data?.data;
-        setPitches(data?.videos || data || []);
+        const list = data?.videos || data || [];
+        if (list.length > 0) setPitches(list);
       })
-      .catch(() => setPitches([]))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [open, founder?._id]);
 
