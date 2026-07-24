@@ -91,8 +91,10 @@ export default function InvestorFeed() {
             if (v.isLiked) likedInit[v._id] = true;
             if (v.isSaved) savedInit[v._id] = true;
           });
-          setLiked(likedInit);
-          setSaved(savedInit);
+          // MERGE — don't replace — so any toggles the user made while the
+          // feed was loading are preserved, not wiped.
+          setLiked((prev) => ({ ...likedInit, ...prev }));
+          setSaved((prev) => ({ ...savedInit, ...prev }));
         }
       })
       .catch(() => {});
@@ -349,32 +351,159 @@ export default function InvestorFeed() {
     // eslint-disable-next-line
   }, [idx, activeModal]);
 
+  const isPitchLiked = (p) => {
+    if (!p?._id) return false;
+    if (liked[p._id] !== undefined) return liked[p._id];
+    if (p.isLiked !== undefined) return p.isLiked;
+    if (Array.isArray(p.likes) && userId) {
+      return p.likes.some((id) => (id._id || id).toString() === userId.toString());
+    }
+    return false;
+  };
+
+  const isPitchSaved = (p) => {
+    if (!p?._id) return false;
+    if (saved[p._id] !== undefined) return saved[p._id];
+    if (p.isSaved !== undefined) return p.isSaved;
+    if (Array.isArray(p.saves) && userId) {
+      return p.saves.some((id) => (id._id || id).toString() === userId.toString());
+    }
+    return false;
+  };
+
   const toggleLike = () => {
+    if (!pitch?._id) return;
     const id = pitch._id;
-    const wasLiked = liked[id];
-    setLiked((p) => ({ ...p, [id]: !wasLiked }));
-    if (id && /^[a-f0-9]{24}$/i.test(id)) {
-      videoService.like(id).catch(() => {});
+    const wasLiked = isPitchLiked(pitch);
+    const nextLiked = !wasLiked;
+    const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
+
+    // Update both the dictionary AND the pitch object in the array
+    setLiked((prev) => ({ ...prev, [id]: nextLiked }));
+    setPitches((prev) =>
+      prev.map((p) => (p._id === id ? { ...p, isLiked: nextLiked } : p)),
+    );
+
+    if (isRealMongoId) {
+      videoService
+        .like(id)
+        .then((res) => {
+          const data = res?.data?.data ?? res?.data;
+          if (data && typeof data.liked === "boolean") {
+            setLiked((prev) => ({ ...prev, [id]: data.liked }));
+            setPitches((prev) =>
+              prev.map((p) =>
+                p._id === id ? { ...p, isLiked: data.liked } : p,
+              ),
+            );
+          }
+        })
+        .catch(() => {
+          setLiked((prev) => ({ ...prev, [id]: wasLiked }));
+          setPitches((prev) =>
+            prev.map((p) => (p._id === id ? { ...p, isLiked: wasLiked } : p)),
+          );
+          toast.error("Failed to update like status");
+        });
     }
   };
 
   // Double-tap on the video — Instagram only LIKES (never unlikes) on double-tap
   const doubleTapLike = () => {
+    if (!pitch?._id) return;
     const id = pitch._id;
-    if (!liked[id]) {
-      setLiked((p) => ({ ...p, [id]: true }));
-      if (id && /^[a-f0-9]{24}$/i.test(id)) {
+    const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
+    if (!isPitchLiked(pitch)) {
+      setLiked((prev) => ({ ...prev, [id]: true }));
+      setPitches((prev) =>
+        prev.map((p) => (p._id === id ? { ...p, isLiked: true } : p)),
+      );
+      if (isRealMongoId) {
         videoService.like(id).catch(() => {});
       }
     }
   };
 
   const toggleSave = () => {
+    if (!pitch?._id) return;
     const id = pitch._id;
-    const wasSaved = saved[id];
-    setSaved((p) => ({ ...p, [id]: !wasSaved }));
-    if (id && /^[a-f0-9]{24}$/i.test(id)) {
-      videoService.save(id).catch(() => {});
+    const wasSaved = isPitchSaved(pitch);
+    const nextSaved = !wasSaved;
+    const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
+
+    // Update both the dictionary AND the pitch object in the array so
+    // isPitchSaved() always returns the right value even after scrolling away
+    setSaved((prev) => ({ ...prev, [id]: nextSaved }));
+    setPitches((prev) =>
+      prev.map((p) =>
+        p._id === id
+          ? {
+              ...p,
+              isSaved: nextSaved,
+              saveCount: nextSaved
+                ? (p.saveCount || 0) + 1
+                : Math.max(0, (p.saveCount || 0) - 1),
+            }
+          : p,
+      ),
+    );
+
+    if (isRealMongoId) {
+      videoService
+        .save(id)
+        .then((res) => {
+          const data = res?.data?.data ?? res?.data;
+          const confirmedSaved =
+            data && typeof data.saved === "boolean" ? data.saved : nextSaved;
+          const confirmedCount =
+            data && typeof data.totalSaves === "number"
+              ? data.totalSaves
+              : null;
+
+          setSaved((prev) => ({ ...prev, [id]: confirmedSaved }));
+          setPitches((prev) =>
+            prev.map((p) =>
+              p._id === id
+                ? {
+                    ...p,
+                    isSaved: confirmedSaved,
+                    saveCount:
+                      confirmedCount !== null ? confirmedCount : p.saveCount,
+                  }
+                : p,
+            ),
+          );
+
+          if (confirmedSaved) {
+            toast.success("Saved to bookmarks");
+          } else {
+            toast.info("Removed from saved pitches");
+          }
+        })
+        .catch(() => {
+          // Revert both dictionary and pitch object
+          setSaved((prev) => ({ ...prev, [id]: wasSaved }));
+          setPitches((prev) =>
+            prev.map((p) =>
+              p._id === id
+                ? {
+                    ...p,
+                    isSaved: wasSaved,
+                    saveCount: wasSaved
+                      ? (p.saveCount || 0) + 1
+                      : Math.max(0, (p.saveCount || 0) - 1),
+                  }
+                : p,
+            ),
+          );
+          toast.error("Failed to save pitch. Please try again.");
+        });
+    } else {
+      if (nextSaved) {
+        toast.success("Saved to bookmarks");
+      } else {
+        toast.info("Removed from saved pitches");
+      }
     }
   };
 
@@ -580,11 +709,20 @@ export default function InvestorFeed() {
               const base =
                 pitch.likeCount ??
                 (Array.isArray(pitch.likes) ? pitch.likes.length : 0);
-              if (liked[pitch._id] && !pitch.isLiked) return base + 1;
-              if (!liked[pitch._id] && pitch.isLiked) return base - 1;
+              const activeL = isPitchLiked(pitch);
+              const initL = Boolean(
+                pitch.isLiked ||
+                  (Array.isArray(pitch.likes) &&
+                    userId &&
+                    pitch.likes.some(
+                      (id) => (id._id || id).toString() === userId.toString(),
+                    )),
+              );
+              if (activeL && !initL) return base + 1;
+              if (!activeL && initL) return Math.max(0, base - 1);
               return base;
             })()}
-            active={liked[pitch._id]}
+            active={isPitchLiked(pitch)}
             activeClass="text-red-400"
             onClick={toggleLike}
             title="Like"
@@ -604,11 +742,20 @@ export default function InvestorFeed() {
               const base =
                 pitch.saveCount ??
                 (Array.isArray(pitch.saves) ? pitch.saves.length : 0);
-              if (saved[pitch._id] && !pitch.isSaved) return base + 1;
-              if (!saved[pitch._id] && pitch.isSaved) return base - 1;
+              const activeS = isPitchSaved(pitch);
+              const initS = Boolean(
+                pitch.isSaved ||
+                  (Array.isArray(pitch.saves) &&
+                    userId &&
+                    pitch.saves.some(
+                      (id) => (id._id || id).toString() === userId.toString(),
+                    )),
+              );
+              if (activeS && !initS) return base + 1;
+              if (!activeS && initS) return Math.max(0, base - 1);
               return base;
             })()}
-            active={saved[pitch._id]}
+            active={isPitchSaved(pitch)}
             activeClass="text-gold"
             onClick={toggleSave}
             title="Save"
