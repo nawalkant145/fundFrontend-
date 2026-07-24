@@ -108,7 +108,7 @@ function AccountTab() {
         <div>
           <button
             onClick={() => avatarRef.current?.click()}
-            className="px-4 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-xs font-bold rounded-full shadow-md"
+            className="px-4 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force text-xs font-bold rounded-full shadow-md"
           >
             Change photo
           </button>
@@ -218,7 +218,7 @@ function AccountTab() {
             setSaving(false);
           }
         }}
-        className={`px-6 py-3 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md shadow-[#1B5E3F]/25 ${saving ? "opacity-60" : ""}`}
+        className={`px-6 py-3 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force shadow-md shadow-[#1B5E3F]/25 ${saving ? "opacity-60" : ""}`}
       >
         {saving ? "Saving…" : "Save changes"}
       </motion.button>
@@ -385,9 +385,9 @@ function NotificationsTab() {
       {NOTIF_PREFS.map(({ key, label }) => (
         <label
           key={key}
-          className="flex items-center justify-between gap-2 p-3 hover:bg-dark-bg/40 rounded-xl cursor-pointer"
+          className="flex items-center justify-between gap-4 p-3 hover:bg-dark-bg/40 rounded-xl cursor-pointer"
         >
-          <span className="text-sm text-gray-300">{label}</span>
+          <span className="text-sm text-gray-300 flex-1 pr-2">{label}</span>
           <ToggleSwitch on={prefs[key]} onToggle={() => toggle(key)} />
         </label>
       ))}
@@ -522,14 +522,14 @@ function ToggleSwitch({ on: controlledOn, onToggle, defaultOn }) {
     <button
       type="button"
       onClick={handle}
-      className={`w-11 h-6 rounded-full transition-colors relative ${
+      className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
         on ? "bg-gold" : "bg-gray-700"
       }`}
     >
       <motion.span
-        animate={{ x: on ? 22 : 2 }}
+        animate={{ x: on ? 20 : 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="absolute top-1 w-4 h-4 bg-white rounded-full"
+        className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full pointer-events-none"
       />
     </button>
   );
