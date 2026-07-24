@@ -81,8 +81,8 @@ export default function MessagesPage() {
   const [confirming, setConfirming] = useState(null);
   const searchInputRef = useRef(null);
 
-  // Fetch real chats on mount
-  useEffect(() => {
+  // Fetch chats on mount and whenever the active chat changes (so new chats appear)
+  const refreshChats = () => {
     chatService
       .listChats()
       .then((res) => {
@@ -90,8 +90,12 @@ export default function MessagesPage() {
         const list = data?.chats || data || [];
         setChats(list);
       })
-      .catch(() => setChats([]));
-  }, []);
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshChats();
+  }, [chatId]); // re-fetch when switching chats (covers new chat being opened)
 
   // Search registered users in backend when typing
   useEffect(() => {
@@ -382,6 +386,16 @@ export default function MessagesPage() {
               chat={activeChat}
               onBack={() => navigate("/app/messages")}
               onConfirmDelete={() => setConfirming(activeChat)}
+              onMessageSent={(lastMsg) => {
+                // Update sidebar lastMessage instantly without a full re-fetch
+                setChats((prev) =>
+                  prev.map((c) =>
+                    c._id === activeChat._id
+                      ? { ...c, lastMessage: lastMsg, lastMessageAt: new Date().toISOString() }
+                      : c
+                  )
+                );
+              }}
             />
           ) : (
             <EmptyState />
@@ -429,7 +443,7 @@ function EmptyState() {
 }
 
 // ─── ACTIVE CHAT (right side) ─────────────────
-function ActiveChat({ chat, onBack, onConfirmDelete }) {
+function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
   const toast = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -470,7 +484,29 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
     socket.emit("mark_read", { chatId: chat._id });
 
     const handleNewMsg = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        // Avoid duplicating an optimistic message we already added
+        const isDup = prev.some(
+          (m) =>
+            (m._id && m._id === msg._id) ||
+            (m._id?.startsWith?.("opt_") &&
+              m.text === msg.text &&
+              m.senderId?.toString() === msg.senderId?.toString())
+        );
+        if (isDup) {
+          // Replace optimistic with real message from server
+          return prev.map((m) =>
+            m._id?.startsWith?.("opt_") &&
+            m.text === msg.text &&
+            m.senderId?.toString() === msg.senderId?.toString()
+              ? msg
+              : m
+          );
+        }
+        return [...prev, msg];
+      });
+      // Update sidebar lastMessage for incoming messages
+      onMessageSent?.(msg.text || `[${msg.type || "message"}]`);
     };
     const handleTyping = ({ userId }) => {
       if (userId !== user?._id) setTyping(true);
@@ -519,17 +555,45 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
 
   const send = (e) => {
     e?.preventDefault();
-    if (!text.trim()) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setText("");
+    if (socket) socket.emit("stop_typing", { chatId: chat._id });
+
+    // Optimistic UI — add the message locally right away
+    const optimistic = {
+      _id: `opt_${Date.now()}`,
+      chatId: chat._id,
+      senderId: user?._id,
+      text: trimmed,
+      type: "text",
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    onMessageSent?.(trimmed);
+
     // Send via socket (real-time — the server broadcasts back via "new_message")
     if (socket) {
       socket.emit(
         "send_message",
-        { chatId: chat._id, text: text.trim(), type: "text" },
+        { chatId: chat._id, text: trimmed, type: "text" },
         (res) => {
           if (!res?.ok) {
             // Fallback: use REST API
             chatService
-              .sendMessage(chat._id, { text: text.trim() })
+              .sendMessage(chat._id, { text: trimmed })
+              .then((res) => {
+                const data = res?.data?.data;
+                const msg = data?.message || data;
+                if (msg) {
+                  // Replace optimistic with real message
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m._id === optimistic._id ? msg : m
+                    )
+                  );
+                }
+              })
               .catch(() => {});
           }
         },
@@ -537,17 +601,18 @@ function ActiveChat({ chat, onBack, onConfirmDelete }) {
     } else {
       // No socket — use REST
       chatService
-        .sendMessage(chat._id, { text: text.trim() })
+        .sendMessage(chat._id, { text: trimmed })
         .then((res) => {
           const data = res?.data?.data;
           const msg = data?.message || data;
-          if (msg) setMessages((prev) => [...prev, msg]);
+          if (msg) {
+            setMessages((prev) =>
+              prev.map((m) => (m._id === optimistic._id ? msg : m))
+            );
+          }
         })
         .catch(() => {});
     }
-    setText("");
-    // Stop typing indicator
-    if (socket) socket.emit("stop_typing", { chatId: chat._id });
   };
 
   // Typing indicator
