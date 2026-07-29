@@ -67,15 +67,15 @@ export default function FollowButton({
     compact:
       "px-2.5 py-0.5 text-[11px] font-bold rounded-full inline-flex items-center gap-1 transition-all",
     outline:
-      "px-4 py-1.5 text-xs font-bold rounded-full inline-flex items-center gap-1.5 transition-all border",
+      "px-7 py-2 text-sm font-extrabold rounded-full inline-flex items-center justify-center gap-1.5 transition-all border",
   }[variant];
 
   const stateClasses = following
     ? variant === "outline"
-      ? "bg-white border-[#1B5E3F]/25 text-[#0F4A2E]"
+      ? "bg-[#E8F5EF] border-[#1B5E3F]/40 text-[#1B5E3F] hover:bg-red-50 hover:border-red-300 hover:text-red-500"
       : "bg-white/15 text-white border border-white/40 backdrop-blur-sm"
     : variant === "outline"
-      ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white border-transparent shadow-md shadow-[#1B5E3F]/25"
+      ? "bg-[#F5B942] border-transparent text-[#0F4A2E] shadow-sm hover:bg-[#FFD166] hover:shadow-md"
       : "bg-[#F5B942] text-[#0F4A2E]";
 
   return (

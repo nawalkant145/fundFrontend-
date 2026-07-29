@@ -110,7 +110,7 @@ export default function SubscriptionPage() {
                 {pro ? `You're on ${plan.name}` : `Plans for ${role}s`}
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black leading-tight">
+ <h2 className="text-4xl sm:text-5xl font-black leading-tight max-w-2xl">
               {pro
                 ? isInvestor
                   ? "Unlimited chats. Unlimited calls."
@@ -118,12 +118,27 @@ export default function SubscriptionPage() {
                 : plan.tagline}
             </h2>
             {pro && sub.expiresAt && (
-              <p className="text-sm text-white/75 mt-2">
-                Renews on{" "}
-                <span className="font-bold text-[#F5B942]">
-                  {new Date(sub.expiresAt).toLocaleDateString()}
-                </span>
-              </p>
+                          <>
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs">
+                    ✓ Cancel Anytime
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs">
+                    ✓ Secure Payments
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs ">
+                    ✓ No Hidden Fees
+                  </span>
+                </div>
+                <p className="text-sm text-white/75 mt-2">
+                  Renews on{" "}
+                  <span className="font-bold text-[#F5B942]">
+                    {new Date(sub.expiresAt).toLocaleDateString()}
+                  </span>
+                </p>
+              </>
             )}
           </div>
           {pro && (
@@ -144,7 +159,7 @@ export default function SubscriptionPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="bg-white border border-[#1B5E3F]/12 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col"
+ className="bg-white border border-[#1B5E3F]/12 rounded-3xl p-8 sm:p-7 shadow-sm flex flex-col"
         >
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0A1F14]/55 mb-2">
             FREE
@@ -184,7 +199,7 @@ export default function SubscriptionPage() {
           ) : (
             <button
               onClick={handleCancel}
-              className="w-full py-3 rounded-full font-bold text-sm border border-[#1B5E3F]/15 text-[#0F4A2E] bg-white hover:bg-[#FAFAF7] transition-all"
+       className="w-full py-3 rounded-full font-bold text-sm border border-[#1B5E3F]/15 text-[#0F4A2E] bg-[#FCFCFB] hover:bg-[#FAFAF7] transition-all opacity-90"
             >
               Downgrade to Free
             </button>
@@ -196,7 +211,7 @@ export default function SubscriptionPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white rounded-3xl p-6 sm:p-7 shadow-xl shadow-[#1B5E3F]/25 overflow-hidden flex flex-col"
+   className="relative bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white rounded-3xl p-8 sm:p-7 shadow-xl shadow-[#1B5E3F]/25 overflow-hidden flex flex-col shadow-black/10 shadow-lg"
         >
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#F5B942]/20 rounded-full blur-[80px]" />
           <span className="relative inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#F5B942] mb-2">
@@ -231,9 +246,13 @@ export default function SubscriptionPage() {
             ))}
           </ul>
           {pro ? (
-            <div className="relative w-full py-3 rounded-full font-bold text-sm bg-[#F5B942] text-[#0F4A2E] text-center">
-              Active
-            </div>
+  <div className="w-full rounded-full py-3 bg-[#F5B942] text-[#0F4A2E] font-bold flex justify-center items-center gap-2">
+
+<HiCheck />
+
+Current Plan
+
+</div>
           ) : (
             <motion.button
               whileHover={!submitting ? { y: -2 } : {}}
@@ -304,7 +323,7 @@ export default function SubscriptionPage() {
           </div>
           <button
             onClick={() => navigate("/app/studio")}
-            className="px-6 py-3 rounded-full bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-2"
+        className="px-6 py-3 rounded-full bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-2 !text-white"
           >
             Boost a pitch
             <HiArrowRight className="w-4 h-4" />

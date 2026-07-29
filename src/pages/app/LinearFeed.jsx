@@ -17,6 +17,9 @@ import {
   HiVolumeUp,
   HiVolumeOff,
   HiX,
+  HiPhotograph,
+  HiUpload,
+  HiCollection,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
@@ -30,7 +33,7 @@ import { useAuth } from "../../context/AuthContext";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { chatService } from "../../services/chatService";
-import { MOCK_PITCHES, MOCK_POSTS, formatINR } from "../../constants/mockData";
+import { MOCK_PITCHES, ALL_MOCK_PITCHES, MOCK_POSTS, formatINR } from "../../constants/mockData";
 import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
 
 /**
@@ -42,9 +45,11 @@ import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
  * (mocked as f_1) and don't see the "Express Interest" pill on pitches.
  */
 export default function LinearFeed() {
-  const role = getRole() || "investor";
+  const { user, loading: authLoading } = useAuth();
+  // Wait for auth to resolve — during loading user is null which would
+  // incorrectly mark the session as investor and hide the composer card.
+  const role = authLoading ? null : (user?.role || getRole() || "investor");
   const isFounder = role === "founder";
-  const { user } = useAuth();
   const userId = user?._id;
 
   const [paywall, setPaywall] = useState(false);
@@ -105,14 +110,18 @@ export default function LinearFeed() {
   };
 
   const items = useMemo(() => {
-    const ownId = isFounder ? "f_1" : null;
-    const pitchSource = realPitches || MOCK_PITCHES;
+    // Use actual logged-in user's ID (not hardcoded f_1)
+    // Only filter out own content if user is a real logged-in founder with a known ID
+    const ownId = isFounder && userId ? userId : null;
+
+    const pitchSource = [...(realPitches || [])];
+    MOCK_PITCHES.forEach((mp) => {
+      if (!pitchSource.some((p) => p._id === mp._id)) {
+        pitchSource.push(mp);
+      }
+    });
 
     const pitchEntries = pitchSource
-      .filter((p) => {
-        const fId = p.founderId?._id || p.founderId;
-        return fId !== ownId;
-      })
       .map((p) => {
         const boosted =
           !!p.isBoosted &&
@@ -120,23 +129,24 @@ export default function LinearFeed() {
         return {
           kind: "pitch",
           id: p._id,
-          ts: new Date(p.createdAt).getTime(),
+          ts: new Date(p.createdAt || 0).getTime(),
           boosted,
           data: p,
         };
       });
 
-    const postSource = realPosts || MOCK_POSTS;
+    const postSource = [...(realPosts || [])];
+    MOCK_POSTS.forEach((mp) => {
+      if (!postSource.some((p) => p._id === mp._id)) {
+        postSource.push(mp);
+      }
+    });
 
     const postEntries = postSource
-      .filter((p) => {
-        const aId = p.authorId?._id || p.authorId;
-        return aId !== ownId;
-      })
       .map((p) => ({
         kind: "post",
         id: p._id,
-        ts: new Date(p.createdAt).getTime(),
+        ts: new Date(p.createdAt || 0).getTime(),
         boosted: false,
         data: p,
       }));
@@ -149,35 +159,71 @@ export default function LinearFeed() {
       return b.ts - a.ts;
     });
 
-    return merged;
-  }, [isFounder, realPitches, realPosts]);
+    // Deduplicate by item ID to guarantee no duplicate cards
+    const seen = new Set();
+    return merged.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [isFounder, userId, realPitches, realPosts]);
 
   return (
     <DashboardShell>
-      <div className="max-w-[520px] mx-auto">
+      <div className="w-full max-w-[520px] mx-auto">
         {/* Composer for founders */}
         {isFounder && (
-          <Link
-            to="/app/post/new"
-            className="block mb-5 bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 hover:border-[#1B5E3F]/30 transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
-                }
-                alt=""
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
-              />
-              <span className="flex-1 text-sm text-[#0A1F14]/55">
+          <div className="mb-5 bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+            {/* Top row: Avatar + Pill input link */}
+            <div className="flex items-center gap-3 pb-3.5 border-b border-[#1B5E3F]/8">
+              <Link to="/app/profile" className="flex-shrink-0">
+                <img
+                  src={
+                    user?.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
+                  }
+                  alt={user?.name || "User"}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/35 transition-all duration-200"
+                />
+              </Link>
+              <Link
+                to="/app/post/new"
+                className="flex-1 px-4 py-2.5 bg-[#FAFAF7] hover:bg-[#FAFAF7]/80 border border-[#1B5E3F]/8 hover:border-[#1B5E3F]/20 rounded-full text-left text-sm text-[#0A1F14]/55 hover:text-[#0A1F14]/75 transition-all duration-200 font-medium cursor-pointer"
+              >
                 Share an update, lesson or photo…
-              </span>
-              <span className="px-3 py-1.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-xs font-bold rounded-full">
-                Post
-              </span>
+              </Link>
             </div>
-          </Link>
+
+            {/* Bottom row: Quick action links */}
+            <div className="flex items-center justify-around pt-3">
+              {/* Photo/Post link */}
+              <Link
+                to="/app/post/new"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/5 transition-all duration-200 group"
+              >
+                <HiPhotograph className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform duration-200" />
+                <span>Photo/Post</span>
+              </Link>
+
+              {/* Upload Pitch link */}
+              <Link
+                to="/app/upload"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#F5B942] hover:bg-[#F5B942]/5 transition-all duration-200 group"
+              >
+                <HiUpload className="w-5 h-5 text-[#F5B942] group-hover:scale-110 transition-transform duration-200" />
+                <span>Upload Pitch</span>
+              </Link>
+
+              {/* My Studio link */}
+              <Link
+                to="/app/studio"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 group"
+              >
+                <HiCollection className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform duration-200" />
+                <span>My Studio</span>
+              </Link>
+            </div>
+          </div>
         )}
 
         {feedLoading ? (
@@ -256,24 +302,27 @@ function PitchFeedCard({
     const next = !liked;
     setLiked(next);
     setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
-    videoService
-      .like(pitch._id)
-      .then((res) => {
-        const d = res?.data?.data;
-        if (d && typeof d.totalLikes === "number") setLikeCount(d.totalLikes);
-        if (d && typeof d.liked === "boolean") setLiked(d.liked);
-      })
-      .catch(() => {
-        // revert on failure
-        setLiked(!next);
-        setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
-      });
+    if (pitch._id && /^[a-f0-9]{24}$/i.test(pitch._id)) {
+      videoService
+        .like(pitch._id)
+        .then((res) => {
+          const d = res?.data?.data;
+          if (d && typeof d.totalLikes === "number") setLikeCount(d.totalLikes);
+          if (d && typeof d.liked === "boolean") setLiked(d.liked);
+        })
+        .catch(() => {
+          setLiked(!next);
+          setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+        });
+    }
   };
 
   const toggleSave = () => {
     const next = !saved;
     setSaved(next);
-    videoService.save(pitch._id).catch(() => setSaved(!next));
+    if (pitch._id && /^[a-f0-9]{24}$/i.test(pitch._id)) {
+      videoService.save(pitch._id).catch(() => setSaved(!next));
+    }
   };
 
   // Log a view once when this pitch first comes into view (real pitches only)
@@ -397,22 +446,27 @@ function PitchFeedCard({
     >
       {/* Author row */}
       <div className="flex items-center gap-3 p-4">
-        <img
-          src={pitch.founderId.avatar}
-          alt=""
-          className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm inline-flex items-center gap-1 truncate">
-            {pitch.founderId.name}
-            {pitch.founderId.isVerified && (
-              <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
-            )}
-          </p>
-          <p className="text-xs text-[#0A1F14]/55 truncate">
-            {pitch.founderId.companyName} · {pitch.industry}
-          </p>
-        </div>
+        <Link
+          to={`/app/u/${pitch.founderId._id}`}
+          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-85 transition-opacity"
+        >
+          <img
+            src={pitch.founderId.avatar}
+            alt=""
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm inline-flex items-center gap-1 truncate text-[#0A1F14]">
+              {pitch.founderId.name}
+              {pitch.founderId.isVerified && (
+                <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
+              )}
+            </p>
+            <p className="text-xs text-[#0A1F14]/55 truncate">
+              {pitch.founderId.companyName} · {pitch.industry}
+            </p>
+          </div>
+        </Link>
         <FollowButton userId={pitch.founderId._id} variant="outline" />
       </div>
 
@@ -490,8 +544,8 @@ function PitchFeedCard({
       </Link>
 
       {/* Actions */}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-1">
+      <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <ActionBtn
             active={liked}
             onClick={toggleLike}
@@ -512,12 +566,14 @@ function PitchFeedCard({
             activeColor="text-[#1B5E3F]"
           />
         </div>
-        <button
-          onClick={startChat}
-          className="px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all"
-        >
-          <HiChatAlt2 className="w-3.5 h-3.5" /> Message
-        </button>
+        {!isFounder && (
+          <button
+            onClick={startChat}
+            className="btn-message px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all flex-shrink-0"
+          >
+            <HiChatAlt2 className="w-3.5 h-3.5" /> Message
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -536,6 +592,7 @@ function PitchFeedCard({
         open={showComments}
         onClose={() => setShowComments(false)}
         videoId={pitch._id}
+        totalCount={pitch.commentCount || pitch.comments}
         onCommentAdded={() => setCommentCount((c) => c + 1)}
       />
       <ShareSheet
@@ -573,23 +630,27 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
     const next = !liked;
     setLiked(next);
     setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
-    postService
-      .like(post._id)
-      .then((res) => {
-        const d = res?.data?.data;
-        if (d && typeof d.count === "number") setLikeCount(d.count);
-        if (d && typeof d.liked === "boolean") setLiked(d.liked);
-      })
-      .catch(() => {
-        setLiked(!next);
-        setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
-      });
+    if (post._id && /^[a-f0-9]{24}$/i.test(post._id)) {
+      postService
+        .like(post._id)
+        .then((res) => {
+          const d = res?.data?.data;
+          if (d && typeof d.count === "number") setLikeCount(d.count);
+          if (d && typeof d.liked === "boolean") setLiked(d.liked);
+        })
+        .catch(() => {
+          setLiked(!next);
+          setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+        });
+    }
   };
 
   const toggleSave = () => {
     const next = !saved;
     setSaved(next);
-    postService.save(post._id).catch(() => setSaved(!next));
+    if (post._id && /^[a-f0-9]{24}$/i.test(post._id)) {
+      postService.save(post._id).catch(() => setSaved(!next));
+    }
   };
 
   const captionLong = post.caption?.length > 220;
@@ -600,14 +661,27 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
 
   const totalImgs = post.images?.length || 0;
 
+  // Safe author object — authorId may be null (deleted user) or a string
+  const author =
+    post.authorId && typeof post.authorId === "object"
+      ? post.authorId
+      : {
+          _id: typeof post.authorId === "string" ? post.authorId : "",
+          name: "Unknown",
+          username: "unknown",
+          avatar: "",
+          companyName: "",
+          isVerified: false,
+        };
+
   const startChat = () => {
-    const check = canStartChat({ withUserId: post.authorId._id });
+    const check = canStartChat({ withUserId: author._id });
     if (!check.allowed) {
       onChatBlocked();
       return;
     }
     chatService
-      .startChat(post.authorId._id)
+      .startChat(author._id)
       .then((res) => {
         if (check.isFreeChat) consumeFreeChat();
         const chat = res?.data?.data?.chat || res?.data?.data;
@@ -627,27 +701,35 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+        className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-shadow"
     >
       {/* Author row */}
       <div className="flex items-center gap-3 p-4">
-        <img
-          src={post.authorId.avatar}
-          alt=""
-          className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm inline-flex items-center gap-1 truncate">
-            {post.authorId.name}
-            {post.authorId.isVerified && (
-              <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
-            )}
-          </p>
-          <p className="text-xs text-[#0A1F14]/55 truncate">
-            {post.authorId.companyName} · @{post.authorId.username}
-          </p>
-        </div>
-        <FollowButton userId={post.authorId._id} variant="outline" />
+        <Link
+          to={author._id ? `/app/u/${author._id}` : "#"}
+          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-85 transition-opacity"
+        >
+          <img
+            src={
+              author.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(author.name)}&background=1B5E3F&color=fff`
+            }
+            alt=""
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm inline-flex items-center gap-1 truncate text-[#0A1F14]">
+              {author.name}
+              {author.isVerified && (
+                <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
+              )}
+            </p>
+            <p className="text-xs text-[#0A1F14]/55 truncate">
+              {author.companyName} · @{author.username}
+            </p>
+          </div>
+        </Link>
+        {author._id && <FollowButton userId={author._id} variant="outline" />}
       </div>
 
       {/* Caption (LinkedIn-style, before images) */}
@@ -749,8 +831,8 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
       )}
 
       {/* Actions */}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-1">
+      <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <ActionBtn
             active={liked}
             onClick={toggleLike}
@@ -771,12 +853,14 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
             activeColor="text-[#1B5E3F]"
           />
         </div>
-        <button
-          onClick={startChat}
-          className="px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all"
-        >
-          <HiChatAlt2 className="w-3.5 h-3.5" /> Message
-        </button>
+        {!isFounder && (
+          <button
+            onClick={startChat}
+            className="btn-message px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all flex-shrink-0"
+          >
+            <HiChatAlt2 className="w-3.5 h-3.5" /> Message
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -794,6 +878,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         open={showComments}
         onClose={() => setShowComments(false)}
         postId={post._id}
+        totalCount={post.commentCount || post.comments}
         onCommentAdded={() => setCommentCount((c) => c + 1)}
       />
       <ShareSheet
@@ -820,10 +905,10 @@ function ActionBtn({
       className={`p-2 rounded-full transition-colors ${
         active
           ? activeColor
-          : "text-[#0A1F14]/65 hover:text-[#0F4A2E] hover:bg-[#FAFAF7]"
+          : "text-[#0A1F14]/70 hover:text-[#0F4A2E] hover:bg-[#F0F5F2]"
       }`}
     >
-      <Icon className="w-6 h-6" />
+      <Icon className="w-6 h-6 current-color" />
     </button>
   );
 }

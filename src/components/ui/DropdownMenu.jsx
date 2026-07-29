@@ -88,7 +88,7 @@ export default function DropdownMenu({
             }}
             transition={{ duration: 0.15 }}
             data-light-app="true"
-            className={`absolute z-50 min-w-[200px] bg-white border border-[#1B5E3F]/15 rounded-xl shadow-2xl shadow-[#0F4A2E]/15 overflow-hidden ${positionClass} ${
+            className={`absolute z-[60] min-w-[200px] bg-white border border-[#1B5E3F]/15 rounded-xl shadow-2xl shadow-[#0F4A2E]/15 overflow-hidden ${positionClass} ${
               align === "right" ? "right-0" : "left-0"
             }`}
           >

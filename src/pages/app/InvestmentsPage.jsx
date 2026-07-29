@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { HiCurrencyDollar, HiTrendingUp } from "react-icons/hi";
+import { HiCurrencyDollar, HiTrendingUp, HiCheckCircle, HiUserGroup } from "react-icons/hi";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import StatCard from "../../components/dashboard/StatCard";
@@ -92,8 +92,8 @@ export default function InvestmentsPage() {
           value={active}
           accent="green"
         />
-        <StatCard label="Completed" value={completed} accent="gold" />
-        <StatCard label="Companies" value={deals.length} accent="blue" />
+     <StatCard icon={HiCheckCircle} label="Completed" value={completed} accent="gold" />
+        <StatCard icon={HiUserGroup} label="Companies" value={deals.length} accent="blue" />
       </div>
 
       {loading ? (

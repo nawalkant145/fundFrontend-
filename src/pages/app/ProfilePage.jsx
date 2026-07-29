@@ -22,6 +22,7 @@ import {
   HiPlay,
   HiHeart,
   HiEye,
+  HiChatAlt2,
 } from "react-icons/hi";
 import { FaLinkedin } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
@@ -117,7 +118,7 @@ export default function ProfilePage() {
             </div>
             <Link to="/app/settings">
               <motion.button
-                className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full flex items-center gap-2 shadow-md shadow-[#1B5E3F]/25"
+                className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force text-sm font-bold rounded-full flex items-center gap-2 shadow-md shadow-[#1B5E3F]/25"
                 whileHover={{ scale: 1.03 }}
               >
                 <HiPencilAlt className="w-4 h-4" />
@@ -131,11 +132,17 @@ export default function ProfilePage() {
             {isFounder && (
               <button className="text-left">
                 <span className="font-black text-[#0A1F14]">
-                  {pitches.length}
+                  {pitches.length || user.pitchesCount || 0}
                 </span>{" "}
                 <span className="text-[#0A1F14]/55 text-sm">pitches</span>
               </button>
             )}
+            <button className="text-left">
+              <span className="font-black text-[#0A1F14]">
+                {posts.length || user.postsCount || 0}
+              </span>{" "}
+              <span className="text-[#0A1F14]/55 text-sm">posts</span>
+            </button>
             <button
               onClick={() => setFollowModal("followers")}
               className="text-left hover:opacity-70 transition-opacity"
@@ -247,16 +254,16 @@ export default function ProfilePage() {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                      <HiPlay className="w-8 h-8 text-white" />
+                      <HiPlay className="w-8 h-8 text-white-force" />
                     </div>
-                    <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] font-bold text-white">
+                    <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] font-bold text-white-force drop-shadow-md">
                       <span className="flex items-center gap-0.5">
-                        <HiHeart className="w-3 h-3" />
+                        <HiHeart className="w-3.5 h-3.5 text-red-500" />
                         {p.likeCount ??
                           (Array.isArray(p.likes) ? p.likes.length : 0)}
                       </span>
                       <span className="flex items-center gap-0.5">
-                        <HiEye className="w-3 h-3" />
+                        <HiEye className="w-3.5 h-3.5 text-white-force" />
                         {p.views || 0}
                       </span>
                     </div>
@@ -282,12 +289,27 @@ export default function ProfilePage() {
                     <img
                       src={p.images[0]}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full p-3 flex items-center text-xs text-[#0A1F14]/85">
-                      <span className="line-clamp-6">{p.caption}</span>
+                    <div className="w-full h-full p-3 flex items-start bg-gradient-to-br from-[#f0faf5] to-[#e8f5ee] border border-[#1B5E3F]/10">
+                      <span className="line-clamp-6 text-xs text-[#0A1F14]/80 leading-relaxed">{p.caption}</span>
                     </div>
+                  )}
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
+                    <span className="inline-flex items-center gap-1">
+                      <HiHeart className="w-4 h-4 text-red-400" />
+                      {Array.isArray(p.likes) ? p.likes.length : (p.likes || 0)}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <HiChatAlt2 className="w-4 h-4" /> {p.commentCount || 0}
+                    </span>
+                  </div>
+                  {p.images?.length > 1 && (
+                    <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-black/55 text-white-force text-[10px] font-bold rounded">
+                      {p.images.length}
+                    </span>
                   )}
                 </Link>
               ))}
@@ -368,7 +390,7 @@ function EmptyGrid({ title, cta, to }) {
     <div className="text-center py-12 bg-[#FAFAF7] border border-[#1B5E3F]/10 rounded-2xl">
       <p className="font-bold text-[#0A1F14] mb-3">{title}</p>
       <Link to={to}>
-        <button className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white">
+        <button className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force">
           {cta}
         </button>
       </Link>

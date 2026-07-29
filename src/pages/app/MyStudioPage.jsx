@@ -124,7 +124,7 @@ export default function MyStudioPage() {
         </div>
         <div className="flex gap-2">
           <Link to="/app/upload">
-            <button className="px-4 py-2 rounded-full font-bold text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all">
+            <button className="px-4 py-2 rounded-full font-bold text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all">
               <HiVideoCamera className="w-4 h-4" /> New Pitch
             </button>
           </Link>
@@ -264,12 +264,12 @@ function PitchTile({ pitch, boost, onBoost }) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-            <span className="text-xs font-bold text-white drop-shadow inline-flex items-center gap-1">
+            <span className="text-xs font-bold text-white-force drop-shadow inline-flex items-center gap-1">
               <HiPlay className="w-3.5 h-3.5" />
               {Math.floor(pitch.duration / 60)}:
               {String(pitch.duration % 60).padStart(2, "0")}
             </span>
-            <span className="text-xs font-bold text-white drop-shadow inline-flex items-center gap-1">
+            <span className="text-xs font-bold text-white-force drop-shadow inline-flex items-center gap-1">
               <HiEye className="w-3.5 h-3.5" />
               {(pitch.views || 0).toLocaleString()}
             </span>
@@ -346,9 +346,9 @@ function PostTile({ post }) {
         </div>
       )}
       {/* Hover overlay */}
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white text-sm font-bold">
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
         <span className="inline-flex items-center gap-1">
-          <HiHeart className="w-4 h-4" />{" "}
+          <HiHeart className="w-4 h-4 text-red-400" />{" "}
           {Array.isArray(post.likes) ? post.likes.length : post.likes || 0}
         </span>
         <span className="inline-flex items-center gap-1">
@@ -356,7 +356,7 @@ function PostTile({ post }) {
         </span>
       </div>
       {post.images?.length > 1 && (
-        <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/55 text-white text-[10px] font-bold rounded">
+        <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/55 text-white-force text-[10px] font-bold rounded">
           {post.images.length}
         </span>
       )}
@@ -372,7 +372,7 @@ function EmptyState({ icon: Icon, title, cta, ctaTo }) {
       </div>
       <h3 className="text-lg font-black mb-2">{title}</h3>
       <Link to={ctaTo}>
-        <button className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all">
+        <button className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all">
           <HiPlus className="w-4 h-4" /> {cta}
         </button>
       </Link>

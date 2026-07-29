@@ -86,6 +86,13 @@ html {
 [data-light-app="true"] .text-white {
   color: #0a1f14;
 }
+/* Exempt message buttons and image overlay text from light-theme text-white remap */
+[data-light-app="true"] .btn-message,
+[data-light-app="true"] .btn-message *,
+[data-light-app="true"] .text-white-force,
+[data-light-app="true"] .text-white-force * {
+  color: #ffffff !important;
+}
 [data-light-app="true"] .text-gray-300 {
   color: rgba(10, 31, 20, 0.78);
 }
@@ -289,13 +296,11 @@ img {
   .shorts-feed-stage {
     flex: 0 0 auto;
     align-self: center;
-    width: auto;
-    /* Fill the full viewport height — Instagram parity */
-    height: 100vh;
-    height: 100dvh;
+    aspect-ratio: 9 / 16;
+    width: min(calc(100vh * 9 / 16), calc(100dvh * 9 / 16), calc(100vw - 200px));
+    height: auto;
     max-height: 100vh;
     max-height: 100dvh;
-    aspect-ratio: 9 / 16;
     border-radius: 0;
     border-width: 0;
   }

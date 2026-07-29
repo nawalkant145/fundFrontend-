@@ -4,6 +4,7 @@ import { HiX, HiHeart, HiOutlineHeart } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import { commentService } from "../../services/commentService";
 import { useAuth } from "../../context/AuthContext";
+import { MOCK_COMMENTS, getFullMockComments } from "../../constants/mockData";
 
 /**
  * Instagram Reels-style comments panel with nested replies.
@@ -20,6 +21,7 @@ export default function CommentsPanel({
   onClose,
   videoId,
   postId,
+  totalCount,
   onCommentAdded,
 }) {
   const [text, setText] = useState("");
@@ -29,35 +31,63 @@ export default function CommentsPanel({
   const [replyTo, setReplyTo] = useState(null); // { parentId, username }
   const inputRef = useRef(null);
   const { user } = useAuth();
+  const targetId = videoId || postId;
 
   // Unified comment fetch — works for either a video or a post target
-  const fetchComments = (params) =>
-    videoId
-      ? commentService.list(videoId, params)
-      : commentService.listByPost(postId, params);
+  const fetchComments = (params) => {
+    if (videoId) return commentService.list(videoId, params);
+    if (postId) return commentService.listByPost(postId, params);
+    return Promise.reject(new Error("No target id"));
+  };
+
+  // Helper to load mock/local comments for a target
+  const getFallbackComments = (id, count) => {
+    if (!id) return [];
+    try {
+      const saved = localStorage.getItem(`expglo:comments:${id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return getFullMockComments(id, count);
+  };
 
   // Fetch top-level comments on open
   useEffect(() => {
-    if (!open || (!videoId && !postId)) return;
+    if (!open || !targetId) return;
     setLoading(true);
-    setComments([]);
+    const fallbacks = getFallbackComments(targetId, totalCount);
+    setComments(fallbacks);
+
+    // Only query API if targetId looks like a real Mongo ObjectId (24 hex characters)
+    const isRealMongoId = /^[a-f0-9]{24}$/i.test(targetId);
+    if (!isRealMongoId) {
+      setLoading(false);
+      return;
+    }
+
     fetchComments({ limit: 50 })
       .then((res) => {
         const data = res?.data?.data;
-        const list = data?.comments || data || [];
-        // attach UI state buckets for replies
-        setComments(
-          list.map((c) => ({
-            ...c,
-            _replies: [],
-            _repliesLoaded: false,
-            _repliesOpen: false,
-          })),
-        );
+        // backend wraps in { comments: [...] } — fall back to array directly
+        const raw = data?.comments ?? (Array.isArray(data) ? data : []);
+        if (raw.length > 0) {
+          setComments(
+            raw.map((c) => ({
+              ...c,
+              _replies: [],
+              _repliesLoaded: false,
+              _repliesOpen: false,
+            })),
+          );
+        }
       })
-      .catch(() => setComments([]))
+      .catch(() => {
+        // Keep fallback comments if API fails
+      })
       .finally(() => setLoading(false));
-  }, [open, videoId, postId]);
+  }, [open, targetId]);
 
   // Escape to close
   useEffect(() => {
@@ -102,8 +132,8 @@ export default function CommentsPanel({
 
     if (parentId) {
       // Nest under the parent comment, ensure thread is open
-      setComments((prev) =>
-        prev.map((c) =>
+      setComments((prev) => {
+        const next = prev.map((c) =>
           c._id === parentId
             ? {
                 ...c,
@@ -113,17 +143,37 @@ export default function CommentsPanel({
                 _replies: [...(c._replies || []), optimistic],
               }
             : c,
-        ),
-      );
+        );
+        try {
+          if (targetId)
+            localStorage.setItem(
+              `expglo:comments:${targetId}`,
+              JSON.stringify(next),
+            );
+        } catch {}
+        return next;
+      });
     } else {
-      setComments((prev) => [optimistic, ...prev]);
+      setComments((prev) => {
+        const next = [optimistic, ...prev];
+        try {
+          if (targetId)
+            localStorage.setItem(
+              `expglo:comments:${targetId}`,
+              JSON.stringify(next),
+            );
+        } catch {}
+        return next;
+      });
       onCommentAdded?.();
     }
 
     setText("");
     setReplyTo(null);
 
-    if (videoId || postId) {
+    // Only call API if targetId looks like a real Mongo ObjectId (24 hex characters)
+    const isRealMongoId = targetId && /^[a-f0-9]{24}$/i.test(targetId);
+    if (isRealMongoId) {
       commentService
         .create({ videoId, postId, text: finalText, parentId })
         .then((res) => {
@@ -179,7 +229,8 @@ export default function CommentsPanel({
     fetchComments({ parentId: comment._id, limit: 50 })
       .then((res) => {
         const data = res?.data?.data;
-        const replies = data?.comments || data || [];
+        // same safe parsing as top-level fetch
+        const replies = data?.comments ?? (Array.isArray(data) ? data : []);
         setComments((prev) =>
           prev.map((c) =>
             c._id === comment._id
@@ -266,7 +317,9 @@ export default function CommentsPanel({
 
             {/* Header */}
             <div className="flex items-center justify-center relative px-4 py-3 border-b border-gray-100">
-              <h2 className="font-bold text-base text-gray-900">Comments</h2>
+              <h2 className="font-bold text-base text-gray-900">
+                Comments {comments.length > 0 ? `(${comments.length})` : ""}
+              </h2>
               <button
                 onClick={onClose}
                 className="absolute right-4 p-1.5 text-gray-400 hover:text-gray-700 transition-colors"

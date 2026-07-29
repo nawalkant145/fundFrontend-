@@ -19,6 +19,7 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import FollowButton from "../../components/monetization/FollowButton";
 import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import { postService } from "../../services/postService";
+import { MOCK_POSTS } from "../../constants/mockData";
 import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
 
@@ -41,7 +42,29 @@ export default function PostDetailPage() {
   const [commentCount, setCommentCount] = useState(0);
   const [showComments, setShowComments] = useState(false);
 
-  // Fetch the post
+  const applyPost = (p) => {
+    if (!p) return;
+    const uid = user?._id;
+    setPost(p);
+    setLiked(
+      !!(
+        uid &&
+        Array.isArray(p.likes) &&
+        p.likes.some((id) => (id._id || id).toString() === uid)
+      ),
+    );
+    setSaved(
+      !!(
+        uid &&
+        Array.isArray(p.saves) &&
+        p.saves.some((id) => (id._id || id).toString() === uid)
+      ),
+    );
+    setLikeCount(Array.isArray(p.likes) ? p.likes.length : (typeof p.likes === "number" ? p.likes : 0));
+    setCommentCount(p.commentCount || 0);
+  };
+
+  // Fetch the post — fall back to MOCK_POSTS if API returns nothing (demo mode)
   useEffect(() => {
     setLoading(true);
     setImgIdx(0);
@@ -50,30 +73,24 @@ export default function PostDetailPage() {
       .then((res) => {
         const data = res?.data?.data;
         const p = data?.post || data || null;
-        setPost(p);
         if (p) {
-          const uid = user?._id;
-          setLiked(
-            !!(
-              uid &&
-              Array.isArray(p.likes) &&
-              p.likes.some((id) => (id._id || id).toString() === uid)
-            ),
-          );
-          setSaved(
-            !!(
-              uid &&
-              Array.isArray(p.saves) &&
-              p.saves.some((id) => (id._id || id).toString() === uid)
-            ),
-          );
-          setLikeCount(Array.isArray(p.likes) ? p.likes.length : p.likes || 0);
-          setCommentCount(p.commentCount || 0);
+          applyPost(p);
+        } else {
+          // API returned nothing — check MOCK_POSTS
+          const mock = MOCK_POSTS.find((m) => m._id === postId) || null;
+          applyPost(mock);
+          if (!mock) setPost(null);
         }
       })
-      .catch(() => setPost(null))
+      .catch(() => {
+        // API error — fall back to MOCK_POSTS
+        const mock = MOCK_POSTS.find((m) => m._id === postId) || null;
+        applyPost(mock);
+        if (!mock) setPost(null);
+      })
       .finally(() => setLoading(false));
-  }, [postId, user?._id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
 
   // Keyboard nav for image carousel
   useEffect(() => {

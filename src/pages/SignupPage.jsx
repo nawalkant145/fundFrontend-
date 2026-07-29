@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiUser,
@@ -40,10 +40,21 @@ const STEPS = ["Role", "Account", "Profile"];
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(0);
   const [userType, setUserType] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+   const [otpSentEmail, setOtpSentEmail] = useState("");
+
+  // Check if role is passed from navigation state (e.g., from Home page)
+  useEffect(() => {
+    const preSelectedRole = location.state?.role;
+    if (preSelectedRole && (preSelectedRole === "founder" || preSelectedRole === "investor")) {
+      setUserType(preSelectedRole);
+      setStep(1); // Skip role selection, go directly to Account Details
+    }
+  }, [location.state]);
   const [data, setData] = useState({
     fullName: "",
     username: "",
@@ -64,8 +75,13 @@ export default function SignupPage() {
     preferredStages: [],
     investmentThesis: "",
   });
-
-  const update = (key, value) => setData((prev) => ({ ...prev, [key]: value }));
+ const update = (key, value) => {
+    // For email: trim and lowercase before storing
+    if (key === "email" && typeof value === "string") {
+      value = value.trim().toLowerCase();
+    }
+    setData((prev) => ({ ...prev, [key]: value }));
+  };
 
   // ─── Live availability checks (username / email / phone) ─────────────
   // 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
@@ -131,6 +147,9 @@ export default function SignupPage() {
   const handleChange = (e) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
+       if (e.target.name === "email" && otpSentEmail && value !== otpSentEmail) {
+      setOtpSentEmail("");
+    }
     update(e.target.name, value);
   };
 
@@ -175,6 +194,7 @@ export default function SignupPage() {
       // Step 1: Send OTP to verify email (account is NOT created yet)
       const res = await authService.sendPreRegisterOtp(data.email);
       const devOtp = res?.data?.data?.devOtp || null;
+      setOtpSentEmail(data.email);
 
       // Convert the selected investment-range key → { min, max } for the API
       const rangeOpt = INVESTMENT_RANGES.find(
@@ -287,7 +307,7 @@ export default function SignupPage() {
               />
               <RoleCard
                 title="Investor"
-                icon={<HiTrendingUp className="w-7 h-7 text-[#F5B942]" />}
+  icon={<HiTrendingUp className="w-7 h-7 text-[#0F4A2E]" />}
                 description="Discover promising startups and back the next big thing."
                 accent="green"
                 bullets={[
@@ -645,6 +665,7 @@ export default function SignupPage() {
           Already have an account?{" "}
           <Link
             to="/login"
+              state={{ role: userType }}
             className="text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors"
           >
             Log in

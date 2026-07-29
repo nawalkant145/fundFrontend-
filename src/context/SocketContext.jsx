@@ -5,7 +5,7 @@ import { useAuth } from "./AuthContext";
 const SocketContext = createContext(null);
 
 // Auto-detect the socket server origin (same logic as api.js)
-const PROD_ORIGIN = "https://expglofundbackend.onrender.com";
+const PROD_ORIGIN = "https://fundbackend-a2ur.onrender.com";
 const LOCAL_ORIGIN = "http://localhost:5000";
 const SOCKET_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace("/api/v1", "")

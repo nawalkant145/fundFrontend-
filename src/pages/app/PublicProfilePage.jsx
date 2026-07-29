@@ -26,6 +26,13 @@ import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { chatService } from "../../services/chatService";
 
+import {
+  FOUNDER_PROFILES,
+  MOCK_PITCHES,
+  MOCK_POSTS,
+  generateMockUsersList,
+} from "../../constants/mockData";
+
 export default function PublicProfilePage() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -38,33 +45,143 @@ export default function PublicProfilePage() {
   const [posts, setPosts] = useState([]);
   const [tab, setTab] = useState("pitches");
   const [followModal, setFollowModal] = useState(null);
+  // Pre-loaded lists from the public profile API to avoid a second fetch
+  const [followersList, setFollowersList] = useState(null);
+  const [followingList, setFollowingList] = useState(null);
+
+  // Helper to construct fallback profile for mock users
+  const getFallbackProfile = (id) => {
+    const fProf = FOUNDER_PROFILES[id];
+    // Find founder in MOCK_PITCHES
+    const mockPitch = MOCK_PITCHES.find(
+      (p) => p.founderId?._id === id || p.founderId === id,
+    );
+    const mockPost = MOCK_POSTS.find(
+      (p) => p.authorId?._id === id || p.authorId === id,
+    );
+    const info = mockPitch?.founderId || mockPost?.authorId;
+
+    if (info || fProf) {
+      return {
+        _id: id,
+        name: info?.name || "Founder Profile",
+        username: info?.username || (info?.name || "founder").toLowerCase().replace(/\s+/g, "_"),
+        avatar: info?.avatar || "",
+        companyName: info?.companyName || "Startup",
+        role: "founder",
+        isVerified: info?.isVerified ?? true,
+        bio: fProf?.bio || "Building impactful solutions for emerging markets.",
+        location: fProf?.location || "India",
+        // Use real counts from mock data only — do NOT hardcode 1240/89 as defaults
+        followersCount: fProf?.followers ?? 0,
+        followingCount: fProf?.following ?? 0,
+        website: fProf?.website || "",
+      };
+    }
+
+    // Fallback profile for any mock follower/following user IDs (e.g. f1_follower_1, m_user_5, etc.)
+    if (
+      id &&
+      (id.startsWith("f1_") ||
+        id.startsWith("f2_") ||
+        id.startsWith("f3_") ||
+        id.startsWith("f4_") ||
+        id.startsWith("f5_") ||
+        id.startsWith("m_user_") ||
+        !/^[a-f0-9]{24}$/i.test(id))
+    ) {
+      const match = id.match(/_(\d+)$/);
+      const index = match ? parseInt(match[1], 10) - 1 : 0;
+      const generatedList = generateMockUsersList(
+        Math.max(index + 1, 50),
+        "mock_user",
+      );
+      const user = generatedList[index % generatedList.length];
+
+      return {
+        _id: id,
+        name: user?.name || "Member Profile",
+        username: user?.username || `user_${id}`,
+        avatar:
+          user?.avatar ||
+          `https://i.pravatar.cc/150?img=${(Math.abs(index) % 70) + 1}`,
+        companyName: user?.companyName || "Tech Ventures",
+        role: user?.role || "investor",
+        isVerified: user?.isVerified ?? true,
+        bio: `${user?.role === "founder" ? "Founder" : "Investor"} building and supporting transformative ideas in emerging technology.`,
+        location: "India",
+        followersCount: Math.floor((Math.abs(index) * 37 + 120) % 800) + 45,
+        followingCount: Math.floor((Math.abs(index) * 19 + 40) % 300) + 12,
+        website: "",
+      };
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     setLoading(true);
+
+    const fallbackProfile = getFallbackProfile(userId);
+    const fallbackPitches =
+      FOUNDER_PROFILES[userId]?.pitches ||
+      MOCK_PITCHES.filter(
+        (p) => (p.founderId?._id || p.founderId) === userId,
+      );
+    const fallbackPosts = MOCK_POSTS.filter(
+      (p) => (p.authorId?._id || p.authorId) === userId,
+    );
+
+    setProfile(fallbackProfile);
+    setPitches(fallbackPitches);
+    setPosts(fallbackPosts);
+
+    const isRealMongoId = /^[a-f0-9]{24}$/i.test(userId);
+    if (!isRealMongoId) {
+      // For mock/demo profiles, use follower/following arrays from FOUNDER_PROFILES
+      const fProf = FOUNDER_PROFILES[userId];
+      if (fProf?.followersList) setFollowersList(fProf.followersList);
+      if (fProf?.followingList) setFollowingList(fProf.followingList);
+      setLoading(false);
+      return;
+    }
+
     userService
       .getPublicProfile(userId)
       .then((res) => {
         const data = res?.data?.data || res?.data;
-        setProfile(data?.user || data);
+        const realProfile = data?.user || data;
+        if (realProfile) {
+          setProfile(realProfile);
+          // Pre-load followers / following lists from the populated profile
+          if (Array.isArray(realProfile.followers)) {
+            setFollowersList(realProfile.followers);
+          }
+          if (Array.isArray(realProfile.following)) {
+            setFollowingList(realProfile.following);
+          }
+        }
       })
-      .catch(() => setProfile(null))
+      .catch(() => {})
       .finally(() => setLoading(false));
 
     videoService
       .getUserPitches(userId)
       .then((res) => {
         const data = res?.data?.data;
-        setPitches(data?.videos || data || []);
+        const list = data?.videos || data || [];
+        setPitches(list);
       })
-      .catch(() => setPitches([]));
+      .catch(() => {});
 
     postService
       .getUserPosts(userId)
       .then((res) => {
         const data = res?.data?.data;
-        setPosts(data?.posts || data || []);
+        const list = data?.posts || data || [];
+        setPosts(list);
       })
-      .catch(() => setPosts([]));
+      .catch(() => {});
   }, [userId]);
 
   // Redirect to own profile if viewing self
@@ -170,11 +287,17 @@ export default function PublicProfilePage() {
             {isFounder && (
               <div>
                 <span className="font-black text-[#0A1F14]">
-                  {pitches.length}
+                  {pitches.length || profile.pitchesCount || 0}
                 </span>{" "}
                 <span className="text-[#0A1F14]/55 text-sm">pitches</span>
               </div>
             )}
+            <div>
+              <span className="font-black text-[#0A1F14]">
+                {posts.length || profile.postsCount || 0}
+              </span>{" "}
+              <span className="text-[#0A1F14]/55 text-sm">posts</span>
+            </div>
             <button
               onClick={() => setFollowModal("followers")}
               className="hover:opacity-70 transition-opacity"
@@ -254,16 +377,16 @@ export default function PublicProfilePage() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                  <HiPlay className="w-8 h-8 text-white" />
+                  <HiPlay className="w-8 h-8 text-white-force" />
                 </div>
-                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] font-bold text-white">
+                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] font-bold text-white-force drop-shadow-md">
                   <span className="flex items-center gap-0.5">
-                    <HiHeart className="w-3 h-3" />
+                    <HiHeart className="w-3.5 h-3.5 text-red-500" />
                     {p.likeCount ??
                       (Array.isArray(p.likes) ? p.likes.length : 0)}
                   </span>
                   <span className="flex items-center gap-0.5">
-                    <HiEye className="w-3 h-3" />
+                    <HiEye className="w-3.5 h-3.5 text-white-force" />
                     {p.views || 0}
                   </span>
                 </div>
@@ -285,12 +408,27 @@ export default function PublicProfilePage() {
                 <img
                   src={p.images[0]}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-full p-3 flex items-center text-xs text-[#0A1F14]/85">
-                  <span className="line-clamp-6">{p.caption}</span>
+                <div className="w-full h-full p-3 flex items-start bg-gradient-to-br from-[#f0faf5] to-[#e8f5ee] border border-[#1B5E3F]/10">
+                  <span className="line-clamp-6 text-xs text-[#0A1F14]/80 leading-relaxed">{p.caption}</span>
                 </div>
+              )}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
+                <span className="inline-flex items-center gap-1">
+                  <HiHeart className="w-4 h-4 text-red-400" />
+                  {Array.isArray(p.likes) ? p.likes.length : (p.likes || 0)}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <HiChatAlt2 className="w-4 h-4" /> {p.commentCount || 0}
+                </span>
+              </div>
+              {p.images?.length > 1 && (
+                <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-black/55 text-white-force text-[10px] font-bold rounded">
+                  {p.images.length}
+                </span>
               )}
             </Link>
           ))}
@@ -302,6 +440,8 @@ export default function PublicProfilePage() {
         onClose={() => setFollowModal(null)}
         userId={userId}
         mode={followModal}
+        preloadedFollowers={followersList}
+        preloadedFollowing={followingList}
       />
     </DashboardShell>
   );

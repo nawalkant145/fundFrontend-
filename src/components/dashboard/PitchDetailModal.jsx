@@ -78,9 +78,9 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
 
   return (
     <Modal open={open} onClose={onClose} size="xl">
-      <div className="grid lg:grid-cols-[1fr_420px]">
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_380px]">
         {/* Video / thumbnail */}
-        <div className="relative bg-black aspect-[4/5] lg:aspect-auto min-h-[400px] lg:min-h-[600px]">
+        <div className="relative bg-black aspect-[4/5] lg:aspect-auto lg:min-h-[600px]">
           <img
             src={pitch.thumbnailUrl}
             alt={pitch.title}
@@ -112,20 +112,33 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
         </div>
 
         {/* Side panel */}
-        <div className="flex flex-col h-[600px] lg:h-[700px]">
+        <div className="flex flex-col max-h-[60vh] lg:max-h-[700px] lg:h-[700px] overflow-hidden">
           {/* Founder header */}
           <div className="p-4 border-b border-gold/10 flex items-center gap-3">
             <img
-              src={f.avatar}
-              alt={f.name}
-              className="w-12 h-12 rounded-full border-2 border-gold/40 object-cover"
+              src={
+                f?.avatar ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  f?.name || pitch.authorName || "Founder",
+                )}&background=152820&color=d4af37`
+              }
+              alt={f?.name || "Founder"}
+              className="w-12 h-12 rounded-full border-2 border-gold/40 object-cover bg-dark-navy"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  f?.name || "Founder",
+                )}&background=152820&color=d4af37`;
+              }}
             />
             <div className="min-w-0">
               <p className="font-bold flex items-center gap-1 text-sm">
-                {f.name}
-                {f.isVerified && <MdVerified className="w-4 h-4 text-gold" />}
+                {f?.name || pitch.authorName || "Founder"}
+                {f?.isVerified && <MdVerified className="w-4 h-4 text-gold" />}
               </p>
-              <p className="text-xs text-gray-400">{f.companyName}</p>
+              <p className="text-xs text-gray-400">
+                {f?.companyName || pitch.companyName || ""}
+              </p>
             </div>
             <button
               className="ml-auto px-4 py-1.5 bg-gold text-dark-navy text-xs font-black rounded-full"
