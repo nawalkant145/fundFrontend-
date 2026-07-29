@@ -7,7 +7,7 @@ import {
 } from "react";
 import { authService } from "../services/authService";
 import { userService } from "../services/userService";
-import { syncSubscriptionFromUser } from "../lib/auth";
+import { syncSubscriptionFromUser, setAuth } from "../lib/auth";
 
 const AuthContext = createContext(null);
 
@@ -69,6 +69,10 @@ export function AuthProvider({ children }) {
       const u = payload.user || payload;
       setUser(u);
       syncSubscriptionFromUser(u);
+      // Ensure localStorage role is always up-to-date for getRole() fallback
+      if (u?.role) {
+        setAuth({ role: u.role, identifier: u.email || u.username || "" });
+      }
     } catch {
       clearToken();
       setUser(null);
@@ -84,6 +88,8 @@ export function AuthProvider({ children }) {
     storeToken(payload.accessToken, remember);
     setUser(payload.user);
     syncSubscriptionFromUser(payload.user);
+    // Persist role to localStorage so getRole() fallback always works
+    setAuth({ role: payload.user?.role, identifier: payload.user?.email || payload.user?.username || "" });
     return payload;
   };
 
@@ -93,6 +99,8 @@ export function AuthProvider({ children }) {
     // Registration always remembers (new user just signed up)
     storeToken(payload.accessToken, true);
     setUser(payload.user);
+    // Persist role to localStorage so getRole() fallback always works
+    setAuth({ role: payload.user?.role, identifier: payload.user?.email || payload.user?.username || "" });
     return payload;
   };
 

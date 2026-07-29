@@ -5,7 +5,7 @@ import axios from "axios";
 //   1. VITE_API_URL (explicit override via .env)
 //   2. Production build → Render backend
 //   3. Local dev → localhost
-const PROD_API = "https://expglofundbackend.onrender.com/api/v1";
+const PROD_API = "https://fundbackend-a2ur.onrender.com/api/v1";
 const LOCAL_API = "http://localhost:5000/api/v1";
 
 const BASE_URL =

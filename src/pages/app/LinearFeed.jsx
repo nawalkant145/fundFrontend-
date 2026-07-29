@@ -17,6 +17,9 @@ import {
   HiVolumeUp,
   HiVolumeOff,
   HiX,
+  HiPhotograph,
+  HiUpload,
+  HiCollection,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
@@ -42,9 +45,11 @@ import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
  * (mocked as f_1) and don't see the "Express Interest" pill on pitches.
  */
 export default function LinearFeed() {
-  const role = getRole() || "investor";
+  const { user, loading: authLoading } = useAuth();
+  // Wait for auth to resolve — during loading user is null which would
+  // incorrectly mark the session as investor and hide the composer card.
+  const role = authLoading ? null : (user?.role || getRole() || "investor");
   const isFounder = role === "founder";
-  const { user } = useAuth();
   const userId = user?._id;
 
   const [paywall, setPaywall] = useState(false);
@@ -168,27 +173,57 @@ export default function LinearFeed() {
       <div className="w-full max-w-[520px] mx-auto">
         {/* Composer for founders */}
         {isFounder && (
-          <Link
-            to="/app/post/new"
-            className="block mb-5 bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 hover:border-[#1B5E3F]/30 transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
-                }
-                alt=""
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
-              />
-              <span className="flex-1 text-sm text-[#0A1F14]/55">
+          <div className="mb-5 bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+            {/* Top row: Avatar + Pill input link */}
+            <div className="flex items-center gap-3 pb-3.5 border-b border-[#1B5E3F]/8">
+              <Link to="/app/profile" className="flex-shrink-0">
+                <img
+                  src={
+                    user?.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
+                  }
+                  alt={user?.name || "User"}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/35 transition-all duration-200"
+                />
+              </Link>
+              <Link
+                to="/app/post/new"
+                className="flex-1 px-4 py-2.5 bg-[#FAFAF7] hover:bg-[#FAFAF7]/80 border border-[#1B5E3F]/8 hover:border-[#1B5E3F]/20 rounded-full text-left text-sm text-[#0A1F14]/55 hover:text-[#0A1F14]/75 transition-all duration-200 font-medium cursor-pointer"
+              >
                 Share an update, lesson or photo…
-              </span>
-              <span className="px-3 py-1.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-xs font-bold rounded-full">
-                Post
-              </span>
+              </Link>
             </div>
-          </Link>
+
+            {/* Bottom row: Quick action links */}
+            <div className="flex items-center justify-around pt-3">
+              {/* Photo/Post link */}
+              <Link
+                to="/app/post/new"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/5 transition-all duration-200 group"
+              >
+                <HiPhotograph className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform duration-200" />
+                <span>Photo/Post</span>
+              </Link>
+
+              {/* Upload Pitch link */}
+              <Link
+                to="/app/upload"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#F5B942] hover:bg-[#F5B942]/5 transition-all duration-200 group"
+              >
+                <HiUpload className="w-5 h-5 text-[#F5B942] group-hover:scale-110 transition-transform duration-200" />
+                <span>Upload Pitch</span>
+              </Link>
+
+              {/* My Studio link */}
+              <Link
+                to="/app/studio"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 group"
+              >
+                <HiCollection className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform duration-200" />
+                <span>My Studio</span>
+              </Link>
+            </div>
+          </div>
         )}
 
         {feedLoading ? (
