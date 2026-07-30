@@ -22,6 +22,7 @@ import { postService } from "../../services/postService";
 import { MOCK_POSTS } from "../../constants/mockData";
 import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 
 /**
  * Instagram-style post detail page.
@@ -63,6 +64,19 @@ export default function PostDetailPage() {
     setLikeCount(Array.isArray(p.likes) ? p.likes.length : (typeof p.likes === "number" ? p.likes : 0));
     setCommentCount(p.commentCount || 0);
   };
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !postId) return;
+    const onEngagement = (data) => {
+      if (data.postId === postId && typeof data.commentCount === "number") {
+        setCommentCount(data.commentCount);
+      }
+    };
+    socket.on("post:engagement", onEngagement);
+    return () => socket.off("post:engagement", onEngagement);
+  }, [socket, postId]);
 
   // Fetch the post — fall back to MOCK_POSTS if API returns nothing (demo mode)
   useEffect(() => {
@@ -367,7 +381,15 @@ export default function PostDetailPage() {
         open={showComments}
         onClose={() => setShowComments(false)}
         postId={postId}
-        onCommentAdded={() => setCommentCount((c) => c + 1)}
+        totalCount={commentCount}
+        onCommentAdded={(newCount) =>
+          setCommentCount((c) => (typeof newCount === "number" ? newCount : c + 1))
+        }
+        onCommentDeleted={(newCount) =>
+          setCommentCount((c) =>
+            typeof newCount === "number" ? newCount : Math.max(0, c - 1),
+          )
+        }
       />
     </DashboardShell>
   );
