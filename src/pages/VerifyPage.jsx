@@ -32,10 +32,12 @@ export default function VerifyPage() {
   const [emailCooldown, setEmailCooldown] = useState(RESEND_SECONDS);
   const [phoneCooldown, setPhoneCooldown] = useState(RESEND_SECONDS);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   // Dev-only: OTP shown on screen (no real email/SMS during testing)
   const [devEmailOtp, setDevEmailOtp] = useState(location.state?.devOtp || "");
   const [devPhoneOtp, setDevPhoneOtp] = useState("");
+  const [hasSentOtp, setHasSentOtp] = useState(false);
 
   useEffect(() => {
     if (step !== 0 || emailCooldown <= 0) return;
@@ -49,9 +51,36 @@ export default function VerifyPage() {
     return () => clearInterval(t);
   }, [step, phoneCooldown]);
 
+  useEffect(() => {
+    if (user) {
+      if (user.isEmailVerified && !user.isPhoneVerified) {
+        setStep(1);
+        if (phone && !hasSentOtp) {
+          setHasSentOtp(true);
+          setLoading(true);
+          authService
+            .sendPhoneOtp(phone)
+            .then((res) => {
+              setDevPhoneOtp(res?.data?.data?.devOtp || "");
+              setSuccessMessage(res?.data?.message || "Phone OTP sent!");
+            })
+            .catch((err) => {
+              setError(err.response?.data?.message || "Failed to send phone OTP.");
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        }
+      } else if (user.isEmailVerified && user.isPhoneVerified) {
+        setStep(2);
+      }
+    }
+  }, [user, phone, hasSentOtp]);
+
   const handleEmailVerify = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     if (emailOtp.length !== 6) {
       setError("Enter the full 6-digit code");
       return;
@@ -70,10 +99,14 @@ export default function VerifyPage() {
       if (phone) {
         setStep(1);
         setPhoneCooldown(RESEND_SECONDS);
-        authService
-          .sendPhoneOtp(phone)
-          .then((res) => setDevPhoneOtp(res?.data?.data?.devOtp || ""))
-          .catch(() => {});
+        setHasSentOtp(true);
+        try {
+          const res = await authService.sendPhoneOtp(phone);
+          setDevPhoneOtp(res?.data?.data?.devOtp || "");
+          setSuccessMessage(res?.data?.message || "Phone OTP sent!");
+        } catch (err) {
+          setError(err.response?.data?.message || "Failed to send phone OTP.");
+        }
       } else {
         setStep(2);
       }
@@ -87,6 +120,7 @@ export default function VerifyPage() {
   const handlePhoneVerify = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     if (phoneOtp.length !== 6) {
       setError("Enter the full 6-digit code");
       return;
@@ -104,19 +138,25 @@ export default function VerifyPage() {
   };
 
   const resend = async (which) => {
+    setError("");
+    setSuccessMessage("");
     try {
       if (which === "email") {
         const res = await authService.sendPreRegisterOtp(email);
         setDevEmailOtp(res?.data?.data?.devOtp || "");
         setEmailCooldown(RESEND_SECONDS);
         setEmailOtp("");
+        setSuccessMessage(res?.data?.message || "OTP sent to email!");
       } else {
         const res = await authService.sendPhoneOtp(phone);
         setDevPhoneOtp(res?.data?.data?.devOtp || "");
         setPhoneCooldown(RESEND_SECONDS);
         setPhoneOtp("");
+        setSuccessMessage(res?.data?.message || "Phone OTP sent!");
       }
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend code.");
+    }
   };
 
   return (
@@ -158,6 +198,11 @@ export default function VerifyPage() {
 
             <OtpInput value={emailOtp} onChange={setEmailOtp} />
 
+            {successMessage && (
+              <p className="text-center text-sm text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                {successMessage}
+              </p>
+            )}
 
             {error && (
               <p className="text-center text-sm text-red-500 font-semibold">
@@ -191,14 +236,20 @@ export default function VerifyPage() {
               </div>
               <h2 className="text-xl font-black mb-1">Verify your phone</h2>
               <p className="text-[#0A1F14]/55 text-sm">
-                We sent a code to{" "}
+                We sent a 6-digit verification code to{" "}
                 <span className="text-[#1B5E3F] font-bold">{phone}</span>
               </p>
             </div>
 
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} />
 
-         
+            {devPhoneOtp && <DevOtpBanner otp={devPhoneOtp} />}
+
+            {successMessage && (
+              <p className="text-center text-sm text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                {successMessage}
+              </p>
+            )}
 
             {error && (
               <p className="text-center text-sm text-red-500 font-semibold">
@@ -279,13 +330,15 @@ export default function VerifyPage() {
 }
 
 function DevOtpBanner({ otp }) {
+  if (import.meta.env.PROD) return null;
+
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FFF6E0] border border-[#F5B942]/40 rounded-xl">
-      <span className="text-xs font-semibold text-[#0A1F14]/70">
-        Dev mode — your code is
+    <div className="flex flex-col items-center justify-center p-3.5 bg-amber-50 border border-amber-300 rounded-xl my-2 shadow-sm">
+      <span className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">
+        Development Mode
       </span>
-      <span className="text-base font-black tracking-[0.3em] text-[#0F4A2E]">
-        {otp}
+      <span className="text-sm font-medium text-amber-950">
+        Your OTP is <strong className="text-lg font-black tracking-widest text-emerald-800 ml-1">{otp}</strong>
       </span>
     </div>
   );
