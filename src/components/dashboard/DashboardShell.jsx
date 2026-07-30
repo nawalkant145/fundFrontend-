@@ -5,6 +5,9 @@ import BottomBar from "./BottomBar";
 import UploadProgressBar from "./UploadProgressBar";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
+import { useUploadModal } from "../../context/UploadModalContext";
+import UploadPitchModal from "./UploadPitchModal";
+import UploadPostModal from "./UploadPostModal";
 
 /**
  * Standard dashboard layout — light premium theme.
@@ -26,6 +29,7 @@ export default function DashboardShell({
   const { user } = useAuth();
   const resolvedMode = mode || user?.role || "founder";
   const unread = useNotifications().unreadCount;
+  const { pitchOpen, closePitchModal, postOpen, closePostModal } = useUploadModal();
 
   return (
     <div
@@ -92,6 +96,8 @@ export default function DashboardShell({
           </main>
         )}
       </div>
+      <UploadPitchModal open={pitchOpen} onClose={closePitchModal} />
+      <UploadPostModal open={postOpen} onClose={closePostModal} />
     </div>
   );
 }
