@@ -40,6 +40,17 @@ import { useSocket } from "../../context/SocketContext";
 import { MOCK_CHATS } from "../../constants/mockData";
 
 /**
+ * Helper to reliably resolve avatar image URL with fallback to ui-avatars.com
+ */
+function getAvatar(userObj) {
+  if (userObj && typeof userObj === "object" && userObj.avatar) {
+    return userObj.avatar;
+  }
+  const name = userObj?.name || userObj?.username || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1B5E3F&color=fff`;
+}
+
+/**
  * Instagram-style split-view inbox.
  * Desktop: chat list on the left, active chat on the right.
  * Mobile: only one of the two visible at a time, route-based.
@@ -48,24 +59,36 @@ function getOtherUser(chat, currentUser) {
   if (!chat) return {};
   const currentUid = (currentUser?._id || "").toString();
 
-  // If founderId & investorId are populated objects
-  if (chat.founderId && chat.investorId) {
-    const founderIdStr = (chat.founderId._id || chat.founderId).toString();
-    const investorIdStr = (chat.investorId._id || chat.investorId).toString();
-    if (currentUid && founderIdStr === currentUid) return chat.investorId;
-    if (currentUid && investorIdStr === currentUid) return chat.founderId;
+  // If currentUser is not ready yet, return founderId or investorId if available
+  if (!currentUid) {
+    if (chat.founderId && typeof chat.founderId === "object" && chat.founderId.name) return chat.founderId;
+    if (chat.investorId && typeof chat.investorId === "object" && chat.investorId.name) return chat.investorId;
+    return {};
   }
 
+  // If founderId & investorId are populated user objects
+  if (chat.founderId && typeof chat.founderId === "object" && chat.founderId._id) {
+    const founderIdStr = chat.founderId._id.toString();
+    if (founderIdStr !== currentUid && chat.founderId.name) return chat.founderId;
+  }
+  if (chat.investorId && typeof chat.investorId === "object" && chat.investorId._id) {
+    const investorIdStr = chat.investorId._id.toString();
+    if (investorIdStr !== currentUid && chat.investorId.name) return chat.investorId;
+  }
+
+  // Check participants array next
   if (Array.isArray(chat.participants)) {
     const otherPart = chat.participants.find(
-      (p) => (p?._id || p).toString() !== currentUid
+      (p) => p && typeof p === "object" && p._id && p._id.toString() !== currentUid
     );
-    if (otherPart && typeof otherPart === "object") return otherPart;
+    if (otherPart && otherPart.name) return otherPart;
   }
 
+  // Fallback
   const isFounder = currentUser?.role === "founder";
   const partner = isFounder ? chat.investorId : chat.founderId;
-  return partner || chat.otherUser || {};
+  if (partner && typeof partner === "object" && partner.name) return partner;
+  return chat.otherUser || {};
 }
 
 export default function MessagesPage() {
@@ -74,6 +97,7 @@ export default function MessagesPage() {
   const toast = useToast();
   const { user } = useAuth();
   const [chats, setChats] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -83,6 +107,7 @@ export default function MessagesPage() {
 
   // Fetch chats on mount and whenever the active chat changes (so new chats appear)
   const refreshChats = () => {
+    setChatsLoading(true);
     chatService
       .listChats()
       .then((res) => {
@@ -90,7 +115,8 @@ export default function MessagesPage() {
         const list = data?.chats || data || [];
         setChats(list);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setChatsLoading(false));
   };
 
   useEffect(() => {
@@ -125,7 +151,7 @@ export default function MessagesPage() {
     return () => clearTimeout(timer);
   }, [query, user]);
 
-  const activeChat = chats.find((c) => c._id === chatId);
+  const activeChat = chats.find((c) => c._id && c._id.toString() === chatId);
 
   const qClean = query.toLowerCase().trim().replace(/^@/, "");
 
@@ -165,7 +191,12 @@ export default function MessagesPage() {
       const res = await chatService.startChat(targetUser._id);
       const newChat = res?.data?.data?.chat || res?.data?.data || res?.data;
       if (newChat && newChat._id) {
-        setChats((prev) => [newChat, ...prev]);
+        setChats((prev) => [
+          newChat,
+          ...prev.filter(
+            (c) => c._id && c._id.toString() !== newChat._id.toString()
+          ),
+        ]);
         navigate(`/app/messages/${newChat._id}`);
         setQuery("");
         setSearchResults([]);
@@ -240,12 +271,7 @@ export default function MessagesPage() {
                 >
                   <div className="relative flex-shrink-0">
                     <img
-                      src={
-                        other.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          other.name || "U"
-                        )}&background=1B5E3F&color=fff`
-                      }
+                      src={getAvatar(other)}
                       alt={other.name || "User"}
                       className="w-12 h-12 rounded-full object-cover ring-2 ring-[#1B5E3F]/20"
                     />
@@ -306,12 +332,7 @@ export default function MessagesPage() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
-                          src={
-                            u.avatar ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              u.name || "U"
-                            )}&background=1B5E3F&color=fff`
-                          }
+                          src={getAvatar(u)}
                           alt={u.name}
                           className="w-10 h-10 rounded-full object-cover ring-2 ring-gold/20 flex-shrink-0"
                         />
@@ -381,8 +402,13 @@ export default function MessagesPage() {
             chatId ? "flex" : "hidden md:flex"
           } flex-col h-full`}
         >
-          {activeChat ? (
+          {chatsLoading && chatId && !activeChat ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-gold/30 border-t-gold rounded-full animate-spin" />
+            </div>
+          ) : activeChat ? (
             <ActiveChat
+              key={activeChat._id}
               chat={activeChat}
               onBack={() => navigate("/app/messages")}
               onConfirmDelete={() => setConfirming(activeChat)}
@@ -470,8 +496,8 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
       .then((res) => {
         const data = res?.data?.data || res?.data;
         const msgs = data?.messages || data || [];
-        // API returns newest first; reverse for display
-        setMessages([...msgs].reverse());
+        // Backend getMessages already returns messages in chronological order (oldest to newest)
+        setMessages(msgs);
       })
       .catch(() => setMessages([]))
       .finally(() => setLoadingMsgs(false));
@@ -484,27 +510,43 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     socket.emit("mark_read", { chatId: chat._id });
 
     const handleNewMsg = (msg) => {
+      if (!msg) return;
+      const msgIdStr = (msg._id?._id || msg._id || "").toString();
+      const msgSenderIdStr = (
+        msg.senderId?._id ||
+        msg.senderId ||
+        ""
+      ).toString();
+      const msgText = msg.text || "";
+
       setMessages((prev) => {
-        // Avoid duplicating an optimistic message we already added
-        const isDup = prev.some(
-          (m) =>
-            (m._id && m._id === msg._id) ||
-            (m._id?.startsWith?.("opt_") &&
-              m.text === msg.text &&
-              m.senderId?.toString() === msg.senderId?.toString())
-        );
-        if (isDup) {
-          // Replace optimistic with real message from server
-          return prev.map((m) =>
-            m._id?.startsWith?.("opt_") &&
-            m.text === msg.text &&
-            m.senderId?.toString() === msg.senderId?.toString()
-              ? msg
-              : m
-          );
+        // 1. If message with exact same ID already exists, do nothing
+        if (
+          msgIdStr &&
+          prev.some((m) => (m._id?._id || m._id || "").toString() === msgIdStr)
+        ) {
+          return prev;
         }
+
+        // 2. If an optimistic message matches text and sender, replace it
+        const optIndex = prev.findIndex(
+          (m) =>
+            typeof m._id === "string" &&
+            m._id.startsWith("opt_") &&
+            m.text === msgText &&
+            (m.senderId?._id || m.senderId || "").toString() === msgSenderIdStr,
+        );
+
+        if (optIndex !== -1) {
+          const next = [...prev];
+          next[optIndex] = msg;
+          return next;
+        }
+
+        // 3. Otherwise append new message
         return [...prev, msg];
       });
+
       // Update sidebar lastMessage for incoming messages
       onMessageSent?.(msg.text || `[${msg.type || "message"}]`);
     };
@@ -558,7 +600,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     const trimmed = text.trim();
     if (!trimmed) return;
     setText("");
-    if (socket) socket.emit("stop_typing", { chatId: chat._id });
+    if (socket && socket.connected) socket.emit("stop_typing", { chatId: chat._id });
 
     // Optimistic UI — add the message locally right away
     const optimistic = {
@@ -572,44 +614,35 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     setMessages((prev) => [...prev, optimistic]);
     onMessageSent?.(trimmed);
 
-    // Send via socket (real-time — the server broadcasts back via "new_message")
-    if (socket) {
+    const isConnected = socket && socket.connected;
+    if (isConnected) {
       socket.emit(
         "send_message",
         { chatId: chat._id, text: trimmed, type: "text" },
         (res) => {
-          if (!res?.ok) {
+          if (res?.ok && res?.message) {
+            handleNewMsg(res.message);
+          } else if (!res?.ok) {
             // Fallback: use REST API
             chatService
               .sendMessage(chat._id, { text: trimmed })
               .then((res) => {
                 const data = res?.data?.data;
                 const msg = data?.message || data;
-                if (msg) {
-                  // Replace optimistic with real message
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m._id === optimistic._id ? msg : m
-                    )
-                  );
-                }
+                if (msg) handleNewMsg(msg);
               })
               .catch(() => {});
           }
         },
       );
     } else {
-      // No socket — use REST
+      // Socket not connected — use REST API directly
       chatService
         .sendMessage(chat._id, { text: trimmed })
         .then((res) => {
           const data = res?.data?.data;
           const msg = data?.message || data;
-          if (msg) {
-            setMessages((prev) =>
-              prev.map((m) => (m._id === optimistic._id ? msg : m))
-            );
-          }
+          if (msg) handleNewMsg(msg);
         })
         .catch(() => {});
     }
@@ -703,7 +736,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
           >
             <div className="relative flex-shrink-0">
               <img
-                src={other.avatar}
+                src={getAvatar(other)}
                 alt={other.name}
                 className="w-9 h-9 rounded-full object-cover"
               />
@@ -753,7 +786,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
       {/* Avatar + name centered intro (Instagram style) */}
       <div className="text-center py-6 border-b border-gold/5">
         <img
-          src={other.avatar}
+          src={getAvatar(other)}
           alt={other.name}
           className="w-20 h-20 rounded-full mx-auto mb-2 object-cover"
         />
@@ -793,7 +826,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
             >
               {!isMe && (
                 <img
-                  src={other.avatar}
+                  src={getAvatar(other)}
                   alt=""
                   className={`w-7 h-7 rounded-full object-cover ${
                     showAvatar ? "" : "invisible"
@@ -914,7 +947,7 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
       >
         <div className="text-center">
           <img
-            src={other.avatar}
+            src={getAvatar(other)}
             alt={other.name}
             className="w-24 h-24 rounded-full mx-auto border-4 border-gold/40 object-cover mb-3"
           />

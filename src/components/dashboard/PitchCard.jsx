@@ -15,6 +15,7 @@ import { formatINR } from "../../constants/mockData";
 import DropdownMenu from "../ui/DropdownMenu";
 import { useToast } from "../ui/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 
 /**
@@ -56,6 +57,9 @@ export default function PitchCard({ pitch }) {
       ? pitch.saves.length
       : Number(pitch?.saves || 0),
   );
+  const [commentCount, setCommentCount] = useState(
+    () => pitch?.commentCount || pitch?.comments || 0,
+  );
 
   useEffect(() => {
     setLiked(isInitiallyLiked);
@@ -70,7 +74,21 @@ export default function PitchCard({ pitch }) {
         ? pitch.saves.length
         : Number(pitch?.saves || 0),
     );
+    setCommentCount(pitch?.commentCount || pitch?.comments || 0);
   }, [pitch, userId]);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !pitch?._id) return;
+    const onEngagement = (data) => {
+      if (data.videoId === pitch._id && typeof data.commentCount === "number") {
+        setCommentCount(data.commentCount);
+      }
+    };
+    socket.on("pitch:engagement", onEngagement);
+    return () => socket.off("pitch:engagement", onEngagement);
+  }, [socket, pitch?._id]);
 
   if (!pitch) return null;
 
@@ -288,7 +306,10 @@ export default function PitchCard({ pitch }) {
             active={saved}
             onClick={handleSaveClick}
           />
-          <Stat icon={HiChatAlt2} value={pitch.comments || 0} />
+          <Stat
+            icon={HiChatAlt2}
+            value={commentCount}
+          />
         </div>
       </div>
     </motion.div>

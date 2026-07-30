@@ -4,17 +4,11 @@ import { HiX, HiHeart, HiOutlineHeart } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import { commentService } from "../../services/commentService";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { MOCK_COMMENTS, getFullMockComments } from "../../constants/mockData";
 
 /**
  * Instagram Reels-style comments panel with nested replies.
- *
- * Behaviour mirrors Instagram:
- *  - Top-level comments listed newest first
- *  - Each comment with replies shows "— View all N replies"
- *  - Tapping it loads + reveals the thread, indented under the parent
- *  - Replying to any comment (or reply) nests under the same top-level parent
- *  - Like / delete-own / avatar-initials fallback / relative time
  */
 export default function CommentsPanel({
   open,
@@ -23,6 +17,7 @@ export default function CommentsPanel({
   postId,
   totalCount,
   onCommentAdded,
+  onCommentDeleted,
 }) {
   const [text, setText] = useState("");
   const [comments, setComments] = useState([]);
@@ -31,6 +26,7 @@ export default function CommentsPanel({
   const [replyTo, setReplyTo] = useState(null); // { parentId, username }
   const inputRef = useRef(null);
   const { user } = useAuth();
+  const { socket } = useSocket();
   const targetId = videoId || postId;
 
   // Unified comment fetch — works for either a video or a post target
@@ -40,54 +36,227 @@ export default function CommentsPanel({
     return Promise.reject(new Error("No target id"));
   };
 
-  // Helper to load mock/local comments for a target
+  // Helper to load mock comments only for non-mongo IDs
   const getFallbackComments = (id, count) => {
     if (!id) return [];
-    try {
-      const saved = localStorage.getItem(`expglo:comments:${id}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
     return getFullMockComments(id, count);
   };
 
   // Fetch top-level comments on open
   useEffect(() => {
     if (!open || !targetId) return;
-    setLoading(true);
-    const fallbacks = getFallbackComments(targetId, totalCount);
-    setComments(fallbacks);
 
-    // Only query API if targetId looks like a real Mongo ObjectId (24 hex characters)
     const isRealMongoId = /^[a-f0-9]{24}$/i.test(targetId);
     if (!isRealMongoId) {
+      setComments(getFallbackComments(targetId, totalCount));
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     fetchComments({ limit: 50 })
       .then((res) => {
         const data = res?.data?.data;
-        // backend wraps in { comments: [...] } — fall back to array directly
         const raw = data?.comments ?? (Array.isArray(data) ? data : []);
-        if (raw.length > 0) {
-          setComments(
-            raw.map((c) => ({
-              ...c,
-              _replies: [],
-              _repliesLoaded: false,
-              _repliesOpen: false,
-            })),
-          );
-        }
+        setComments(
+          raw.map((c) => ({
+            ...c,
+            _replies: [],
+            _repliesLoaded: false,
+            _repliesOpen: false,
+          })),
+        );
       })
-      .catch(() => {
-        // Keep fallback comments if API fails
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [open, targetId]);
+
+  // Real-time socket sync across all connected clients
+  useEffect(() => {
+    if (!socket || !open || !targetId) return;
+
+    socket.emit("join_target", { videoId, postId });
+
+    const onDeleted = (data) => {
+      const match = videoId ? data.videoId === videoId : data.postId === postId;
+      if (!match) return;
+
+      if (data.parentId) {
+        setComments((prev) =>
+          prev.map((c) =>
+            c._id === data.parentId
+              ? {
+                  ...c,
+                  replyCount:
+                    typeof data.replyCount === "number"
+                      ? data.replyCount
+                      : Math.max(0, (c.replyCount || 1) - 1),
+                  _replies: (c._replies || []).filter(
+                    (r) => r._id !== data.commentId,
+                  ),
+                }
+              : c,
+          ),
+        );
+      } else {
+        setComments((prev) => prev.filter((c) => c._id !== data.commentId));
+      }
+      if (typeof data.commentCount === "number") {
+        onCommentDeleted?.(data.commentCount);
+      }
+    };
+
+    const onNew = (data) => {
+      const match = videoId ? data.videoId === videoId : data.postId === postId;
+      if (!match) return;
+
+      if (data.parentId) {
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c._id !== data.parentId) return c;
+            const replies = c._replies || [];
+            if (replies.some((r) => r._id === data.comment._id)) return c;
+
+            const isOwn =
+              (data.comment.userId?._id || data.comment.userId)?.toString() ===
+              user?._id?.toString();
+
+            if (isOwn) {
+              const hasOptimistic = replies.some(
+                (r) =>
+                  typeof r._id === "string" &&
+                  r._id.startsWith("c_") &&
+                  r.text === data.comment.text,
+              );
+              if (hasOptimistic) {
+                return {
+                  ...c,
+                  _replies: replies.map((r) =>
+                    typeof r._id === "string" &&
+                    r._id.startsWith("c_") &&
+                    r.text === data.comment.text
+                      ? { ...data.comment, _isOwn: true }
+                      : r,
+                  ),
+                };
+              }
+            }
+
+            return {
+              ...c,
+              replyCount:
+                typeof data.replyCount === "number"
+                  ? data.replyCount
+                  : (c.replyCount || 0) + 1,
+              _repliesOpen: true,
+              _repliesLoaded: true,
+              _replies: [...replies, data.comment],
+            };
+          }),
+        );
+      } else {
+        setComments((prev) => {
+          if (prev.some((c) => c._id === data.comment._id)) return prev;
+
+          const isOwn =
+            (data.comment.userId?._id || data.comment.userId)?.toString() ===
+            user?._id?.toString();
+
+          if (isOwn) {
+            const hasOptimistic = prev.some(
+              (c) =>
+                typeof c._id === "string" &&
+                c._id.startsWith("c_") &&
+                c.text === data.comment.text,
+            );
+            if (hasOptimistic) {
+              return prev.map((c) =>
+                typeof c._id === "string" &&
+                c._id.startsWith("c_") &&
+                c.text === data.comment.text
+                  ? { ...data.comment, _isOwn: true }
+                  : c,
+              );
+            }
+          }
+
+          return [data.comment, ...prev];
+        });
+      }
+      if (typeof data.commentCount === "number") {
+        onCommentAdded?.(data.commentCount);
+      }
+    };
+
+    const onUpdated = (data) => {
+      const match = videoId ? data.videoId === videoId : data.postId === postId;
+      if (!match) return;
+
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c._id === data.commentId) {
+            return { ...c, text: data.text, isEdited: true };
+          }
+          if (c._replies && c._replies.length > 0) {
+            return {
+              ...c,
+              _replies: c._replies.map((r) =>
+                r._id === data.commentId
+                  ? { ...r, text: data.text, isEdited: true }
+                  : r,
+              ),
+            };
+          }
+          return c;
+        }),
+      );
+    };
+
+    const onLiked = (data) => {
+      const match = videoId ? data.videoId === videoId : data.postId === postId;
+      if (!match) return;
+
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c._id === data.commentId) {
+            return { ...c, likeCount: data.likeCount, count: data.likeCount };
+          }
+          if (c._replies && c._replies.length > 0) {
+            return {
+              ...c,
+              _replies: c._replies.map((r) =>
+                r._id === data.commentId
+                  ? { ...r, likeCount: data.likeCount, count: data.likeCount }
+                  : r,
+              ),
+            };
+          }
+          return c;
+        }),
+      );
+    };
+
+    socket.on("comment:deleted", onDeleted);
+    socket.on("comment:new", onNew);
+    socket.on("comment:updated", onUpdated);
+    socket.on("comment:liked", onLiked);
+
+    return () => {
+      socket.emit("leave_target", { videoId, postId });
+      socket.off("comment:deleted", onDeleted);
+      socket.off("comment:new", onNew);
+      socket.off("comment:updated", onUpdated);
+      socket.off("comment:liked", onLiked);
+    };
+  }, [
+    socket,
+    open,
+    targetId,
+    videoId,
+    postId,
+    onCommentAdded,
+    onCommentDeleted,
+  ]);
 
   // Escape to close
   useEffect(() => {
@@ -132,8 +301,8 @@ export default function CommentsPanel({
 
     if (parentId) {
       // Nest under the parent comment, ensure thread is open
-      setComments((prev) => {
-        const next = prev.map((c) =>
+      setComments((prev) =>
+        prev.map((c) =>
           c._id === parentId
             ? {
                 ...c,
@@ -143,28 +312,10 @@ export default function CommentsPanel({
                 _replies: [...(c._replies || []), optimistic],
               }
             : c,
-        );
-        try {
-          if (targetId)
-            localStorage.setItem(
-              `expglo:comments:${targetId}`,
-              JSON.stringify(next),
-            );
-        } catch {}
-        return next;
-      });
+        ),
+      );
     } else {
-      setComments((prev) => {
-        const next = [optimistic, ...prev];
-        try {
-          if (targetId)
-            localStorage.setItem(
-              `expglo:comments:${targetId}`,
-              JSON.stringify(next),
-            );
-        } catch {}
-        return next;
-      });
+      setComments((prev) => [optimistic, ...prev]);
       onCommentAdded?.();
     }
 
@@ -181,22 +332,29 @@ export default function CommentsPanel({
           if (!real?._id) return;
           if (parentId) {
             setComments((prev) =>
-              prev.map((c) =>
-                c._id === parentId
-                  ? {
-                      ...c,
-                      _replies: (c._replies || []).map((r) =>
-                        r._id === optimistic._id
-                          ? { ...real, _isOwn: true }
-                          : r,
-                      ),
-                    }
-                  : c,
-              ),
+              prev.map((c) => {
+                if (c._id !== parentId) return c;
+                const replies = c._replies || [];
+                if (replies.some((r) => r._id === real._id)) {
+                  return {
+                    ...c,
+                    _replies: replies.filter((r) => r._id !== optimistic._id),
+                  };
+                }
+                return {
+                  ...c,
+                  _replies: replies.map((r) =>
+                    r._id === optimistic._id ? { ...real, _isOwn: true } : r,
+                  ),
+                };
+              }),
             );
           } else {
-            setComments((prev) =>
-              prev.map((c) =>
+            setComments((prev) => {
+              if (prev.some((c) => c._id === real._id)) {
+                return prev.filter((c) => c._id !== optimistic._id);
+              }
+              return prev.map((c) =>
                 c._id === optimistic._id
                   ? {
                       ...real,
@@ -206,8 +364,8 @@ export default function CommentsPanel({
                       _repliesOpen: false,
                     }
                   : c,
-              ),
-            );
+              );
+            });
           }
         })
         .catch(() => {});
@@ -229,7 +387,6 @@ export default function CommentsPanel({
     fetchComments({ parentId: comment._id, limit: 50 })
       .then((res) => {
         const data = res?.data?.data;
-        // same safe parsing as top-level fetch
         const replies = data?.comments ?? (Array.isArray(data) ? data : []);
         setComments((prev) =>
           prev.map((c) =>
@@ -254,6 +411,8 @@ export default function CommentsPanel({
 
   // Delete a top-level comment or a reply
   const handleDelete = (comment, parentId = null) => {
+    const previous = comments;
+
     if (parentId) {
       setComments((prev) =>
         prev.map((c) =>
@@ -271,7 +430,23 @@ export default function CommentsPanel({
     } else {
       setComments((prev) => prev.filter((c) => c._id !== comment._id));
     }
-    commentService.remove(comment._id).catch(() => {});
+    onCommentDeleted?.();
+
+    const isRealMongoId = comment._id && /^[a-f0-9]{24}$/i.test(comment._id);
+    if (isRealMongoId) {
+      commentService
+        .remove(comment._id)
+        .then((res) => {
+          const d = res?.data?.data;
+          if (d && typeof d.commentCount === "number") {
+            onCommentDeleted?.(d.commentCount);
+          }
+        })
+        .catch(() => {
+          // Rollback optimistic delete on error
+          setComments(previous);
+        });
+    }
   };
 
   // Set up a reply (always nests under the TOP-LEVEL parent — Instagram flattens to 1 level)

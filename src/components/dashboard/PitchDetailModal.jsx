@@ -197,7 +197,10 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
           <div className="p-4 border-b border-gold/10 grid grid-cols-3 gap-2">
             <SmallStat icon={HiEye} value={pitch.views} />
             <SmallStat icon={HiHeart} value={pitch.likes.length} />
-            <SmallStat icon={HiChatAlt2} value={pitch.comments} />
+            <SmallStat
+              icon={HiChatAlt2}
+              value={pitch.commentCount || pitch.comments || 0}
+            />
           </div>
 
           {/* CTA buttons */}

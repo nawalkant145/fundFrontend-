@@ -13,6 +13,7 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import PitchCard from "../../components/dashboard/PitchCard";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
+import { useSocket } from "../../context/SocketContext";
 
 /**
  * Saved Studio (replaces "Saved Pitches" for investors).
@@ -150,6 +151,27 @@ function TabButton({ active, onClick, icon: Icon, label, count }) {
 
 function PostTile({ post }) {
   const cover = post.images?.[0];
+  const [commentCount, setCommentCount] = useState(
+    () => post.commentCount || 0,
+  );
+
+  useEffect(() => {
+    setCommentCount(post.commentCount || 0);
+  }, [post]);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !post?._id) return;
+    const onEngagement = (data) => {
+      if (data.postId === post._id && typeof data.commentCount === "number") {
+        setCommentCount(data.commentCount);
+      }
+    };
+    socket.on("post:engagement", onEngagement);
+    return () => socket.off("post:engagement", onEngagement);
+  }, [socket, post?._id]);
+
   return (
     <Link
       to={`/app/post/${post._id}`}
@@ -172,7 +194,7 @@ function PostTile({ post }) {
           {post.likeCount ?? (Array.isArray(post.likes) ? post.likes.length : 0)}
         </span>
         <span className="inline-flex items-center gap-1">
-          <HiChatAlt2 className="w-4 h-4" /> {post.commentCount || 0}
+          <HiChatAlt2 className="w-4 h-4" /> {commentCount}
         </span>
       </div>
     </Link>

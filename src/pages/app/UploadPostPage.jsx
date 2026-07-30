@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiPhotograph,
@@ -22,7 +22,9 @@ export default function UploadPostPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const fileInputRef = useRef(null);
-  const [type, setType] = useState("images"); // 'images' | 'text'
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get("type") === "text" ? "text" : "images";
+  const [type, setType] = useState(initialType); // 'images' | 'text'
   const [images, setImages] = useState([]); // [{ file, preview }]
   const [caption, setCaption] = useState("");
   const [link, setLink] = useState("");
