@@ -19,8 +19,16 @@ import {
   HiX,
   HiPhotograph,
   HiUpload,
-  HiCollection,
+  HiAnnotation,
 } from "react-icons/hi";
+import {
+  FaWhatsapp,
+  FaTwitter,
+  FaLinkedinIn,
+  FaTelegramPlane,
+  FaEnvelope,
+  FaLink,
+} from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
@@ -30,6 +38,7 @@ import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import { useToast } from "../../components/ui/Toast";
 import { FeedSkeleton } from "../../components/ui/PageLoader";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { chatService } from "../../services/chatService";
@@ -56,6 +65,41 @@ export default function LinearFeed() {
   const [realPitches, setRealPitches] = useState(null);
   const [realPosts, setRealPosts] = useState(null);
   const [feedLoading, setFeedLoading] = useState(true);
+
+  // States for inline thoughts posting
+  const [showInlineThought, setShowInlineThought] = useState(false);
+  const [thoughtText, setThoughtText] = useState("");
+  const [thoughtLink, setThoughtLink] = useState("");
+  const [thoughtHashtags, setThoughtHashtags] = useState("");
+  const [isSubmittingThought, setIsSubmittingThought] = useState(false);
+  const toast = useToast();
+
+  const handleThoughtSubmit = async (e) => {
+    e.preventDefault();
+    if (!thoughtText.trim() || isSubmittingThought) return;
+    setIsSubmittingThought(true);
+    try {
+      const res = await postService.create(null, {
+        caption: thoughtText,
+        link: thoughtLink,
+        hashtags: thoughtHashtags,
+        type: "text",
+      });
+      const newPost = res?.data?.data?.post || res?.data?.data;
+      if (newPost) {
+        setRealPosts((prev) => [newPost, ...(prev || [])]);
+      }
+      setThoughtText("");
+      setThoughtLink("");
+      setThoughtHashtags("");
+      setShowInlineThought(false);
+      toast.success("Thought published 🎉");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to publish thought. Please try again.");
+    } finally {
+      setIsSubmittingThought(false);
+    }
+  };
 
   // Fetch real pitches + posts on mount; fall back to mock data if API fails
   useEffect(() => {
@@ -214,15 +258,110 @@ export default function LinearFeed() {
                 <span>Upload Pitch</span>
               </Link>
 
-              {/* My Studio link */}
-              <Link
-                to="/app/studio"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 group"
+              {/* Thoughts button */}
+              <button
+                type="button"
+                onClick={() => { setShowInlineThought(!showInlineThought); setThoughtText(""); setThoughtLink(""); setThoughtHashtags(""); }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 group ${
+                  showInlineThought
+                    ? "text-violet-600 bg-violet-50"
+                    : "text-[#0A1F14]/70 hover:text-violet-600 hover:bg-violet-50"
+                }`}
               >
-                <HiCollection className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform duration-200" />
-                <span>My Studio</span>
-              </Link>
+                <HiAnnotation className={`w-5 h-5 text-violet-500 group-hover:scale-110 transition-transform duration-200 ${showInlineThought ? "scale-110" : ""}`} />
+                <span>Thoughts</span>
+              </button>
             </div>
+
+            {/* Inline Thought Composer */}
+            <AnimatePresence>
+              {showInlineThought && (
+                <motion.form
+                  key="thought-composer"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  onSubmit={handleThoughtSubmit}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3.5 border-t border-[#1B5E3F]/8 mt-3 space-y-3">
+                    {/* Thought textarea */}
+                    <div className="relative">
+                      <textarea
+                        value={thoughtText}
+                        onChange={(e) => setThoughtText(e.target.value.slice(0, 2200))}
+                        rows={4}
+                        placeholder="What startup thoughts do you have today?"
+                        autoFocus
+                        className="w-full px-4 py-3 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10 focus:outline-none transition-all resize-none text-sm leading-relaxed"
+                      />
+                      <span className="absolute bottom-2.5 right-3 text-[10px] text-[#0A1F14]/35 font-medium">
+                        {thoughtText.length}/2200
+                      </span>
+                    </div>
+
+                    {/* Optional link */}
+                    <div className="relative">
+                      <HiLink className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A1F14]/35 pointer-events-none" />
+                      <input
+                        type="url"
+                        value={thoughtLink}
+                        onChange={(e) => setThoughtLink(e.target.value)}
+                        placeholder="Link (optional)"
+                        className="w-full pl-10 pr-4 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-sm text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10 focus:outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Optional hashtags */}
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#0A1F14]/35 font-bold text-sm pointer-events-none">#</span>
+                      <input
+                        type="text"
+                        value={thoughtHashtags}
+                        onChange={(e) => setThoughtHashtags(e.target.value)}
+                        placeholder="Hashtags, comma-separated (optional)"
+                        className="w-full pl-8 pr-4 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-sm text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10 focus:outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowInlineThought(false)}
+                        className="px-4 py-2 rounded-full text-sm font-bold text-[#0A1F14]/55 hover:text-[#0A1F14]/80 hover:bg-[#0A1F14]/5 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <motion.button
+                        type="submit"
+                        disabled={!thoughtText.trim() || isSubmittingThought}
+                        whileHover={thoughtText.trim() && !isSubmittingThought ? { scale: 1.03 } : {}}
+                        whileTap={thoughtText.trim() && !isSubmittingThought ? { scale: 0.97 } : {}}
+                        className={`px-5 py-2 rounded-full text-sm font-bold inline-flex items-center gap-2 transition-all ${
+                          !thoughtText.trim() || isSubmittingThought
+                            ? "bg-violet-200 text-violet-400 cursor-not-allowed"
+                            : "bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-md shadow-violet-500/25 hover:from-violet-500 hover:to-violet-600"
+                        }`}
+                      >
+                        {isSubmittingThought ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Publishing…
+                          </>
+                        ) : (
+                          <>
+                            <HiAnnotation className="w-4 h-4" />
+                            Post Thought
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -437,6 +576,19 @@ function PitchFeedCard({
       });
   };
 
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !pitch._id) return;
+    const onEngagement = (data) => {
+      if (data.videoId === pitch._id && typeof data.commentCount === "number") {
+        setCommentCount(data.commentCount);
+      }
+    };
+    socket.on("pitch:engagement", onEngagement);
+    return () => socket.off("pitch:engagement", onEngagement);
+  }, [socket, pitch._id]);
+
   return (
     <motion.article
       ref={containerRef}
@@ -451,7 +603,10 @@ function PitchFeedCard({
           className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-85 transition-opacity"
         >
           <img
-            src={pitch.founderId.avatar}
+            src={
+              pitch.founderId.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(pitch.founderId.name || "U")}&background=1B5E3F&color=fff`
+            }
             alt=""
             className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
           />
@@ -593,7 +748,14 @@ function PitchFeedCard({
         onClose={() => setShowComments(false)}
         videoId={pitch._id}
         totalCount={pitch.commentCount || pitch.comments}
-        onCommentAdded={() => setCommentCount((c) => c + 1)}
+        onCommentAdded={(newCount) =>
+          setCommentCount((c) => (typeof newCount === "number" ? newCount : c + 1))
+        }
+        onCommentDeleted={(newCount) =>
+          setCommentCount((c) =>
+            typeof newCount === "number" ? newCount : Math.max(0, c - 1),
+          )
+        }
       />
       <ShareSheet
         open={showShare}
@@ -696,6 +858,19 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         }
       });
   };
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !post._id) return;
+    const onEngagement = (data) => {
+      if (data.postId === post._id && typeof data.commentCount === "number") {
+        setCommentCount(data.commentCount);
+      }
+    };
+    socket.on("post:engagement", onEngagement);
+    return () => socket.off("post:engagement", onEngagement);
+  }, [socket, post._id]);
 
   return (
     <motion.article
@@ -879,7 +1054,14 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         onClose={() => setShowComments(false)}
         postId={post._id}
         totalCount={post.commentCount || post.comments}
-        onCommentAdded={() => setCommentCount((c) => c + 1)}
+        onCommentAdded={(newCount) =>
+          setCommentCount((c) => (typeof newCount === "number" ? newCount : c + 1))
+        }
+        onCommentDeleted={(newCount) =>
+          setCommentCount((c) =>
+            typeof newCount === "number" ? newCount : Math.max(0, c - 1),
+          )
+        }
       />
       <ShareSheet
         open={showShare}
@@ -920,7 +1102,7 @@ function ShareSheet({ open, onClose, title, url }) {
 
   const copy = () => {
     navigator.clipboard?.writeText(url);
-    toast.success("Link copied");
+    toast.success("Link copied to clipboard");
     onClose();
   };
 
@@ -935,13 +1117,43 @@ function ShareSheet({ open, onClose, title, url }) {
     }
   };
 
-  const links = {
-    WhatsApp: `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
-    Twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
-    LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-    Telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
-    Email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Check this out: ${url}`)}`,
-  };
+  const socialButtons = [
+    {
+      label: "WhatsApp",
+      icon: FaWhatsapp,
+      href: `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
+      style:
+        "bg-[#25D366]/12 text-[#1E9E4B] border-[#25D366]/35 hover:bg-[#25D366] hover:text-white",
+    },
+    {
+      label: "X (Twitter)",
+      icon: FaTwitter,
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+      style:
+        "bg-[#1DA1F2]/12 text-[#1176B4] border-[#1DA1F2]/35 hover:bg-[#1DA1F2] hover:text-white",
+    },
+    {
+      label: "LinkedIn",
+      icon: FaLinkedinIn,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      style:
+        "bg-[#0A66C2]/12 text-[#0A66C2] border-[#0A66C2]/35 hover:bg-[#0A66C2] hover:text-white",
+    },
+    {
+      label: "Telegram",
+      icon: FaTelegramPlane,
+      href: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+      style:
+        "bg-[#0088cc]/12 text-[#0088cc] border-[#0088cc]/35 hover:bg-[#0088cc] hover:text-white",
+    },
+    {
+      label: "Email",
+      icon: FaEnvelope,
+      href: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`Check out this: ${url}`)}`,
+      style:
+        "bg-[#EA4335]/12 text-[#C5221F] border-[#EA4335]/35 hover:bg-[#EA4335] hover:text-white",
+    },
+  ];
 
   return (
     <AnimatePresence>
@@ -950,7 +1162,7 @@ function ShareSheet({ open, onClose, title, url }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/50 z-[80] flex items-end md:items-center justify-center"
+        className="fixed inset-0 bg-black/50 z-[80] flex items-end md:items-center justify-center p-0 md:p-4"
       >
         <motion.div
           initial={{ y: "100%", opacity: 0.5 }}
@@ -958,48 +1170,52 @@ function ShareSheet({ open, onClose, title, url }) {
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 30, stiffness: 320 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-5 shadow-2xl"
+          className="w-full md:w-[440px] bg-white rounded-t-3xl md:rounded-3xl p-6 shadow-2xl border border-[#1B5E3F]/10"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-[#0A1F14]">Share</h3>
+            <h3 className="font-black text-base text-[#0A1F14]">Share</h3>
             <button
               onClick={onClose}
-              className="p-1.5 text-gray-400 hover:text-gray-700"
+              className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             >
               <HiX className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl p-3 mb-4 flex items-center gap-2">
-            <span className="text-xs text-[#0A1F14]/65 truncate flex-1">
+          {/* Copy link box */}
+          <div className="bg-[#FAFAF7] border border-[#1B5E3F]/15 rounded-2xl p-3 mb-5 flex items-center gap-3">
+            <span className="text-xs font-mono text-[#0A1F14]/75 truncate flex-1 select-all">
               {url}
             </span>
             <button
               onClick={copy}
-              className="px-3 py-1.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white rounded-lg text-xs font-bold flex-shrink-0"
+              className="px-3.5 py-1.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md shrink-0"
             >
-              Copy
+              <FaLink className="w-3.5 h-3.5" /> Copy
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(links).map(([label, href]) => (
+          {/* Social buttons grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {socialButtons.map(({ label, icon: Icon, href, style }) => (
               <a
                 key={label}
                 href={href}
                 target="_blank"
                 rel="noreferrer"
                 onClick={onClose}
-                className="px-3 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 hover:border-[#1B5E3F]/35 rounded-xl text-xs font-semibold text-center text-[#0A1F14] transition-colors"
+                className={`px-3 py-3 border rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-sm ${style}`}
               >
-                {label}
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{label}</span>
               </a>
             ))}
             <button
               onClick={nativeShare}
-              className="px-3 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 hover:border-[#1B5E3F]/35 rounded-xl text-xs font-semibold text-[#0A1F14] transition-colors"
+              className="px-3 py-3 bg-[#FAFAF7] text-[#0A1F14]/80 border border-[#1B5E3F]/15 hover:bg-gray-100 hover:border-[#1B5E3F]/30 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-sm"
             >
-              More…
+              <HiShare className="w-4 h-4 shrink-0" />
+              <span>More…</span>
             </button>
           </div>
         </motion.div>

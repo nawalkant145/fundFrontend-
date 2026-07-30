@@ -15,6 +15,14 @@ import {
   HiDotsVertical,
   HiInformationCircle,
 } from "react-icons/hi";
+import {
+  FaWhatsapp,
+  FaTwitter,
+  FaLinkedinIn,
+  FaTelegramPlane,
+  FaEnvelope,
+  FaLink,
+} from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
 
 import FeedShell from "../../components/dashboard/FeedShell";
@@ -26,6 +34,7 @@ import Modal from "../../components/ui/Modal";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 import { investmentService } from "../../services/investmentService";
 import { reportService } from "../../services/reportService";
@@ -60,6 +69,24 @@ export default function InvestorFeed() {
     }
     return 0;
   });
+
+  const { socket } = useSocket();
+
+  // Socket sync for pitch engagement (commentCount, likes, saves)
+  useEffect(() => {
+    if (!socket) return;
+    const onEngagement = (data) => {
+      if (data.videoId && typeof data.commentCount === "number") {
+        setPitches((prev) =>
+          prev.map((p) =>
+            p._id === data.videoId ? { ...p, commentCount: data.commentCount } : p
+          )
+        );
+      }
+    };
+    socket.on("pitch:engagement", onEngagement);
+    return () => socket.off("pitch:engagement", onEngagement);
+  }, [socket]);
 
   // Fetch real feed on mount. After the array is replaced we re-anchor idx by
   // pitch ID so the active pitch never changes unexpectedly.
@@ -183,10 +210,12 @@ export default function InvestorFeed() {
 
   const pitch = pitches[idx];
 
-  // Update activePitchRef whenever active pitch changes
+  // Update activePitchRef whenever active pitch changes (only after feed has loaded)
   useEffect(() => {
-    if (pitch?._id) activePitchRef.current = pitch._id;
-  }, [pitch?._id]);
+    if (feedLoaded && pitch?._id) {
+      activePitchRef.current = pitch._id;
+    }
+  }, [pitch?._id, feedLoaded]);
 
   // Log a view when a pitch becomes active (once per pitch per session).
   // Fires after 1.5s on the pitch so quick scroll-throughs don't count.
@@ -629,7 +658,10 @@ export default function InvestorFeed() {
                     className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
                   >
                     <img
-                      src={pitch.founderId.avatar}
+                      src={
+                        pitch.founderId.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(pitch.founderId.name || "U")}&background=1B5E3F&color=fff`
+                      }
                       alt={pitch.founderId.name}
                       className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
                     />
@@ -705,23 +737,10 @@ export default function InvestorFeed() {
         >
           <RailButton
             icon={HiHeart}
-            label={(() => {
-              const base =
-                pitch.likeCount ??
-                (Array.isArray(pitch.likes) ? pitch.likes.length : 0);
-              const activeL = isPitchLiked(pitch);
-              const initL = Boolean(
-                pitch.isLiked ||
-                  (Array.isArray(pitch.likes) &&
-                    userId &&
-                    pitch.likes.some(
-                      (id) => (id._id || id).toString() === userId.toString(),
-                    )),
-              );
-              if (activeL && !initL) return base + 1;
-              if (!activeL && initL) return Math.max(0, base - 1);
-              return base;
-            })()}
+            label={
+              pitch.likeCount ??
+              (Array.isArray(pitch.likes) ? pitch.likes.length : 0)
+            }
             active={isPitchLiked(pitch)}
             activeClass="text-red-400"
             onClick={toggleLike}
@@ -729,32 +748,16 @@ export default function InvestorFeed() {
           />
           <RailButton
             icon={HiChatAlt2}
-            label={
-              (pitch.commentCount || pitch.comments || 0) +
-              (localCommentCount[pitch._id] || 0)
-            }
+            label={pitch.commentCount || pitch.comments || 0}
             onClick={() => setActiveModal("comments")}
             title="Comments"
           />
           <RailButton
             icon={HiBookmark}
-            label={(() => {
-              const base =
-                pitch.saveCount ??
-                (Array.isArray(pitch.saves) ? pitch.saves.length : 0);
-              const activeS = isPitchSaved(pitch);
-              const initS = Boolean(
-                pitch.isSaved ||
-                  (Array.isArray(pitch.saves) &&
-                    userId &&
-                    pitch.saves.some(
-                      (id) => (id._id || id).toString() === userId.toString(),
-                    )),
-              );
-              if (activeS && !initS) return base + 1;
-              if (!activeS && initS) return Math.max(0, base - 1);
-              return base;
-            })()}
+            label={
+              pitch.saveCount ??
+              (Array.isArray(pitch.saves) ? pitch.saves.length : 0)
+            }
             active={isPitchSaved(pitch)}
             activeClass="text-gold"
             onClick={toggleSave}
@@ -798,12 +801,36 @@ export default function InvestorFeed() {
         onClose={() => setActiveModal(null)}
         videoId={pitch._id}
         totalCount={pitch.commentCount || pitch.comments}
-        onCommentAdded={() =>
-          setLocalCommentCount((p) => ({
-            ...p,
-            [pitch._id]: (p[pitch._id] || 0) + 1,
-          }))
-        }
+        onCommentAdded={(newCount) => {
+          if (typeof newCount === "number") {
+            setPitches((prev) =>
+              prev.map((p) => (p._id === pitch._id ? { ...p, commentCount: newCount } : p))
+            );
+          } else {
+            setPitches((prev) =>
+              prev.map((p) =>
+                p._id === pitch._id
+                  ? { ...p, commentCount: (p.commentCount || p.comments || 0) + 1 }
+                  : p,
+              ),
+            );
+          }
+        }}
+        onCommentDeleted={(newCount) => {
+          if (typeof newCount === "number") {
+            setPitches((prev) =>
+              prev.map((p) => (p._id === pitch._id ? { ...p, commentCount: newCount } : p))
+            );
+          } else {
+            setPitches((prev) =>
+              prev.map((p) =>
+                p._id === pitch._id
+                  ? { ...p, commentCount: Math.max(0, (p.commentCount || p.comments || 0) - 1) }
+                  : p,
+              ),
+            );
+          }
+        }}
       />
 
       <ShareModal
@@ -887,15 +914,15 @@ function FollowButton({ active, onClick }) {
 
 function ShareModal({ open, onClose, pitch }) {
   const toast = useToast();
-  const url =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/pitch/${pitch._id}`
-      : "";
+  if (!pitch) return null;
+  const url = `${window.location.origin}/pitch/${pitch._id}`;
+
   const copy = () => {
     navigator.clipboard?.writeText(url);
-    toast.success("Link copied");
+    toast.success("Link copied to clipboard");
     onClose();
   };
+
   const nativeShare = () => {
     if (navigator.share) {
       navigator
@@ -910,43 +937,85 @@ function ShareModal({ open, onClose, pitch }) {
       copy();
     }
   };
-  const shareLinks = {
-    WhatsApp: `https://wa.me/?text=${encodeURIComponent(`${pitch.title} ${url}`)}`,
-    Twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(pitch.title)}&url=${encodeURIComponent(url)}`,
-    LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-    Email: `mailto:?subject=${encodeURIComponent(pitch.title)}&body=${encodeURIComponent(`Check this pitch: ${url}`)}`,
-    Telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(pitch.title)}`,
-  };
+
+  const socialButtons = [
+    {
+      label: "WhatsApp",
+      icon: FaWhatsapp,
+      href: `https://wa.me/?text=${encodeURIComponent(`${pitch.title} ${url}`)}`,
+      style:
+        "bg-[#25D366]/10 text-[#1E9E4B] border-[#25D366]/30 hover:bg-[#25D366] hover:text-white",
+    },
+    {
+      label: "X (Twitter)",
+      icon: FaTwitter,
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(pitch.title)}&url=${encodeURIComponent(url)}`,
+      style:
+        "bg-[#1DA1F2]/10 text-[#0C7ABF] border-[#1DA1F2]/30 hover:bg-[#1DA1F2] hover:text-white",
+    },
+    {
+      label: "LinkedIn",
+      icon: FaLinkedinIn,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      style:
+        "bg-[#0A66C2]/10 text-[#0A66C2] border-[#0A66C2]/30 hover:bg-[#0A66C2] hover:text-white",
+    },
+    {
+      label: "Telegram",
+      icon: FaTelegramPlane,
+      href: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(pitch.title)}`,
+      style:
+        "bg-[#0088cc]/10 text-[#0088cc] border-[#0088cc]/30 hover:bg-[#0088cc] hover:text-white",
+    },
+    {
+      label: "Email",
+      icon: FaEnvelope,
+      href: `mailto:?subject=${encodeURIComponent(pitch.title)}&body=${encodeURIComponent(`Check out this pitch: ${url}`)}`,
+      style:
+        "bg-[#EA4335]/10 text-[#C5221F] border-[#EA4335]/30 hover:bg-[#EA4335] hover:text-white",
+    },
+  ];
+
   return (
-    <Modal open={open} onClose={onClose} title="Share pitch">
-      <p className="text-sm text-gray-300 mb-3">{pitch.title}</p>
-      <div className="bg-dark-bg/60 border border-gold/15 rounded-xl p-3 mb-3 flex items-center gap-2">
-        <span className="text-sm text-gray-300 truncate flex-1">{url}</span>
+    <Modal open={open} onClose={onClose} title="Share Pitch">
+      <p className="text-sm font-bold text-[#0A1F14]/80 mb-4 line-clamp-1">
+        {pitch.title}
+      </p>
+
+      {/* Copy link box */}
+      <div className="bg-[#FAFAF7] border border-[#1B5E3F]/20 rounded-2xl p-3 mb-5 flex items-center gap-3 shadow-inner">
+        <span className="text-xs font-mono font-bold text-[#1B5E3F] truncate flex-1 select-all">
+          {url}
+        </span>
         <button
           onClick={copy}
-          className="px-3 py-1.5 bg-gold text-dark-navy rounded-lg text-xs font-bold"
+          className="px-3.5 py-2 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md shrink-0"
         >
-          Copy
+          <FaLink className="w-3.5 h-3.5 text-[#F5B942]" /> Copy
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {Object.entries(shareLinks).map(([label, href]) => (
+
+      {/* Social grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        {socialButtons.map(({ label, icon: Icon, href, style }) => (
           <a
             key={label}
             href={href}
             target="_blank"
             rel="noreferrer"
             onClick={onClose}
-            className="px-3 py-2 bg-dark-bg/60 border border-gold/15 hover:border-gold/40 rounded-xl text-sm font-semibold text-center"
+            className={`px-3.5 py-3 border rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-sm ${style}`}
           >
-            {label}
+            <Icon className="w-4 h-4 shrink-0" />
+            <span>{label}</span>
           </a>
         ))}
         <button
           onClick={nativeShare}
-          className="px-3 py-2 bg-dark-bg/60 border border-gold/15 hover:border-gold/40 rounded-xl text-sm font-semibold"
+          className="px-3.5 py-3 bg-[#FAFAF7] text-[#0A1F14] border border-[#1B5E3F]/15 hover:bg-[#1B5E3F]/10 hover:border-[#1B5E3F]/30 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-sm"
         >
-          More
+          <HiShare className="w-4 h-4 shrink-0 text-[#1B5E3F]" />
+          <span>More…</span>
         </button>
       </div>
     </Modal>
@@ -1071,7 +1140,10 @@ function DetailsModal({ open, onClose, pitch }) {
     <Modal open={open} onClose={onClose} title={pitch.title}>
       <div className="flex items-center gap-3 mb-3">
         <img
-          src={pitch.founderId.avatar}
+          src={
+            pitch.founderId.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(pitch.founderId.name || "U")}&background=1B5E3F&color=fff`
+          }
           alt={pitch.founderId.name}
           className="w-12 h-12 rounded-full border-2 border-gold/40"
         />
