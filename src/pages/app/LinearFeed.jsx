@@ -42,6 +42,7 @@ import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { chatService } from "../../services/chatService";
+import { useUploadModal } from "../../context/UploadModalContext";
 import { MOCK_PITCHES, ALL_MOCK_PITCHES, MOCK_POSTS, formatINR } from "../../constants/mockData";
 import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
 
@@ -60,49 +61,16 @@ export default function LinearFeed() {
   const role = authLoading ? null : (user?.role || getRole() || "investor");
   const isFounder = role === "founder";
   const userId = user?._id;
+  const { openPitchModal, openPostModal } = useUploadModal();
 
   const [paywall, setPaywall] = useState(false);
   const [realPitches, setRealPitches] = useState(null);
   const [realPosts, setRealPosts] = useState(null);
   const [feedLoading, setFeedLoading] = useState(true);
 
-  // States for inline thoughts posting
-  const [showInlineThought, setShowInlineThought] = useState(false);
-  const [thoughtText, setThoughtText] = useState("");
-  const [thoughtLink, setThoughtLink] = useState("");
-  const [thoughtHashtags, setThoughtHashtags] = useState("");
-  const [isSubmittingThought, setIsSubmittingThought] = useState(false);
   const toast = useToast();
 
-  const handleThoughtSubmit = async (e) => {
-    e.preventDefault();
-    if (!thoughtText.trim() || isSubmittingThought) return;
-    setIsSubmittingThought(true);
-    try {
-      const res = await postService.create(null, {
-        caption: thoughtText,
-        link: thoughtLink,
-        hashtags: thoughtHashtags,
-        type: "text",
-      });
-      const newPost = res?.data?.data?.post || res?.data?.data;
-      if (newPost) {
-        setRealPosts((prev) => [newPost, ...(prev || [])]);
-      }
-      setThoughtText("");
-      setThoughtLink("");
-      setThoughtHashtags("");
-      setShowInlineThought(false);
-      toast.success("Thought published 🎉");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to publish thought. Please try again.");
-    } finally {
-      setIsSubmittingThought(false);
-    }
-  };
-
-  // Fetch real pitches + posts on mount; fall back to mock data if API fails
-  useEffect(() => {
+  const loadFeedData = () => {
     let loaded = 0;
     const done = () => {
       loaded++;
@@ -128,6 +96,23 @@ export default function LinearFeed() {
       })
       .catch(() => {})
       .finally(done);
+  };
+
+  // Fetch real pitches + posts on mount; fall back to mock data if API fails
+  useEffect(() => {
+    loadFeedData();
+
+    const handleUpdate = () => {
+      loadFeedData();
+    };
+
+    window.addEventListener("pitch-uploaded", handleUpdate);
+    window.addEventListener("post-created", handleUpdate);
+
+    return () => {
+      window.removeEventListener("pitch-uploaded", handleUpdate);
+      window.removeEventListener("post-created", handleUpdate);
+    };
   }, []);
 
   // Disable browser scroll-restoration so refresh always lands at the top
@@ -230,138 +215,44 @@ export default function LinearFeed() {
                   className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/35 transition-all duration-200"
                 />
               </Link>
-              <Link
-                to="/app/post/new"
+              <button
+                onClick={() => openPostModal()}
                 className="flex-1 px-4 py-2.5 bg-[#FAFAF7] hover:bg-[#FAFAF7]/80 border border-[#1B5E3F]/8 hover:border-[#1B5E3F]/20 rounded-full text-left text-sm text-[#0A1F14]/55 hover:text-[#0A1F14]/75 transition-all duration-200 font-medium cursor-pointer"
               >
                 Share an update, lesson or photo…
-              </Link>
+              </button>
             </div>
 
             {/* Bottom row: Quick action links */}
             <div className="flex items-center justify-around pt-3">
               {/* Photo/Post link */}
-              <Link
-                to="/app/post/new"
+              <button
+                onClick={() => openPostModal("images")}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/5 transition-all duration-200 group"
               >
                 <HiPhotograph className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform duration-200" />
                 <span>Photo/Post</span>
-              </Link>
+              </button>
 
               {/* Upload Pitch link */}
-              <Link
-                to="/app/upload"
+              <button
+                onClick={openPitchModal}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#F5B942] hover:bg-[#F5B942]/5 transition-all duration-200 group"
               >
                 <HiUpload className="w-5 h-5 text-[#F5B942] group-hover:scale-110 transition-transform duration-200" />
                 <span>Upload Pitch</span>
-              </Link>
+              </button>
 
               {/* Thoughts button */}
               <button
                 type="button"
-                onClick={() => { setShowInlineThought(!showInlineThought); setThoughtText(""); setThoughtLink(""); setThoughtHashtags(""); }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 group ${
-                  showInlineThought
-                    ? "text-violet-600 bg-violet-50"
-                    : "text-[#0A1F14]/70 hover:text-violet-600 hover:bg-violet-50"
-                }`}
+                onClick={() => openPostModal("text")}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200 group"
               >
-                <HiAnnotation className={`w-5 h-5 text-violet-500 group-hover:scale-110 transition-transform duration-200 ${showInlineThought ? "scale-110" : ""}`} />
+                <HiAnnotation className="w-5 h-5 text-violet-500 group-hover:scale-110 transition-transform duration-200" />
                 <span>Thoughts</span>
               </button>
             </div>
-
-            {/* Inline Thought Composer */}
-            <AnimatePresence>
-              {showInlineThought && (
-                <motion.form
-                  key="thought-composer"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.22, ease: "easeInOut" }}
-                  onSubmit={handleThoughtSubmit}
-                  className="overflow-hidden"
-                >
-                  <div className="pt-3.5 border-t border-[#1B5E3F]/8 mt-3 space-y-3">
-                    {/* Thought textarea */}
-                    <div className="relative">
-                      <textarea
-                        value={thoughtText}
-                        onChange={(e) => setThoughtText(e.target.value.slice(0, 2200))}
-                        rows={4}
-                        placeholder="What startup thoughts do you have today?"
-                        autoFocus
-                        className="w-full px-4 py-3 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10 focus:outline-none transition-all resize-none text-sm leading-relaxed"
-                      />
-                      <span className="absolute bottom-2.5 right-3 text-[10px] text-[#0A1F14]/35 font-medium">
-                        {thoughtText.length}/2200
-                      </span>
-                    </div>
-
-                    {/* Optional link */}
-                    <div className="relative">
-                      <HiLink className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A1F14]/35 pointer-events-none" />
-                      <input
-                        type="url"
-                        value={thoughtLink}
-                        onChange={(e) => setThoughtLink(e.target.value)}
-                        placeholder="Link (optional)"
-                        className="w-full pl-10 pr-4 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-sm text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10 focus:outline-none transition-all"
-                      />
-                    </div>
-
-                    {/* Optional hashtags */}
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#0A1F14]/35 font-bold text-sm pointer-events-none">#</span>
-                      <input
-                        type="text"
-                        value={thoughtHashtags}
-                        onChange={(e) => setThoughtHashtags(e.target.value)}
-                        placeholder="Hashtags, comma-separated (optional)"
-                        className="w-full pl-8 pr-4 py-2.5 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-sm text-[#0A1F14] placeholder-[#0A1F14]/35 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10 focus:outline-none transition-all"
-                      />
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-2 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setShowInlineThought(false)}
-                        className="px-4 py-2 rounded-full text-sm font-bold text-[#0A1F14]/55 hover:text-[#0A1F14]/80 hover:bg-[#0A1F14]/5 transition-all"
-                      >
-                        Cancel
-                      </button>
-                      <motion.button
-                        type="submit"
-                        disabled={!thoughtText.trim() || isSubmittingThought}
-                        whileHover={thoughtText.trim() && !isSubmittingThought ? { scale: 1.03 } : {}}
-                        whileTap={thoughtText.trim() && !isSubmittingThought ? { scale: 0.97 } : {}}
-                        className={`px-5 py-2 rounded-full text-sm font-bold inline-flex items-center gap-2 transition-all ${
-                          !thoughtText.trim() || isSubmittingThought
-                            ? "bg-violet-200 text-violet-400 cursor-not-allowed"
-                            : "bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-md shadow-violet-500/25 hover:from-violet-500 hover:to-violet-600"
-                        }`}
-                      >
-                        {isSubmittingThought ? (
-                          <>
-                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Publishing…
-                          </>
-                        ) : (
-                          <>
-                            <HiAnnotation className="w-4 h-4" />
-                            Post Thought
-                          </>
-                        )}
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.form>
-              )}
-            </AnimatePresence>
           </div>
         )}
 

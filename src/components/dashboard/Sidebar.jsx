@@ -26,6 +26,7 @@ import { MdVerified } from "react-icons/md";
 import { isPro } from "../../lib/auth";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
+import { useUploadModal } from "../../context/UploadModalContext";
 
 const founderNav = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
@@ -76,6 +77,7 @@ export default function Sidebar({ mode }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const { openPitchModal } = useUploadModal();
   const role = mode || user?.role || "founder";
   const items =
     role === "investor"
@@ -152,6 +154,7 @@ export default function Sidebar({ mode }) {
             icon={item.icon}
             active={isActive(item)}
             badge={item.to.endsWith("/notifications") ? unread : 0}
+            onClick={item.to === "/app/upload" ? openPitchModal : undefined}
           />
         ))}
       </nav>
@@ -183,10 +186,18 @@ export default function Sidebar({ mode }) {
   );
 }
 
-function NavLink({ to, label, icon: Icon, active, badge }) {
+function NavLink({ to, label, icon: Icon, active, badge, onClick }) {
+  const handleClick = (e) => {
+    if (onClick) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <Link
       to={to}
+      onClick={handleClick}
       className={`flex items-center h-12 rounded-xl transition-colors relative ${
         active
           ? "bg-[#1B5E3F]/10 text-[#0F4A2E]"

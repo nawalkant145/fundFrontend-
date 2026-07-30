@@ -21,6 +21,7 @@ import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { boostService } from "../../services/boostService";
 import { useAuth } from "../../context/AuthContext";
+import { useUploadModal } from "../../context/UploadModalContext";
 import { formatINR } from "../../constants/mockData";
 
 /**
@@ -33,6 +34,7 @@ export default function MyStudioPage() {
   const [tab, setTab] = useState(initialTab);
   const [boostFor, setBoostFor] = useState(null);
   const { user } = useAuth();
+  const { openPitchModal, openPostModal } = useUploadModal();
 
   // Fetch real pitches — show empty state if none uploaded yet
   const [myPitches, setMyPitches] = useState([]);
@@ -52,13 +54,7 @@ export default function MyStudioPage() {
       .finally(() => setPitchesLoading(false));
   };
 
-  useEffect(() => {
-    loadPitches();
-  }, []);
-
-  // Fetch real posts
-  const [myPosts, setMyPosts] = useState([]);
-  useEffect(() => {
+  const loadPosts = () => {
     postService
       .getMyPosts()
       .then((res) => {
@@ -67,6 +63,28 @@ export default function MyStudioPage() {
         setMyPosts(posts);
       })
       .catch(() => setMyPosts([]));
+  };
+
+  useEffect(() => {
+    loadPitches();
+    
+    const handlePitchUploaded = () => {
+      loadPitches();
+    };
+    window.addEventListener("pitch-uploaded", handlePitchUploaded);
+    return () => window.removeEventListener("pitch-uploaded", handlePitchUploaded);
+  }, []);
+
+  // Fetch real posts
+  const [myPosts, setMyPosts] = useState([]);
+  useEffect(() => {
+    loadPosts();
+
+    const handlePostCreated = () => {
+      loadPosts();
+    };
+    window.addEventListener("post-created", handlePostCreated);
+    return () => window.removeEventListener("post-created", handlePostCreated);
   }, []);
 
   // Fetch the founder's currently-active boosts
@@ -123,16 +141,18 @@ export default function MyStudioPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link to="/app/upload">
-            <button className="px-4 py-2 rounded-full font-bold text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all">
-              <HiVideoCamera className="w-4 h-4" /> New Pitch
-            </button>
-          </Link>
-          <Link to="/app/post/new">
-            <button className="px-4 py-2 rounded-full font-bold text-xs bg-white border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40 text-[#0F4A2E] inline-flex items-center gap-1.5 transition-all">
-              <HiPhotograph className="w-4 h-4" /> New Post
-            </button>
-          </Link>
+          <button
+            onClick={openPitchModal}
+            className="px-4 py-2 rounded-full font-bold text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all"
+          >
+            <HiVideoCamera className="w-4 h-4" /> New Pitch
+          </button>
+          <button
+            onClick={openPostModal}
+            className="px-4 py-2 rounded-full font-bold text-xs bg-white border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40 text-[#0F4A2E] inline-flex items-center gap-1.5 transition-all"
+          >
+            <HiPhotograph className="w-4 h-4" /> New Post
+          </button>
         </div>
       </div>
 
@@ -178,7 +198,7 @@ export default function MyStudioPage() {
             icon={HiVideoCamera}
             title="No pitches yet"
             cta="Upload your first pitch"
-            ctaTo="/app/upload"
+            onClick={openPitchModal}
           />
         )
       ) : myPosts.length ? (
@@ -192,7 +212,7 @@ export default function MyStudioPage() {
           icon={HiPhotograph}
           title="No posts yet"
           cta="Create your first post"
-          ctaTo="/app/post/new"
+          onClick={openPostModal}
         />
       )}
 
@@ -364,18 +384,19 @@ function PostTile({ post }) {
   );
 }
 
-function EmptyState({ icon: Icon, title, cta, ctaTo }) {
+function EmptyState({ icon: Icon, title, cta, onClick }) {
   return (
     <div className="text-center py-16 sm:py-20 bg-[#FAFAF7] border border-[#1B5E3F]/10 rounded-3xl">
       <div className="w-14 h-14 rounded-2xl bg-white border border-[#1B5E3F]/15 flex items-center justify-center mx-auto mb-4">
         <Icon className="w-7 h-7 text-[#1B5E3F]" />
       </div>
       <h3 className="text-lg font-black mb-2">{title}</h3>
-      <Link to={ctaTo}>
-        <button className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all">
-          <HiPlus className="w-4 h-4" /> {cta}
-        </button>
-      </Link>
+      <button
+        onClick={onClick}
+        className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all"
+      >
+        <HiPlus className="w-4 h-4" /> {cta}
+      </button>
     </div>
   );
 }

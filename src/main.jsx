@@ -9,6 +9,7 @@ import { SocketProvider } from "./context/SocketContext.jsx";
 import { UploadProvider } from "./context/UploadContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
 import { CallProvider } from "./context/CallContext.jsx";
+import { UploadModalProvider } from "./context/UploadModalContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -19,7 +20,9 @@ createRoot(document.getElementById("root")).render(
             <NotificationProvider>
               <UploadProvider>
                 <CallProvider>
-                  <App />
+                  <UploadModalProvider>
+                    <App />
+                  </UploadModalProvider>
                 </CallProvider>
               </UploadProvider>
             </NotificationProvider>
