@@ -50,6 +50,7 @@ export default function LoginPage() {
         identifier: formData.identifier,
         password: formData.password,
         remember: formData.remember,
+        role: userType,
       });
       const role = data.user?.role || userType;
       navigate(role === "admin" ? "/admin" : from, { replace: true });

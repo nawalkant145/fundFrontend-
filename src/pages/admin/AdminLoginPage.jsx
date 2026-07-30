@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      const data = await login({ identifier, password, remember: true });
+      const data = await login({ identifier, password, remember: true, role: "admin" });
       if (data.user?.role !== "admin") {
         // Not an admin — reject and clear the session
         await logout();
