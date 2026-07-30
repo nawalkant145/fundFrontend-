@@ -19,8 +19,17 @@ export default function PublicNav() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        setMenuOpen(false);
+      }
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   const isActive = (href) => {
@@ -94,81 +103,82 @@ export default function PublicNav() {
           })}
         </div>
 
-        <div className="hidden sm:flex items-center gap-2">
-          {loading ? (
-            <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
-          ) : isLoggedIn && pathname !== "/verify" ? (
-            <DropdownMenu
-              align="right"
-              triggerClass="flex items-center p-1 rounded-full hover:bg-black/5 transition-all"
-              trigger={
-                <img
-                  src={
-                    user?.avatar ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
-                  }
-                  alt={user?.name || "Profile"}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/40 transition-colors cursor-pointer"
-                />
-              }
-              items={[
-                {
-                  label: role === "admin" ? "Admin Panel" : "Go to App",
-                  icon: HiUser,
-                  onClick: () => navigate(role === "admin" ? "/admin" : "/app"),
-                },
-                {
-                  label: "Settings",
-                  icon: HiCog,
-                  onClick: () => navigate(role === "admin" ? "/admin/settings" : "/app/settings"),
-                },
-                { divider: true },
-                {
-                  label: "Log out",
-                  icon: HiLogout,
-                  danger: true,
-                  onClick: logout,
-                },
-              ]}
-            />
-          ) : (
-            <>
-             <div className="inline-flex bg-[#FAFAF7] rounded-full p-1 border border-[#1B5E3F]/10">
-            <Link
-              to="/login"
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                pathname === "/login"
-                  ? "bg-[#1B5E3F] text-white shadow-md"
-                  : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
-              }`}
-            >
-              Log in
-            </Link>
-            <Link
-              to="/signup"
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                pathname === "/signup" || pathname === "/verify"
-                  ? "bg-[#1B5E3F] text-white shadow-md"
-                  : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
-              }`}
-            >
-              Sign Up Free
-            </Link>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className={`${menuOpen ? "hidden" : "hidden sm:flex"} items-center gap-2`}>
+            {loading ? (
+              <div className="h-9 w-24 bg-[#1B5E3F]/10 animate-pulse rounded-full" />
+            ) : isLoggedIn && pathname !== "/verify" ? (
+              <DropdownMenu
+                align="right"
+                triggerClass="flex items-center p-1 rounded-full hover:bg-black/5 transition-all"
+                trigger={
+                  <img
+                    src={
+                      user?.avatar ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
+                    }
+                    alt={user?.name || "Profile"}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/40 transition-colors cursor-pointer"
+                  />
+                }
+                items={[
+                  {
+                    label: role === "admin" ? "Admin Panel" : "Go to App",
+                    icon: HiUser,
+                    onClick: () => navigate(role === "admin" ? "/admin" : "/app"),
+                  },
+                  {
+                    label: "Settings",
+                    icon: HiCog,
+                    onClick: () => navigate(role === "admin" ? "/admin/settings" : "/app/settings"),
+                  },
+                  { divider: true },
+                  {
+                    label: "Log out",
+                    icon: HiLogout,
+                    danger: true,
+                    onClick: logout,
+                  },
+                ]}
+              />
+            ) : (
+              <div className="inline-flex bg-[#FAFAF7] rounded-full p-1 border border-[#1B5E3F]/10">
+                <Link
+                  to="/login"
+                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                    pathname === "/login"
+                      ? "bg-[#1B5E3F] text-white shadow-md"
+                      : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
+                  }`}
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/signup"
+                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                    pathname === "/signup" || pathname === "/verify"
+                      ? "bg-[#1B5E3F] text-white shadow-md"
+                      : "text-[#0A1F14]/70 hover:text-[#0A1F14]"
+                  }`}
+                >
+                  Sign Up Free
+                </Link>
+              </div>
+            )}
           </div>
-            </>
-          )}
-        </div>
 
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden text-[#0F4A2E] p-1"
-        >
-          {menuOpen ? (
-            <HiX className="w-6 h-6" />
-          ) : (
-            <HiMenu className="w-6 h-6" />
-          )}
-        </button>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden text-[#0F4A2E] p-2 hover:bg-black/5 rounded-full transition-colors flex items-center justify-center"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? (
+              <HiX className="w-6 h-6" />
+            ) : (
+              <HiMenu className="w-6 h-6" />
+            )}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
