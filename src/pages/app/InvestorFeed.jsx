@@ -407,10 +407,22 @@ export default function InvestorFeed() {
     const nextLiked = !wasLiked;
     const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
 
-    // Update both the dictionary AND the pitch object in the array
+    // Update both the dictionary AND the pitch object in the array (including the count)
     setLiked((prev) => ({ ...prev, [id]: nextLiked }));
     setPitches((prev) =>
-      prev.map((p) => (p._id === id ? { ...p, isLiked: nextLiked } : p)),
+      prev.map((p) => {
+        if (p._id === id) {
+          const currentLikes = p.likeCount !== undefined
+            ? p.likeCount
+            : (Array.isArray(p.likes) ? p.likes.length : 0);
+          return {
+            ...p,
+            isLiked: nextLiked,
+            likeCount: nextLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1),
+          };
+        }
+        return p;
+      }),
     );
 
     if (isRealMongoId) {
@@ -419,10 +431,17 @@ export default function InvestorFeed() {
         .then((res) => {
           const data = res?.data?.data ?? res?.data;
           if (data && typeof data.liked === "boolean") {
+            const confirmedCount = typeof data.likeCount === "number" ? data.likeCount : (typeof data.totalLikes === "number" ? data.totalLikes : null);
             setLiked((prev) => ({ ...prev, [id]: data.liked }));
             setPitches((prev) =>
               prev.map((p) =>
-                p._id === id ? { ...p, isLiked: data.liked } : p,
+                p._id === id
+                  ? {
+                      ...p,
+                      isLiked: data.liked,
+                      likeCount: confirmedCount !== null ? confirmedCount : p.likeCount,
+                    }
+                  : p,
               ),
             );
           }
@@ -430,7 +449,19 @@ export default function InvestorFeed() {
         .catch(() => {
           setLiked((prev) => ({ ...prev, [id]: wasLiked }));
           setPitches((prev) =>
-            prev.map((p) => (p._id === id ? { ...p, isLiked: wasLiked } : p)),
+            prev.map((p) => {
+              if (p._id === id) {
+                const currentLikes = p.likeCount !== undefined
+                  ? p.likeCount
+                  : (Array.isArray(p.likes) ? p.likes.length : 0);
+                return {
+                  ...p,
+                  isLiked: wasLiked,
+                  likeCount: wasLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1),
+                };
+              }
+              return p;
+            }),
           );
           toast.error("Failed to update like status");
         });
@@ -445,10 +476,59 @@ export default function InvestorFeed() {
     if (!isPitchLiked(pitch)) {
       setLiked((prev) => ({ ...prev, [id]: true }));
       setPitches((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, isLiked: true } : p)),
+        prev.map((p) => {
+          if (p._id === id) {
+            const currentLikes = p.likeCount !== undefined
+              ? p.likeCount
+              : (Array.isArray(p.likes) ? p.likes.length : 0);
+            return {
+              ...p,
+              isLiked: true,
+              likeCount: currentLikes + 1,
+            };
+          }
+          return p;
+        }),
       );
       if (isRealMongoId) {
-        videoService.like(id).catch(() => {});
+        videoService
+          .like(id)
+          .then((res) => {
+            const data = res?.data?.data ?? res?.data;
+            if (data && typeof data.liked === "boolean") {
+              const confirmedCount = typeof data.likeCount === "number" ? data.likeCount : (typeof data.totalLikes === "number" ? data.totalLikes : null);
+              setLiked((prev) => ({ ...prev, [id]: data.liked }));
+              setPitches((prev) =>
+                prev.map((p) =>
+                  p._id === id
+                    ? {
+                        ...p,
+                        isLiked: data.liked,
+                        likeCount: confirmedCount !== null ? confirmedCount : p.likeCount,
+                      }
+                    : p,
+                ),
+              );
+            }
+          })
+          .catch(() => {
+            setLiked((prev) => ({ ...prev, [id]: false }));
+            setPitches((prev) =>
+              prev.map((p) => {
+                if (p._id === id) {
+                  const currentLikes = p.likeCount !== undefined
+                    ? p.likeCount
+                    : (Array.isArray(p.likes) ? p.likes.length : 0);
+                  return {
+                    ...p,
+                    isLiked: false,
+                    likeCount: Math.max(0, currentLikes - 1),
+                  };
+                }
+                return p;
+              }),
+            );
+          });
       }
     }
   };
