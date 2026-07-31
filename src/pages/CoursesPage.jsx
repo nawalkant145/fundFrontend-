@@ -37,7 +37,7 @@ const courses = [
     level: "Beginner → Advanced",
     thumbnail:
       "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=500&fit=crop",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    videoUrl: "/pitchvideo.mp4",
     instructor: "Sarah Chen",
     instructorTitle: "Ex-YC Partner · raised $50M+",
     features: [
@@ -94,7 +94,7 @@ const courses = [
     level: "Beginner",
     thumbnail:
       "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=500&fit=crop",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    videoUrl: "/videos/appshowcase.mp4",
     instructor: "Marcus Webb",
     instructorTitle: "3× Founder · 2 exits",
     features: [
@@ -147,7 +147,7 @@ const courses = [
     level: "Intermediate",
     thumbnail:
       "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=500&fit=crop",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    videoUrl: "/videos/herostory.mp4",
     instructor: "David Park",
     instructorTitle: "Design Lead · Sequoia",
     features: [
@@ -192,7 +192,7 @@ const courses = [
     level: "Advanced",
     thumbnail:
       "https://images.unsplash.com/photo-1573167507387-6b4b98cb7c13?w=800&h=500&fit=crop",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    videoUrl: "/videos/globalnetwork.mp4",
     instructor: "Aisha Kamara",
     instructorTitle: "Former VC · $2B AUM",
     features: [
@@ -237,7 +237,7 @@ const courses = [
     level: "Beginner",
     thumbnail:
       "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=800&h=500&fit=crop",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylines.mp4",
+    videoUrl: "/videos/investorpov.mp4",
     instructor: "Sofia Martinez",
     instructorTitle: "Emmy-winning producer",
     features: [
@@ -282,7 +282,7 @@ const courses = [
     level: "All levels",
     thumbnail:
       "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=500&fit=crop",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+    videoUrl: "/mockvideo/pitch1.mp4",
     instructor: "Expert team",
     instructorTitle: "100+ years combined experience",
     features: [
@@ -638,12 +638,16 @@ export default function CoursesPage() {
                 {/* Video Player */}
                 <div className="relative rounded-2xl overflow-hidden bg-black aspect-video shadow-lg border border-[#1B5E3F]/15">
                   <video
-                    src={selectedPreview.videoUrl}
                     controls
                     autoPlay
+                    muted
+                    playsInline
+                    preload="metadata"
                     poster={selectedPreview.thumbnail}
                     className="w-full h-full object-cover"
                   >
+                    <source src={selectedPreview.videoUrl} type="video/mp4" />
+                    <source src="/pitchvideo.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                 </div>
