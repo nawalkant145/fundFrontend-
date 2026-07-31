@@ -22,6 +22,7 @@ import { MdVerified } from "react-icons/md";
 import PublicNav from "../components/public/PublicNav";
 import PublicFooter from "../components/public/PublicFooter";
 import { useAuth } from "../context/AuthContext";
+import courseService from "../services/courseService";
 
 const courses = [
   {
@@ -494,8 +495,30 @@ export default function CoursesPage() {
 
   const handleConfirmEnrollment = () => {
     setEnrollingState("processing");
-    setTimeout(() => {
+    setTimeout(async () => {
       setEnrollingState("success");
+
+      // Determine payment method label
+      const methodLabel =
+        activeModule === 0 ? "Credit / Debit Card"
+        : activeModule === 1 ? `UPI (${upiVal})`
+        : `Net Banking (${selectedBank})`;
+
+      // Send receipt email (fire-and-forget — don't block UI)
+      try {
+        const recipientEmail = currentUser?.email || null;
+        if (recipientEmail && selectedEnroll) {
+          await courseService.sendCourseReceipt({
+            email: recipientEmail,
+            name: currentUser?.name || currentUser?.firstName || "Student",
+            courseTitle: selectedEnroll.title,
+            price: selectedEnroll.price,
+            paymentMethod: methodLabel,
+          });
+        }
+      } catch (_) {
+        // Receipt failure is non-critical; do not block success UI
+      }
     }, 1200);
   };
 
@@ -913,13 +936,18 @@ export default function CoursesPage() {
                   <p className="text-sm text-[#0A1F14]/70 max-w-xs mx-auto">
                     You have unlocked lifetime access to <span className="font-bold text-[#1B5E3F]">{selectedEnroll.title}</span>.
                   </p>
-                  <div className="p-4 bg-[#FAFAF7] rounded-2xl border border-[#1B5E3F]/10 text-left text-xs space-y-1.5 text-[#0A1F14]/80">
+                  <div className="p-4 bg-[#FAFAF7] rounded-2xl border border-[#1B5E3F]/10 text-left text-xs space-y-2 text-[#0A1F14]/80">
                     <p className="flex items-center gap-1.5 font-semibold text-[#1B5E3F]">
                       <HiShieldCheck className="w-4 h-4" /> Payment authorized securely
                     </p>
                     <p className="flex items-center gap-1.5">
                       <HiBookOpen className="w-4 h-4 text-[#1B5E3F]" /> Access via your student dashboard
                     </p>
+                    {currentUser?.email && (
+                      <p className="flex items-center gap-1.5 text-[#0A1F14]/60">
+                        📧 Receipt sent to <span className="font-semibold text-[#0A1F14]/80">{currentUser.email}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="pt-2 flex flex-col gap-2">
                     <button
