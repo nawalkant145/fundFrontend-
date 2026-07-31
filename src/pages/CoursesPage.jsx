@@ -359,6 +359,12 @@ export default function CoursesPage() {
   const [cardExp, setCardExp] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [upiVal, setUpiVal] = useState("");
+  const [touched, setTouched] = useState({
+    cardNo: false,
+    cardExp: false,
+    cardCvv: false,
+    upiVal: false,
+  });
 
   const handleEnrollClick = (course) => {
     setSelectedPreview(null);
@@ -368,6 +374,12 @@ export default function CoursesPage() {
     setCardExp("");
     setCardCvv("");
     setUpiVal("");
+    setTouched({
+      cardNo: false,
+      cardExp: false,
+      cardCvv: false,
+      upiVal: false,
+    });
   };
 
   const handleCardNoChange = (e) => {
@@ -392,6 +404,57 @@ export default function CoursesPage() {
 
   const handleUpiChange = (e) => {
     setUpiVal(e.target.value.trim());
+  };
+
+  const getCardNoError = () => {
+    if (!touched.cardNo || !cardNo) return "";
+    const clean = cardNo.replace(/\s/g, "");
+    if (clean.length < 16) return "Card number must be 16 digits";
+    
+    // Luhn algorithm check
+    let sum = 0;
+    let shouldDouble = false;
+    for (let i = clean.length - 1; i >= 0; i--) {
+      let digit = parseInt(clean.charAt(i), 10);
+      if (shouldDouble) {
+        if ((digit *= 2) > 9) digit -= 9;
+      }
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+    if (sum % 10 !== 0) return "Invalid card number (checksum failed)";
+    return "";
+  };
+
+  const getCardExpError = () => {
+    if (!touched.cardExp || !cardExp) return "";
+    if (cardExp.length < 5) return "Expiry must be MM/YY";
+    const [mmStr, yyStr] = cardExp.split("/");
+    const mm = parseInt(mmStr, 10);
+    const yy = parseInt(yyStr, 10);
+    if (isNaN(mm) || mm < 1 || mm > 12) return "Month must be 01 to 12";
+    
+    const now = new Date();
+    const curYear = now.getFullYear() % 100;
+    const curMonth = now.getMonth() + 1;
+    if (isNaN(yy) || yy < curYear || (yy === curYear && mm < curMonth)) {
+      return "Card has expired";
+    }
+    return "";
+  };
+
+  const getCardCvvError = () => {
+    if (!touched.cardCvv || !cardCvv) return "";
+    if (cardCvv.length < 3) return "CVV must be 3 digits";
+    return "";
+  };
+
+  const getUpiError = () => {
+    if (!touched.upiVal || !upiVal) return "";
+    if (!/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upiVal)) {
+      return "Invalid UPI ID (e.g. name@bank)";
+    }
+    return "";
   };
 
   const handleConfirmEnrollment = () => {
@@ -898,11 +961,21 @@ export default function CoursesPage() {
                           type="text"
                           value={cardNo}
                           onChange={handleCardNoChange}
+                          onBlur={() => setTouched((prev) => ({ ...prev, cardNo: true }))}
                           placeholder="4111 2222 3333 4444"
                           maxLength="19"
                           required
-                          className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                          className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                            touched.cardNo && getCardNoError()
+                              ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                              : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                          }`}
                         />
+                        {touched.cardNo && getCardNoError() && (
+                          <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                            ✕ {getCardNoError()}
+                          </p>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -913,11 +986,21 @@ export default function CoursesPage() {
                             type="text"
                             value={cardExp}
                             onChange={handleCardExpChange}
+                            onBlur={() => setTouched((prev) => ({ ...prev, cardExp: true }))}
                             placeholder="MM / YY"
                             maxLength="5"
                             required
-                            className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                            className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                              touched.cardExp && getCardExpError()
+                                ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                               : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                            }`}
                           />
+                          {touched.cardExp && getCardExpError() && (
+                            <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                              ✕ {getCardExpError()}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
@@ -927,11 +1010,21 @@ export default function CoursesPage() {
                             type="password"
                             value={cardCvv}
                             onChange={handleCardCvvChange}
+                            onBlur={() => setTouched((prev) => ({ ...prev, cardCvv: true }))}
                             placeholder="•••"
                             maxLength="3"
                             required
-                            className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                            className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                              touched.cardCvv && getCardCvvError()
+                                ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                                : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                            }`}
                           />
+                          {touched.cardCvv && getCardCvvError() && (
+                            <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                              ✕ {getCardCvvError()}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -945,10 +1038,20 @@ export default function CoursesPage() {
                           type="text"
                           value={upiVal}
                           onChange={handleUpiChange}
+                          onBlur={() => setTouched((prev) => ({ ...prev, upiVal: true }))}
                           placeholder="username@okaxis"
                           required
-                          className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                          className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                            touched.upiVal && getUpiError()
+                              ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                              : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                          }`}
                         />
+                        {touched.upiVal && getUpiError() && (
+                          <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                            ✕ {getUpiError()}
+                          </p>
+                        )}
                       </div>
                       <p className="text-[10px] text-[#0A1F14]/50 leading-relaxed">
                         A payment request will be sent to your UPI app. Please open the app and authorize payment.
@@ -981,9 +1084,9 @@ export default function CoursesPage() {
                       type="button"
                       disabled={
                         activeModule === 0
-                          ? cardNo.replace(/\s/g, "").length !== 16 || cardExp.length !== 5 || cardCvv.length !== 3
+                          ? !cardNo || !cardExp || !cardCvv || !!getCardNoError() || !!getCardExpError() || !!getCardCvvError()
                           : activeModule === 1
-                            ? !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upiVal)
+                            ? !upiVal || !!getUpiError()
                             : false
                       }
                       onClick={handleConfirmEnrollment}
