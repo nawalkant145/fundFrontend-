@@ -765,7 +765,7 @@ export default function CoursesPage() {
               <button
                 type="button"
                 onClick={() => setSelectedEnroll(null)}
-                className="absolute top-5 right-5 w-9 h-9 rounded-full bg-[#FAFAF7] border border-[#1B5E3F]/15 flex items-center justify-center text-[#0A1F14]/70 hover:text-[#0A1F14] transition-colors"
+                className="absolute top-5 right-5 w-9 h-9 rounded-full bg-[#FAFAF7] border border-[#1B5E3F]/15 flex items-center justify-center text-[#0A1F14]/70 hover:text-[#0A1F14] transition-colors z-10"
               >
                 <HiX className="w-5 h-5" />
               </button>
@@ -783,7 +783,7 @@ export default function CoursesPage() {
                   </p>
                   <div className="p-4 bg-[#FAFAF7] rounded-2xl border border-[#1B5E3F]/10 text-left text-xs space-y-1.5 text-[#0A1F14]/80">
                     <p className="flex items-center gap-1.5 font-semibold text-[#1B5E3F]">
-                      <HiShieldCheck className="w-4 h-4" /> Receipt sent to your email
+                      <HiShieldCheck className="w-4 h-4" /> Payment authorized securely
                     </p>
                     <p className="flex items-center gap-1.5">
                       <HiBookOpen className="w-4 h-4 text-[#1B5E3F]" /> Access via your student dashboard
@@ -802,11 +802,170 @@ export default function CoursesPage() {
                     </button>
                   </div>
                 </div>
+              ) : enrollingState === "payment" ? (
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#1B5E3F] bg-[#1B5E3F]/10 px-2.5 py-1 rounded-full">
+                      Step 2: Payment Gateway
+                    </span>
+                    <h3 className="text-2xl font-black mt-2 text-[#0A1F14]">
+                      Secure Checkout
+                    </h3>
+                    <p className="text-xs text-[#0A1F14]/65 mt-1">
+                      Choose your preferred payment method below.
+                    </p>
+                  </div>
+
+                  {/* Payment Tabs */}
+                  <div className="grid grid-cols-3 gap-2 p-1 bg-[#FAFAF7] border border-[#1B5E3F]/15 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModule(0)} // reuse state for active payment tab
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                        activeModule === 0
+                          ? "bg-[#1B5E3F] text-white shadow-sm"
+                          : "text-[#0A1F14]/75 hover:bg-[#1B5E3F]/5"
+                      }`}
+                    >
+                      Card
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModule(1)}
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                        activeModule === 1
+                          ? "bg-[#1B5E3F] text-white shadow-sm"
+                          : "text-[#0A1F14]/75 hover:bg-[#1B5E3F]/5"
+                      }`}
+                    >
+                      UPI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModule(2)}
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                        activeModule === 2
+                          ? "bg-[#1B5E3F] text-white shadow-sm"
+                          : "text-[#0A1F14]/75 hover:bg-[#1B5E3F]/5"
+                      }`}
+                    >
+                      Netbanking
+                    </button>
+                  </div>
+
+                  {/* Payment Forms */}
+                  {activeModule === 0 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                          Card Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="4111 2222 3333 4444"
+                          maxLength="19"
+                          required
+                          className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                            Expiry Date
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="MM / YY"
+                            maxLength="5"
+                            required
+                            className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                            CVV
+                          </label>
+                          <input
+                            type="password"
+                            placeholder="•••"
+                            maxLength="3"
+                            required
+                            className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : activeModule === 1 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                          UPI ID / VPA
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="username@okaxis"
+                          required
+                          className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
+                        />
+                      </div>
+                      <p className="text-[10px] text-[#0A1F14]/50 leading-relaxed">
+                        A payment request will be sent to your UPI app. Please open the app and authorize payment.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold text-[#0A1F14]/80">
+                        Select Bank
+                      </label>
+                      <select className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none font-medium">
+                        <option>State Bank of India</option>
+                        <option>HDFC Bank</option>
+                        <option>ICICI Bank</option>
+                        <option>Axis Bank</option>
+                        <option>Kotak Mahindra Bank</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEnrollingState("idle")}
+                      className="px-5 py-3 text-xs text-[#0A1F14]/75 font-bold rounded-full border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/45 transition-colors bg-white"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmEnrollment}
+                      className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <HiLockClosed className="w-4 h-4 text-[#F5B942]" /> Pay {selectedEnroll.price} Securely
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "processing" ? (
+                <div className="text-center py-10 space-y-5">
+                  <div className="relative w-16 h-16 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-4 border-[#1B5E3F]/10 border-t-[#1B5E3F] animate-spin" />
+                    <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                      <HiLockClosed className="w-6 h-6 text-[#1B5E3F] animate-pulse" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-[#0F4A2E]">
+                      Connecting to gateway...
+                    </h4>
+                    <p className="text-xs text-[#0A1F14]/55 mt-1 max-w-xs mx-auto">
+                      Please do not close this window or click back. We are securing your transaction details.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-6">
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-[#1B5E3F] bg-[#1B5E3F]/10 px-2.5 py-1 rounded-full">
-                      Checkout Overview
+                      Step 1: Checkout Overview
                     </span>
                     <h3 className="text-2xl font-black mt-2 text-[#0A1F14]">
                       {selectedEnroll.title}
@@ -858,18 +1017,14 @@ export default function CoursesPage() {
                   {/* Submit Button */}
                   <button
                     type="button"
-                    disabled={enrollingState === "processing"}
-                    onClick={handleConfirmEnrollment}
-                    className="w-full py-3.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white font-bold text-base rounded-full shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                    onClick={() => {
+                      setEnrollingState("payment");
+                      setActiveModule(0); // Card tab as default
+                    }}
+                    className="w-full py-3.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white font-bold text-base rounded-full shadow-xl transition-all flex items-center justify-center gap-2"
                   >
-                    {enrollingState === "processing" ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <HiCreditCard className="w-5 h-5" />
-                        Complete Enrollment ({selectedEnroll.price})
-                      </>
-                    )}
+                    <HiCreditCard className="w-5 h-5" />
+                    Complete Enrollment ({selectedEnroll.price})
                   </button>
                 </div>
               )}
