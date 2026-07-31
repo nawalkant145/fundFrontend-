@@ -351,7 +351,7 @@ export default function CoursesPage() {
   // Modals state
   const [selectedPreview, setSelectedPreview] = useState(null);
   const [selectedEnroll, setSelectedEnroll] = useState(null);
-  const [enrollingState, setEnrollingState] = useState("idle"); // 'idle' | 'payment' | 'processing' | 'success'
+  const [enrollingState, setEnrollingState] = useState("idle"); // 'idle' | 'payment' | 'upi-pending' | 'netbanking-auth' | 'processing' | 'success'
   const [activeModule, setActiveModule] = useState(0);
 
   // Payment form states
@@ -359,11 +359,22 @@ export default function CoursesPage() {
   const [cardExp, setCardExp] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [upiVal, setUpiVal] = useState("");
+
+  // Netbanking form states
+  const [netbankUser, setNetbankUser] = useState("");
+  const [netbankPass, setNetbankPass] = useState("");
+  const [selectedBank, setSelectedBank] = useState("State Bank of India");
+
   const [touched, setTouched] = useState({
     cardNo: false,
     cardExp: false,
     cardCvv: false,
     upiVal: false,
+  });
+
+  const [touchedNetbank, setTouchedNetbank] = useState({
+    user: false,
+    pass: false,
   });
 
   const handleEnrollClick = (course) => {
@@ -374,11 +385,18 @@ export default function CoursesPage() {
     setCardExp("");
     setCardCvv("");
     setUpiVal("");
+    setNetbankUser("");
+    setNetbankPass("");
+    setSelectedBank("State Bank of India");
     setTouched({
       cardNo: false,
       cardExp: false,
       cardCvv: false,
       upiVal: false,
+    });
+    setTouchedNetbank({
+      user: false,
+      pass: false,
     });
   };
 
@@ -386,6 +404,7 @@ export default function CoursesPage() {
     const raw = e.target.value.replace(/\D/g, "");
     const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
     setCardNo(formatted.slice(0, 19)); // 16 digits + 3 spaces
+    if (raw.length > 0) setTouched((prev) => ({ ...prev, cardNo: true }));
   };
 
   const handleCardExpChange = (e) => {
@@ -395,15 +414,19 @@ export default function CoursesPage() {
       formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
     }
     setCardExp(formatted.slice(0, 5));
+    if (raw.length > 0) setTouched((prev) => ({ ...prev, cardExp: true }));
   };
 
   const handleCardCvvChange = (e) => {
     const raw = e.target.value.replace(/\D/g, "");
     setCardCvv(raw.slice(0, 3));
+    if (raw.length > 0) setTouched((prev) => ({ ...prev, cardCvv: true }));
   };
 
   const handleUpiChange = (e) => {
-    setUpiVal(e.target.value.trim());
+    const val = e.target.value.trim();
+    setUpiVal(val);
+    if (val.length > 0) setTouched((prev) => ({ ...prev, upiVal: true }));
   };
 
   const getCardNoError = () => {
@@ -450,11 +473,23 @@ export default function CoursesPage() {
   };
 
   const getUpiError = () => {
-    if (!touched.upiVal || !upiVal) return "";
-    if (!/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upiVal)) {
-      return "Invalid UPI ID (e.g. name@bank)";
-    }
+    if (!touched.upiVal) return "";
+    if (!upiVal) return "UPI ID cannot be empty";
+    if (!upiVal.includes("@")) return "UPI ID must contain @ (e.g. name@bank)";
+    const [handle, bankPart] = upiVal.split("@");
+    if (!handle || handle.length < 2) return "Handle before @ must be at least 2 characters";
+    if (!bankPart || !/^[a-zA-Z]{2,64}$/.test(bankPart)) return "Bank name after @ must be letters only (e.g. okaxis, ybl, paytm)";
     return "";
+  };
+
+  const handlePaymentSubmit = () => {
+    if (activeModule === 0) {
+      handleConfirmEnrollment();
+    } else if (activeModule === 1) {
+      setEnrollingState("upi-pending");
+    } else {
+      setEnrollingState("netbanking-auth");
+    }
   };
 
   const handleConfirmEnrollment = () => {
@@ -1062,7 +1097,11 @@ export default function CoursesPage() {
                       <label className="block text-xs font-bold text-[#0A1F14]/80">
                         Select Bank
                       </label>
-                      <select className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none font-medium">
+                      <select
+                        value={selectedBank}
+                        onChange={(e) => setSelectedBank(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none font-medium"
+                      >
                         <option>State Bank of India</option>
                         <option>HDFC Bank</option>
                         <option>ICICI Bank</option>
@@ -1089,10 +1128,117 @@ export default function CoursesPage() {
                             ? !upiVal || !!getUpiError()
                             : false
                       }
-                      onClick={handleConfirmEnrollment}
+                      onClick={handlePaymentSubmit}
                       className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       <HiLockClosed className="w-4 h-4 text-[#F5B942]" /> Pay {selectedEnroll.price} Securely
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "upi-pending" ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="relative w-16 h-16 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-spin" />
+                    <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                      <HiSparkles className="w-6 h-6 text-emerald-500 animate-pulse" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-black text-[#0F4A2E]">
+                    Waiting for UPI approval
+                  </h3>
+                  <p className="text-sm text-[#0A1F14]/75 max-w-xs mx-auto">
+                    We sent a payment request to <span className="font-bold text-[#1B5E3F]">{upiVal}</span>. Please open your UPI app and authorize the transaction.
+                  </p>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleConfirmEnrollment}
+                      className="w-full py-3 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white font-bold text-sm rounded-full shadow-lg transition-all"
+                    >
+                      Simulate App Approval (Authorize Payment)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEnrollingState("payment")}
+                      className="w-full py-3 bg-white text-[#0A1F14]/70 border border-[#1B5E3F]/15 font-bold text-sm rounded-full transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "netbanking-auth" ? (
+                <div className="space-y-5">
+                  <div className="pb-3 border-b border-[#1B5E3F]/15">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white bg-[#1B5E3F] px-2.5 py-1 rounded-full">
+                      {selectedBank} Secure Login
+                    </span>
+                    <h3 className="text-xl font-black mt-2 text-[#0A1F14]">
+                      Net Banking Authentication
+                    </h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                        User ID / Customer ID
+                      </label>
+                      <input
+                        type="text"
+                        value={netbankUser}
+                        onChange={(e) => setNetbankUser(e.target.value)}
+                        onBlur={() => setTouchedNetbank((prev) => ({ ...prev, user: true }))}
+                        placeholder="Enter bank user ID"
+                        required
+                        className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                          touchedNetbank.user && !netbankUser
+                            ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                            : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                        }`}
+                      />
+                      {touchedNetbank.user && !netbankUser && (
+                        <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                          ✕ User ID is required to authenticate
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                        Password / IPIN
+                      </label>
+                      <input
+                        type="password"
+                        value={netbankPass}
+                        onChange={(e) => setNetbankPass(e.target.value)}
+                        onBlur={() => setTouchedNetbank((prev) => ({ ...prev, pass: true }))}
+                        placeholder="••••••••"
+                        required
+                        className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                          touchedNetbank.pass && !netbankPass
+                            ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                            : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                        }`}
+                      />
+                      {touchedNetbank.pass && !netbankPass && (
+                        <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                          ✕ Password is required to authenticate
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEnrollingState("payment")}
+                      className="px-5 py-3 text-xs text-[#0A1F14]/75 font-bold rounded-full border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/45 bg-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!netbankUser || !netbankPass}
+                      onClick={handleConfirmEnrollment}
+                      className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      <HiLockClosed className="w-4 h-4 text-[#F5B942]" /> Authenticate & Pay {selectedEnroll.price}
                     </button>
                   </div>
                 </div>
