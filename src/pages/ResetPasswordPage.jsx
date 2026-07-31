@@ -1,24 +1,90 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiLockClosed, HiCheckCircle, HiArrowRight } from "react-icons/hi";
+import {
+  HiLockClosed,
+  HiCheckCircle,
+  HiArrowRight,
+  HiExclamationCircle,
+} from "react-icons/hi";
 
 import AuthShell from "../components/auth/AuthShell";
 import { FormField, PasswordStrength } from "../components/auth/FormField";
+import { authService } from "../services/authService";
+
+/**
+ * Password complexity regex — mirrors the backend PASSWORD_REGEX exactly:
+ * At least 8 chars, one uppercase, one lowercase, one digit, one special char.
+ */
+const PASSWORD_REGEX =
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Read the reset token and email that the backend embedded in the link
+  const token = searchParams.get("token") || "";
+  const emailFromUrl = (searchParams.get("email") || "").trim().toLowerCase();
+
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const valid = password.length >= 8 && password === confirm;
+  // True when both password fields are fully valid
+  const passwordComplex = PASSWORD_REGEX.test(password);
+  const passwordsMatch = password === confirm && confirm.length > 0;
+  const valid = passwordComplex && passwordsMatch;
 
-  const handleSubmit = (e) => {
+  // If the URL is missing the token or email, show an error immediately
+  if (!token || !emailFromUrl) {
+    return (
+      <AuthShell maxWidth="max-w-xl">
+        <div className="text-center space-y-5 py-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 border-2 border-red-200">
+            <HiExclamationCircle className="w-9 h-9 text-red-500" />
+          </div>
+          <h1 className="text-2xl font-black">Invalid reset link</h1>
+          <p className="text-[#0A1F14]/65 max-w-sm mx-auto">
+            This password reset link is invalid or has expired. Please request a
+            new one.
+          </p>
+          <Link to="/forgot-password">
+            <motion.button
+              whileHover={{ y: -2 }}
+              className="px-7 py-3 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-xl shadow-[#1B5E3F]/30 transition-all"
+            >
+              Request new link
+            </motion.button>
+          </Link>
+        </div>
+      </AuthShell>
+    );
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!valid) return;
-    setDone(true);
-    setTimeout(() => navigate("/login"), 1500);
+    setError("");
+    setLoading(true);
+    try {
+      await authService.resetPassword({
+        email: emailFromUrl,
+        token,
+        newPassword: password,
+      });
+      setDone(true);
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        "Failed to reset password. The link may have expired — please request a new one.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,7 +110,10 @@ export default function ResetPasswordPage() {
                 </span>
               </h1>
               <p className="text-[#0A1F14]/60 text-sm sm:text-base">
-                Choose a strong password you don't use anywhere else.
+                Resetting password for{" "}
+                <span className="font-semibold text-[#1B5E3F]">
+                  {emailFromUrl}
+                </span>
               </p>
             </div>
 
@@ -59,6 +128,12 @@ export default function ResetPasswordPage() {
                 placeholder="At least 8 characters"
                 autoComplete="new-password"
                 required
+                error={
+                  password && !passwordComplex
+                    ? "Must have uppercase, lowercase, number, and special character"
+                    : null
+                }
+                success={password && passwordComplex ? "Password strength looks good" : null}
               />
               <PasswordStrength password={password} />
             </div>
@@ -72,28 +147,50 @@ export default function ResetPasswordPage() {
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repeat password"
               autoComplete="new-password"
-              error={
-                confirm && password !== confirm
-                  ? "Passwords do not match"
-                  : null
-              }
-              success={
-                confirm && password === confirm ? "Passwords match" : null
-              }
+              error={confirm && !passwordsMatch ? "Passwords do not match" : null}
+              success={passwordsMatch ? "Passwords match" : null}
               required
             />
 
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5"
+              >
+                <HiExclamationCircle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </motion.p>
+            )}
+
             <motion.button
               type="submit"
-              disabled={!valid}
-              whileHover={valid ? { y: -2 } : {}}
-              whileTap={valid ? { scale: 0.99 } : {}}
+              disabled={!valid || loading}
+              whileHover={valid && !loading ? { y: -2 } : {}}
+              whileTap={valid && !loading ? { scale: 0.99 } : {}}
               className={`w-full py-3.5 rounded-full font-bold text-base bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-xl shadow-[#1B5E3F]/30 transition-all flex items-center justify-center gap-2 ${
-                !valid ? "opacity-50 cursor-not-allowed shadow-none" : ""
+                !valid || loading ? "opacity-50 cursor-not-allowed shadow-none" : ""
               }`}
             >
-              Reset password <HiArrowRight />
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Reset password <HiArrowRight />
+                </>
+              )}
             </motion.button>
+
+            <div className="text-center pt-3 border-t border-[#1B5E3F]/10">
+              <p className="text-[#0A1F14]/65 text-sm">
+                <Link
+                  to="/login"
+                  className="text-[#1B5E3F] hover:text-[#0F4A2E] font-bold"
+                >
+                  Back to login
+                </Link>
+              </p>
+            </div>
           </motion.form>
         ) : (
           <motion.div
@@ -105,24 +202,13 @@ export default function ResetPasswordPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200">
               <HiCheckCircle className="w-12 h-12 text-emerald-500" />
             </div>
-            <h2 className="text-2xl font-black">Password updated</h2>
-            <p className="text-[#0A1F14]/65">Redirecting to login…</p>
+            <h2 className="text-2xl font-black">Password updated!</h2>
+            <p className="text-[#0A1F14]/65">
+              Redirecting you to login…
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {!done && (
-        <div className="text-center mt-7 pt-6 border-t border-[#1B5E3F]/10">
-          <p className="text-[#0A1F14]/65 text-sm">
-            <Link
-              to="/login"
-              className="text-[#1B5E3F] hover:text-[#0F4A2E] font-bold"
-            >
-              Back to login
-            </Link>
-          </p>
-        </div>
-      )}
     </AuthShell>
   );
 }
