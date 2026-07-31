@@ -351,13 +351,47 @@ export default function CoursesPage() {
   // Modals state
   const [selectedPreview, setSelectedPreview] = useState(null);
   const [selectedEnroll, setSelectedEnroll] = useState(null);
-  const [enrollingState, setEnrollingState] = useState("idle"); // 'idle' | 'processing' | 'success'
+  const [enrollingState, setEnrollingState] = useState("idle"); // 'idle' | 'payment' | 'processing' | 'success'
   const [activeModule, setActiveModule] = useState(0);
+
+  // Payment form states
+  const [cardNo, setCardNo] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [upiVal, setUpiVal] = useState("");
 
   const handleEnrollClick = (course) => {
     setSelectedPreview(null);
     setSelectedEnroll(course);
     setEnrollingState("idle");
+    setCardNo("");
+    setCardExp("");
+    setCardCvv("");
+    setUpiVal("");
+  };
+
+  const handleCardNoChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
+    setCardNo(formatted.slice(0, 19)); // 16 digits + 3 spaces
+  };
+
+  const handleCardExpChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    let formatted = raw;
+    if (raw.length > 2) {
+      formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
+    }
+    setCardExp(formatted.slice(0, 5));
+  };
+
+  const handleCardCvvChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    setCardCvv(raw.slice(0, 3));
+  };
+
+  const handleUpiChange = (e) => {
+    setUpiVal(e.target.value.trim());
   };
 
   const handleConfirmEnrollment = () => {
@@ -862,6 +896,8 @@ export default function CoursesPage() {
                         </label>
                         <input
                           type="text"
+                          value={cardNo}
+                          onChange={handleCardNoChange}
                           placeholder="4111 2222 3333 4444"
                           maxLength="19"
                           required
@@ -875,6 +911,8 @@ export default function CoursesPage() {
                           </label>
                           <input
                             type="text"
+                            value={cardExp}
+                            onChange={handleCardExpChange}
                             placeholder="MM / YY"
                             maxLength="5"
                             required
@@ -887,6 +925,8 @@ export default function CoursesPage() {
                           </label>
                           <input
                             type="password"
+                            value={cardCvv}
+                            onChange={handleCardCvvChange}
                             placeholder="•••"
                             maxLength="3"
                             required
@@ -903,6 +943,8 @@ export default function CoursesPage() {
                         </label>
                         <input
                           type="text"
+                          value={upiVal}
+                          onChange={handleUpiChange}
                           placeholder="username@okaxis"
                           required
                           className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none"
@@ -937,8 +979,15 @@ export default function CoursesPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={
+                        activeModule === 0
+                          ? cardNo.replace(/\s/g, "").length !== 16 || cardExp.length !== 5 || cardCvv.length !== 3
+                          : activeModule === 1
+                            ? !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upiVal)
+                            : false
+                      }
                       onClick={handleConfirmEnrollment}
-                      className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       <HiLockClosed className="w-4 h-4 text-[#F5B942]" /> Pay {selectedEnroll.price} Securely
                     </button>
