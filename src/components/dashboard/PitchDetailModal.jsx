@@ -365,7 +365,7 @@ function ReportModal({ open, onClose }) {
           disabled={!type}
           className={`w-full py-3 rounded-xl font-bold ${
             type
-              ? "bg-red-500 hover:bg-red-600 text-white"
+              ? "bg-red-500 hover:bg-red-600 text-white-force"
               : "bg-dark-bg text-gray-500 cursor-not-allowed"
           }`}
         >
