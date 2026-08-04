@@ -23,6 +23,7 @@ import {
   Checkbox,
   MultiSelectChips,
   PhoneInput,
+  getPhoneIsValid,
 } from "../components/auth/FormField";
 import Select from "../components/auth/Select";
 import Stepper from "../components/auth/Stepper";
@@ -91,8 +92,10 @@ export default function SignupPage() {
   const debounceRef = useRef({});
 
   const usernameValidFmt = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
-  const emailValidFmt = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
-  const phoneValidFmt = /^\+\d{1,4}\d{6,14}$/.test(data.phone);
+  // Stricter email regex — mirrors the backend pattern (requires 2+ char TLD)
+  const emailValidFmt = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(data.email);
+  // Country-aware phone validation using the shared helper from FormField
+  const phoneValidFmt = getPhoneIsValid(data.phone);
 
   useEffect(() => {
     clearTimeout(debounceRef.current.username);
@@ -153,12 +156,15 @@ export default function SignupPage() {
     update(e.target.name, value);
   };
 
+  // ─── Derived validation state ─────────────────────────────────────────────
   const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+  // Same stricter email regex — no separate variable needed vs emailValidFmt
+  const emailValid = emailValidFmt;
   const passwordValid = data.password.length >= 8;
   const passwordsMatch =
     data.password === data.confirmPassword && data.confirmPassword.length > 0;
-  const phoneValid = /^\+\d{1,4}\d{6,14}$/.test(data.phone);
+  // Reuse the shared helper — single source of truth for phone validity
+  const phoneValid = phoneValidFmt;
 
   const accountStepValid =
     data.fullName.trim().length >= 2 &&

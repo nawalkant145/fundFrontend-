@@ -145,7 +145,7 @@ export default function UploadPitchModal({ open, onClose }) {
 
           {/* Modal panel */}
           <motion.div
-            className="relative z-10 w-full sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-y-auto"
+            className="relative z-10 w-full sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col"
             initial={{ y: 80, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 80, opacity: 0, scale: 0.97 }}
@@ -153,12 +153,12 @@ export default function UploadPitchModal({ open, onClose }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle (mobile) */}
-            <div className="flex justify-center pt-3 sm:hidden">
+            <div className="flex justify-center pt-3 sm:hidden flex-shrink-0">
               <div className="w-10 h-1.5 rounded-full bg-[#0A1F14]/15" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1B5E3F]/10">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
               <div>
                 <h2 className="text-xl font-black text-[#0A1F14]">Upload your pitch</h2>
                 <p className="text-xs text-[#0A1F14]/55 mt-0.5">60–120 seconds · Vertical video works best</p>
@@ -172,7 +172,7 @@ export default function UploadPitchModal({ open, onClose }) {
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5">
+            <div className="px-6 py-5 overflow-y-auto flex-1">
               {submitted ? (
                 <motion.div
                   className="text-center py-10"
@@ -195,7 +195,7 @@ export default function UploadPitchModal({ open, onClose }) {
                     </button>
                     <button
                       onClick={onClose}
-                      className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white rounded-xl font-bold text-sm shadow-md"
+                      className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force rounded-xl font-bold text-sm shadow-md"
                     >
                       Done
                     </button>
@@ -321,7 +321,7 @@ export default function UploadPitchModal({ open, onClose }) {
                         onClick={() => setData((p) => ({ ...p, visibility: "everyone" }))}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                           data.visibility === "everyone"
-                            ? "bg-[#1B5E3F] text-white border-[#1B5E3F] shadow-md"
+                            ? "bg-[#1B5E3F] text-white-force border-[#1B5E3F] shadow-md"
                             : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40"
                         }`}
                       >

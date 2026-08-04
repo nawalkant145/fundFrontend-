@@ -735,7 +735,7 @@ function CommentAvatar({ src, name, size = 36 }) {
   return (
     <div
       style={style}
-      className="rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white font-bold"
+      className="rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force font-bold"
     >
       <span style={{ fontSize: size * 0.35 }}>{initials}</span>
     </div>

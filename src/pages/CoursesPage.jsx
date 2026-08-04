@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
 import {
   HiAcademicCap,
   HiTrendingUp,
@@ -10,10 +11,18 @@ import {
   HiPlay,
   HiArrowRight,
   HiSparkles,
+  HiX,
+  HiBookOpen,
+  HiShieldCheck,
+  HiLockClosed,
+  HiCreditCard,
+  HiCheck,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import PublicNav from "../components/public/PublicNav";
 import PublicFooter from "../components/public/PublicFooter";
+import { useAuth } from "../context/AuthContext";
+import courseService from "../services/courseService";
 
 const courses = [
   {
@@ -21,6 +30,7 @@ const courses = [
     title: "Master the 60-Second Pitch",
     subtitle: "Captivate investors in under a minute",
     price: "$299",
+    priceNumber: 299,
     originalPrice: "$499",
     duration: "6 weeks",
     students: "2,400+",
@@ -28,6 +38,7 @@ const courses = [
     level: "Beginner → Advanced",
     thumbnail:
       "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=500&fit=crop",
+    videoUrl: "/pitchvideo.mp4",
     instructor: "Sarah Chen",
     instructorTitle: "Ex-YC Partner · raised $50M+",
     features: [
@@ -38,6 +49,36 @@ const courses = [
       "Real unicorn examples",
       "Lifetime access",
     ],
+    syllabus: [
+      {
+        title: "Module 1: The 60-Second Hook",
+        lessons: [
+          "Why 60 Seconds Matters",
+          "Crafting Your Elevator Statement",
+          "The 3-Second Attention Grabber",
+        ],
+      },
+      {
+        title: "Module 2: Storytelling & Metrics",
+        lessons: [
+          "Framing the Problem & Solution",
+          "Traction Metrics Investors Care About",
+          "Structuring the Ask",
+        ],
+      },
+      {
+        title: "Module 3: Delivery & Body Language",
+        lessons: [
+          "Voice Modulation & Tone",
+          "Camera Presence & Framing",
+          "Handling Q&A Under Pressure",
+        ],
+      },
+      {
+        title: "Module 4: Real Pitch Teardowns",
+        lessons: ["Analyzing 5 Unicorn Pitches", "Common Pitfalls & Mistakes to Avoid"],
+      },
+    ],
     badge: "BESTSELLER",
     badgeColor: "bg-[#F5B942] text-[#0F4A2E]",
   },
@@ -46,6 +87,7 @@ const courses = [
     title: "Founder Fundamentals",
     subtitle: "From idea to funded startup in 90 days",
     price: "$499",
+    priceNumber: 499,
     originalPrice: "$799",
     duration: "12 weeks",
     students: "1,800+",
@@ -53,6 +95,7 @@ const courses = [
     level: "Beginner",
     thumbnail:
       "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=500&fit=crop",
+    videoUrl: "/videos/appshowcase.mp4",
     instructor: "Marcus Webb",
     instructorTitle: "3× Founder · 2 exits",
     features: [
@@ -63,6 +106,32 @@ const courses = [
       "PMF framework",
       "Fundraising playbook",
     ],
+    syllabus: [
+      {
+        title: "Module 1: Validation & PMF",
+        lessons: [
+          "Idea Validation Framework",
+          "Customer Interview Playbook",
+          "Building an MVP in 14 Days",
+        ],
+      },
+      {
+        title: "Module 2: Legal & Equity",
+        lessons: [
+          "Incorporation & Cap Table Setup",
+          "Co-founder Agreements & Vesting",
+          "SAFE Notes vs Priced Rounds",
+        ],
+      },
+      {
+        title: "Module 3: Financial Modeling",
+        lessons: [
+          "5-Year Projections Spreadsheet",
+          "Unit Economics & CAC/LTV",
+          "Burn Rate Management",
+        ],
+      },
+    ],
     badge: "NEW",
     badgeColor: "bg-[#1B5E3F] text-white",
   },
@@ -71,6 +140,7 @@ const courses = [
     title: "Pitch Deck Mastery",
     subtitle: "Decks that close million-dollar rounds",
     price: "$199",
+    priceNumber: 199,
     originalPrice: "$349",
     duration: "4 weeks",
     students: "3,200+",
@@ -78,6 +148,7 @@ const courses = [
     level: "Intermediate",
     thumbnail:
       "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=500&fit=crop",
+    videoUrl: "/videos/herostory.mp4",
     instructor: "David Park",
     instructorTitle: "Design Lead · Sequoia",
     features: [
@@ -88,6 +159,24 @@ const courses = [
       "Live deck reviews",
       "Figma files included",
     ],
+    syllabus: [
+      {
+        title: "Module 1: The 10 Essential Slides",
+        lessons: [
+          "Problem, Solution & Market Size",
+          "Traction Slide Design Secrets",
+          "The Team Slide That Converts",
+        ],
+      },
+      {
+        title: "Module 2: Visual Storytelling",
+        lessons: [
+          "Typography & Color Hierarchy",
+          "Data Visualization & Charts",
+          "Formatting for Mobile & PDF",
+        ],
+      },
+    ],
     badge: "POPULAR",
     badgeColor: "bg-[#F5B942] text-[#0F4A2E]",
   },
@@ -96,6 +185,7 @@ const courses = [
     title: "Investor Relations Pro",
     subtitle: "Build lasting relationships with VCs",
     price: "$399",
+    priceNumber: 399,
     originalPrice: "$599",
     duration: "8 weeks",
     students: "1,200+",
@@ -103,6 +193,7 @@ const courses = [
     level: "Advanced",
     thumbnail:
       "https://images.unsplash.com/photo-1573167507387-6b4b98cb7c13?w=800&h=500&fit=crop",
+    videoUrl: "/videos/globalnetwork.mp4",
     instructor: "Aisha Kamara",
     instructorTitle: "Former VC · $2B AUM",
     features: [
@@ -113,6 +204,24 @@ const courses = [
       "Post-funding management",
       "VC network access",
     ],
+    syllabus: [
+      {
+        title: "Module 1: Warm Introductions & Cold Email",
+        lessons: [
+          "Mapping Your Ideal Investor Profile",
+          "Cold Email Templates That Get 60% Reply Rate",
+          "Leveraging Mutual Connections",
+        ],
+      },
+      {
+        title: "Module 2: Term Sheet Negotiation",
+        lessons: [
+          "Understanding Valuation & Dilution",
+          "Liquidation Preferences & Governance",
+          "Creating FOMO in Your Round",
+        ],
+      },
+    ],
     badge: "PRO",
     badgeColor: "bg-[#0F4A2E] text-[#F5B942]",
   },
@@ -121,6 +230,7 @@ const courses = [
     title: "Video Pitch Production",
     subtitle: "Film & edit professional pitch videos",
     price: "$149",
+    priceNumber: 149,
     originalPrice: "$249",
     duration: "3 weeks",
     students: "2,800+",
@@ -128,6 +238,7 @@ const courses = [
     level: "Beginner",
     thumbnail:
       "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=800&h=500&fit=crop",
+    videoUrl: "/videos/investorpov.mp4",
     instructor: "Sofia Martinez",
     instructorTitle: "Emmy-winning producer",
     features: [
@@ -138,6 +249,24 @@ const courses = [
       "B-roll techniques",
       "Platform optimization",
     ],
+    syllabus: [
+      {
+        title: "Module 1: Studio Setup on a Budget",
+        lessons: [
+          "Smartphone Camera Optimization",
+          "3-Point Lighting Setup",
+          "Audio Gear & Noise Cancellation",
+        ],
+      },
+      {
+        title: "Module 2: Editing & Post-Production",
+        lessons: [
+          "Cutting Your Pitch Video in CapCut/Premiere",
+          "Adding Subtitles & Motion Graphics",
+          "Exporting for EXPGLO FUND Platform",
+        ],
+      },
+    ],
     badge: "TRENDING",
     badgeColor: "bg-[#F5B942] text-[#0F4A2E]",
   },
@@ -146,6 +275,7 @@ const courses = [
     title: "Fundraising Strategy Bundle",
     subtitle: "Complete system from seed to Series A",
     price: "$799",
+    priceNumber: 799,
     originalPrice: "$1,299",
     duration: "16 weeks",
     students: "900+",
@@ -153,6 +283,7 @@ const courses = [
     level: "All levels",
     thumbnail:
       "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=500&fit=crop",
+    videoUrl: "/mockvideo/pitch1.mp4",
     instructor: "Expert team",
     instructorTitle: "100+ years combined experience",
     features: [
@@ -162,6 +293,16 @@ const courses = [
       "Investor introductions",
       "Pitch competition entry",
       "Certificate",
+    ],
+    syllabus: [
+      {
+        title: "Module 1: Complete Academy Curriculum",
+        lessons: [
+          "Includes Access to Courses 1 Through 5",
+          "Private Monthly Masterminds with VCs",
+          "Direct Introductions to EXPGLO Angel Network",
+        ],
+      },
     ],
     badge: "BUNDLE",
     badgeColor: "bg-[#0F4A2E] text-[#F5B942]",
@@ -199,6 +340,188 @@ const stats = [
 ];
 
 export default function CoursesPage() {
+  const navigate = useNavigate();
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.user;
+  } catch {
+    currentUser = null;
+  }
+
+  // Modals state
+  const [selectedPreview, setSelectedPreview] = useState(null);
+  const [selectedEnroll, setSelectedEnroll] = useState(null);
+  const [enrollingState, setEnrollingState] = useState("idle"); // 'idle' | 'payment' | 'upi-pending' | 'netbanking-auth' | 'processing' | 'success'
+  const [activeModule, setActiveModule] = useState(0);
+
+  // Payment form states
+  const [cardNo, setCardNo] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [upiVal, setUpiVal] = useState("");
+
+  // Netbanking form states
+  const [netbankUser, setNetbankUser] = useState("");
+  const [netbankPass, setNetbankPass] = useState("");
+  const [selectedBank, setSelectedBank] = useState("State Bank of India");
+
+  const [touched, setTouched] = useState({
+    cardNo: false,
+    cardExp: false,
+    cardCvv: false,
+    upiVal: false,
+  });
+
+  const [touchedNetbank, setTouchedNetbank] = useState({
+    user: false,
+    pass: false,
+  });
+
+  const handleEnrollClick = (course) => {
+    setSelectedPreview(null);
+    setSelectedEnroll(course);
+    setEnrollingState("idle");
+    setCardNo("");
+    setCardExp("");
+    setCardCvv("");
+    setUpiVal("");
+    setNetbankUser("");
+    setNetbankPass("");
+    setSelectedBank("State Bank of India");
+    setTouched({
+      cardNo: false,
+      cardExp: false,
+      cardCvv: false,
+      upiVal: false,
+    });
+    setTouchedNetbank({
+      user: false,
+      pass: false,
+    });
+  };
+
+  const handleCardNoChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
+    setCardNo(formatted.slice(0, 19)); // 16 digits + 3 spaces
+    if (raw.length > 0) setTouched((prev) => ({ ...prev, cardNo: true }));
+  };
+
+  const handleCardExpChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    let formatted = raw;
+    if (raw.length > 2) {
+      formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
+    }
+    setCardExp(formatted.slice(0, 5));
+    if (raw.length > 0) setTouched((prev) => ({ ...prev, cardExp: true }));
+  };
+
+  const handleCardCvvChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    setCardCvv(raw.slice(0, 3));
+    if (raw.length > 0) setTouched((prev) => ({ ...prev, cardCvv: true }));
+  };
+
+  const handleUpiChange = (e) => {
+    const val = e.target.value.trim();
+    setUpiVal(val);
+    if (val.length > 0) setTouched((prev) => ({ ...prev, upiVal: true }));
+  };
+
+  const getCardNoError = () => {
+    if (!touched.cardNo || !cardNo) return "";
+    const clean = cardNo.replace(/\s/g, "");
+    if (clean.length < 16) return "Card number must be 16 digits";
+    
+    // Luhn algorithm check
+    let sum = 0;
+    let shouldDouble = false;
+    for (let i = clean.length - 1; i >= 0; i--) {
+      let digit = parseInt(clean.charAt(i), 10);
+      if (shouldDouble) {
+        if ((digit *= 2) > 9) digit -= 9;
+      }
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+    if (sum % 10 !== 0) return "Invalid card number (checksum failed)";
+    return "";
+  };
+
+  const getCardExpError = () => {
+    if (!touched.cardExp || !cardExp) return "";
+    if (cardExp.length < 5) return "Expiry must be MM/YY";
+    const [mmStr, yyStr] = cardExp.split("/");
+    const mm = parseInt(mmStr, 10);
+    const yy = parseInt(yyStr, 10);
+    if (isNaN(mm) || mm < 1 || mm > 12) return "Month must be 01 to 12";
+    
+    const now = new Date();
+    const curYear = now.getFullYear() % 100;
+    const curMonth = now.getMonth() + 1;
+    if (isNaN(yy) || yy < curYear || (yy === curYear && mm < curMonth)) {
+      return "Card has expired";
+    }
+    return "";
+  };
+
+  const getCardCvvError = () => {
+    if (!touched.cardCvv || !cardCvv) return "";
+    if (cardCvv.length < 3) return "CVV must be 3 digits";
+    return "";
+  };
+
+  const getUpiError = () => {
+    if (!touched.upiVal) return "";
+    if (!upiVal) return "UPI ID cannot be empty";
+    if (!upiVal.includes("@")) return "UPI ID must contain @ (e.g. name@bank)";
+    const [handle, bankPart] = upiVal.split("@");
+    if (!handle || handle.length < 2) return "Handle before @ must be at least 2 characters";
+    if (!bankPart || !/^[a-zA-Z]{2,64}$/.test(bankPart)) return "Bank name after @ must be letters only (e.g. okaxis, ybl, paytm)";
+    return "";
+  };
+
+  const handlePaymentSubmit = () => {
+    if (activeModule === 0) {
+      handleConfirmEnrollment();
+    } else if (activeModule === 1) {
+      setEnrollingState("upi-pending");
+    } else {
+      setEnrollingState("netbanking-auth");
+    }
+  };
+
+  const handleConfirmEnrollment = () => {
+    setEnrollingState("processing");
+    setTimeout(async () => {
+      setEnrollingState("success");
+
+      // Determine payment method label
+      const methodLabel =
+        activeModule === 0 ? "Credit / Debit Card"
+        : activeModule === 1 ? `UPI (${upiVal})`
+        : `Net Banking (${selectedBank})`;
+
+      // Send receipt email (fire-and-forget — don't block UI)
+      try {
+        const recipientEmail = currentUser?.email || null;
+        if (recipientEmail && selectedEnroll) {
+          await courseService.sendCourseReceipt({
+            email: recipientEmail,
+            name: currentUser?.name || currentUser?.firstName || "Student",
+            courseTitle: selectedEnroll.title,
+            price: selectedEnroll.price,
+            paymentMethod: methodLabel,
+          });
+        }
+      } catch (_) {
+        // Receipt failure is non-critical; do not block success UI
+      }
+    }, 1200);
+  };
+
   return (
     <div className="min-h-screen bg-white text-[#0A1F14] overflow-x-hidden">
       {/* Soft brand glows */}
@@ -305,7 +628,7 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* COURSES */}
+      {/* COURSES GRID */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
           <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-3">
@@ -329,7 +652,7 @@ export default function CoursesPage() {
                 whileHover={{ y: -6 }}
                 className="group bg-white rounded-3xl overflow-hidden border border-[#1B5E3F]/10 shadow-sm hover:shadow-2xl hover:border-[#1B5E3F]/25 transition-all flex flex-col"
               >
-                <div className="relative h-48 overflow-hidden">
+                <div className="relative h-48 overflow-hidden cursor-pointer" onClick={() => { setSelectedPreview(c); setActiveModule(0); }}>
                   <img
                     src={c.thumbnail}
                     alt={c.title}
@@ -341,8 +664,16 @@ export default function CoursesPage() {
                     {c.badge}
                   </div>
                   <div className="absolute inset-0 bg-[#0A1F14]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button className="px-5 py-2.5 bg-[#F5B942] text-[#0F4A2E] text-sm font-bold rounded-full inline-flex items-center gap-1.5 shadow-lg">
-                      <HiPlay /> Preview
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPreview(c);
+                        setActiveModule(0);
+                      }}
+                      className="px-5 py-2.5 bg-[#F5B942] hover:bg-[#FFD166] text-[#0F4A2E] text-sm font-bold rounded-full inline-flex items-center gap-1.5 shadow-lg transition-transform active:scale-95"
+                    >
+                      <HiPlay className="w-4 h-4" /> Preview Course
                     </button>
                   </div>
                 </div>
@@ -406,8 +737,12 @@ export default function CoursesPage() {
                         {c.originalPrice}
                       </span>
                     </div>
-                    <button className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md transition-all whitespace-nowrap">
-                      Enroll
+                    <button
+                      type="button"
+                      onClick={() => handleEnrollClick(c)}
+                      className="px-5 py-2.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-md transition-all active:scale-95 whitespace-nowrap"
+                    >
+                      Enroll Now
                     </button>
                   </div>
                 </div>
@@ -416,6 +751,613 @@ export default function CoursesPage() {
           </div>
         </div>
       </section>
+
+      {/* ─── COURSE PREVIEW MODAL ───────────────────────── */}
+      <AnimatePresence>
+        {selectedPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedPreview(null)}
+              className="fixed inset-0 bg-[#0A1F14]/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden z-10 my-8 max-h-[90vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#1B5E3F]/10 bg-[#FAFAF7]">
+                <div className="flex items-center gap-3">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${selectedPreview.badgeColor}`}>
+                    {selectedPreview.badge}
+                  </span>
+                  <h3 className="font-black text-lg text-[#0A1F14] truncate max-w-md">
+                    {selectedPreview.title}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPreview(null)}
+                  className="w-9 h-9 rounded-full bg-white border border-[#1B5E3F]/15 flex items-center justify-center text-[#0A1F14]/70 hover:text-[#0A1F14] transition-colors"
+                >
+                  <HiX className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="overflow-y-auto p-6 space-y-6 flex-1">
+                {/* Video Player */}
+                <div className="relative rounded-2xl overflow-hidden bg-black aspect-video shadow-lg border border-[#1B5E3F]/15">
+                  <video
+                    controls
+                    autoPlay
+                    muted
+                    playsInline
+                    preload="metadata"
+                    poster={selectedPreview.thumbnail}
+                    className="w-full h-full object-cover"
+                  >
+                    <source src={selectedPreview.videoUrl} type="video/mp4" />
+                    <source src="/pitchvideo.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+
+                {/* Info Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#1B5E3F]/5 border border-[#1B5E3F]/10 text-center">
+                  <div>
+                    <span className="text-xs text-[#0A1F14]/50 block">Rating</span>
+                    <span className="text-base font-black text-[#F5B942] flex items-center justify-center gap-1">
+                      <HiStar /> {selectedPreview.rating}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#0A1F14]/50 block">Duration</span>
+                    <span className="text-base font-black text-[#0F4A2E]">{selectedPreview.duration}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#0A1F14]/50 block">Students</span>
+                    <span className="text-base font-black text-[#0F4A2E]">{selectedPreview.students}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#0A1F14]/50 block">Price</span>
+                    <span className="text-base font-black text-[#0F4A2E]">{selectedPreview.price}</span>
+                  </div>
+                </div>
+
+                {/* Syllabus */}
+                <div>
+                  <h4 className="font-black text-lg mb-3 flex items-center gap-2 text-[#0A1F14]">
+                    <HiBookOpen className="w-5 h-5 text-[#1B5E3F]" />
+                    Course Syllabus & Curriculum
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedPreview.syllabus?.map((mod, idx) => (
+                      <div
+                        key={mod.title}
+                        className="border border-[#1B5E3F]/15 rounded-xl overflow-hidden bg-white"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setActiveModule(activeModule === idx ? -1 : idx)}
+                          className="w-full px-4 py-3 bg-[#FAFAF7] flex items-center justify-between font-bold text-sm text-[#0F4A2E] hover:bg-[#1B5E3F]/5 transition-colors text-left"
+                        >
+                          <span>{mod.title}</span>
+                          <span className="text-xs font-semibold text-[#0A1F14]/50">
+                            {mod.lessons.length} lessons
+                          </span>
+                        </button>
+                        {activeModule === idx && (
+                          <div className="p-4 border-t border-[#1B5E3F]/10 space-y-2 bg-white">
+                            {mod.lessons.map((lesson) => (
+                              <div key={lesson} className="flex items-center gap-2.5 text-xs text-[#0A1F14]/80">
+                                <HiPlay className="w-3.5 h-3.5 text-[#1B5E3F] flex-shrink-0" />
+                                <span>{lesson}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Instructor Details */}
+                <div className="p-4 rounded-2xl border border-[#1B5E3F]/10 bg-[#FAFAF7] flex items-center gap-4">
+                  <img
+                    src={selectedPreview.thumbnail}
+                    alt={selectedPreview.instructor}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-[#1B5E3F]/20"
+                  />
+                  <div>
+                    <h5 className="font-bold text-sm">{selectedPreview.instructor}</h5>
+                    <p className="text-xs text-[#0A1F14]/60">{selectedPreview.instructorTitle}</p>
+                    <p className="text-xs text-[#1B5E3F] font-semibold mt-1">Lead Instructor · EXPGLO FUND Academy</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 sm:p-6 border-t border-[#1B5E3F]/10 bg-[#FAFAF7] flex items-center justify-between gap-4">
+                <div>
+                  <span className="text-2xl font-black text-[#0F4A2E]">{selectedPreview.price}</span>
+                  <span className="text-xs text-[#0A1F14]/45 block">Lifetime Access</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleEnrollClick(selectedPreview)}
+                  className="px-7 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white text-sm font-bold rounded-full shadow-xl transition-all flex items-center gap-2"
+                >
+                  Enroll Now <HiArrowRight />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── COURSE ENROLLMENT MODAL ────────────────────── */}
+      <AnimatePresence>
+        {selectedEnroll && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedEnroll(null)}
+              className="fixed inset-0 bg-[#0A1F14]/75 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden z-10 my-8 p-6 sm:p-8"
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedEnroll(null)}
+                className="absolute top-5 right-5 w-9 h-9 rounded-full bg-[#FAFAF7] border border-[#1B5E3F]/15 flex items-center justify-center text-[#0A1F14]/70 hover:text-[#0A1F14] transition-colors z-10"
+              >
+                <HiX className="w-5 h-5" />
+              </button>
+
+              {enrollingState === "success" ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+                    <HiCheck className="w-9 h-9" />
+                  </div>
+                  <h3 className="text-2xl font-black text-[#0F4A2E]">
+                    Enrollment Successful!
+                  </h3>
+                  <p className="text-sm text-[#0A1F14]/70 max-w-xs mx-auto">
+                    You have unlocked lifetime access to <span className="font-bold text-[#1B5E3F]">{selectedEnroll.title}</span>.
+                  </p>
+                  <div className="p-4 bg-[#FAFAF7] rounded-2xl border border-[#1B5E3F]/10 text-left text-xs space-y-2 text-[#0A1F14]/80">
+                    <p className="flex items-center gap-1.5 font-semibold text-[#1B5E3F]">
+                      <HiShieldCheck className="w-4 h-4" /> Payment authorized securely
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <HiBookOpen className="w-4 h-4 text-[#1B5E3F]" /> Access via your student dashboard
+                    </p>
+                    {currentUser?.email && (
+                      <p className="flex items-center gap-1.5 text-[#0A1F14]/60">
+                        📧 Receipt sent to <span className="font-semibold text-[#0A1F14]/80">{currentUser.email}</span>
+                      </p>
+                    )}
+                  </div>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEnroll(null);
+                        navigate(currentUser ? "/app" : "/signup");
+                      }}
+                      className="w-full py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white font-bold text-sm rounded-full shadow-lg transition-all"
+                    >
+                      {currentUser ? "Go to Dashboard" : "Create Account to Start Learning"}
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "payment" ? (
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#1B5E3F] bg-[#1B5E3F]/10 px-2.5 py-1 rounded-full">
+                      Step 2: Payment Gateway
+                    </span>
+                    <h3 className="text-2xl font-black mt-2 text-[#0A1F14]">
+                      Secure Checkout
+                    </h3>
+                    <p className="text-xs text-[#0A1F14]/65 mt-1">
+                      Choose your preferred payment method below.
+                    </p>
+                  </div>
+
+                  {/* Payment Tabs */}
+                  <div className="grid grid-cols-3 gap-2 p-1 bg-[#FAFAF7] border border-[#1B5E3F]/15 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModule(0)} // reuse state for active payment tab
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                        activeModule === 0
+                          ? "bg-[#1B5E3F] text-white shadow-sm"
+                          : "text-[#0A1F14]/75 hover:bg-[#1B5E3F]/5"
+                      }`}
+                    >
+                      Card
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModule(1)}
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                        activeModule === 1
+                          ? "bg-[#1B5E3F] text-white shadow-sm"
+                          : "text-[#0A1F14]/75 hover:bg-[#1B5E3F]/5"
+                      }`}
+                    >
+                      UPI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModule(2)}
+                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                        activeModule === 2
+                          ? "bg-[#1B5E3F] text-white shadow-sm"
+                          : "text-[#0A1F14]/75 hover:bg-[#1B5E3F]/5"
+                      }`}
+                    >
+                      Netbanking
+                    </button>
+                  </div>
+
+                  {/* Payment Forms */}
+                  {activeModule === 0 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                          Card Number
+                        </label>
+                        <input
+                          type="text"
+                          value={cardNo}
+                          onChange={handleCardNoChange}
+                          onBlur={() => setTouched((prev) => ({ ...prev, cardNo: true }))}
+                          placeholder="4111 2222 3333 4444"
+                          maxLength="19"
+                          required
+                          className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                            touched.cardNo && getCardNoError()
+                              ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                              : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                          }`}
+                        />
+                        {touched.cardNo && getCardNoError() && (
+                          <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                            ✕ {getCardNoError()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                            Expiry Date
+                          </label>
+                          <input
+                            type="text"
+                            value={cardExp}
+                            onChange={handleCardExpChange}
+                            onBlur={() => setTouched((prev) => ({ ...prev, cardExp: true }))}
+                            placeholder="MM / YY"
+                            maxLength="5"
+                            required
+                            className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                              touched.cardExp && getCardExpError()
+                                ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                               : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                            }`}
+                          />
+                          {touched.cardExp && getCardExpError() && (
+                            <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                              ✕ {getCardExpError()}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                            CVV
+                          </label>
+                          <input
+                            type="password"
+                            value={cardCvv}
+                            onChange={handleCardCvvChange}
+                            onBlur={() => setTouched((prev) => ({ ...prev, cardCvv: true }))}
+                            placeholder="•••"
+                            maxLength="3"
+                            required
+                            className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                              touched.cardCvv && getCardCvvError()
+                                ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                                : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                            }`}
+                          />
+                          {touched.cardCvv && getCardCvvError() && (
+                            <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                              ✕ {getCardCvvError()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : activeModule === 1 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                          UPI ID / VPA
+                        </label>
+                        <input
+                          type="text"
+                          value={upiVal}
+                          onChange={handleUpiChange}
+                          onBlur={() => setTouched((prev) => ({ ...prev, upiVal: true }))}
+                          placeholder="username@okaxis"
+                          required
+                          className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                            touched.upiVal && getUpiError()
+                              ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                              : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                          }`}
+                        />
+                        {touched.upiVal && getUpiError() && (
+                          <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                            ✕ {getUpiError()}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#0A1F14]/50 leading-relaxed">
+                        A payment request will be sent to your UPI app. Please open the app and authorize payment.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold text-[#0A1F14]/80">
+                        Select Bank
+                      </label>
+                      <select
+                        value={selectedBank}
+                        onChange={(e) => setSelectedBank(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-sm focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none font-medium"
+                      >
+                        <option>State Bank of India</option>
+                        <option>HDFC Bank</option>
+                        <option>ICICI Bank</option>
+                        <option>Axis Bank</option>
+                        <option>Kotak Mahindra Bank</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEnrollingState("idle")}
+                      className="px-5 py-3 text-xs text-[#0A1F14]/75 font-bold rounded-full border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/45 transition-colors bg-white"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      disabled={
+                        activeModule === 0
+                          ? !cardNo || !cardExp || !cardCvv || !!getCardNoError() || !!getCardExpError() || !!getCardCvvError()
+                          : activeModule === 1
+                            ? !upiVal || !!getUpiError()
+                            : false
+                      }
+                      onClick={handlePaymentSubmit}
+                      className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      <HiLockClosed className="w-4 h-4 text-[#F5B942]" /> Pay {selectedEnroll.price} Securely
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "upi-pending" ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="relative w-16 h-16 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-spin" />
+                    <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                      <HiSparkles className="w-6 h-6 text-emerald-500 animate-pulse" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-black text-[#0F4A2E]">
+                    Waiting for UPI approval
+                  </h3>
+                  <p className="text-sm text-[#0A1F14]/75 max-w-xs mx-auto">
+                    We sent a payment request to <span className="font-bold text-[#1B5E3F]">{upiVal}</span>. Please open your UPI app and authorize the transaction.
+                  </p>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleConfirmEnrollment}
+                      className="w-full py-3 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white font-bold text-sm rounded-full shadow-lg transition-all"
+                    >
+                      Simulate App Approval (Authorize Payment)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEnrollingState("payment")}
+                      className="w-full py-3 bg-white text-[#0A1F14]/70 border border-[#1B5E3F]/15 font-bold text-sm rounded-full transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "netbanking-auth" ? (
+                <div className="space-y-5">
+                  <div className="pb-3 border-b border-[#1B5E3F]/15">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white bg-[#1B5E3F] px-2.5 py-1 rounded-full">
+                      {selectedBank} Secure Login
+                    </span>
+                    <h3 className="text-xl font-black mt-2 text-[#0A1F14]">
+                      Net Banking Authentication
+                    </h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                        User ID / Customer ID
+                      </label>
+                      <input
+                        type="text"
+                        value={netbankUser}
+                        onChange={(e) => setNetbankUser(e.target.value)}
+                        onBlur={() => setTouchedNetbank((prev) => ({ ...prev, user: true }))}
+                        placeholder="Enter bank user ID"
+                        required
+                        className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                          touchedNetbank.user && !netbankUser
+                            ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                            : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                        }`}
+                      />
+                      {touchedNetbank.user && !netbankUser && (
+                        <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                          ✕ User ID is required to authenticate
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#0A1F14]/80 mb-1">
+                        Password / IPIN
+                      </label>
+                      <input
+                        type="password"
+                        value={netbankPass}
+                        onChange={(e) => setNetbankPass(e.target.value)}
+                        onBlur={() => setTouchedNetbank((prev) => ({ ...prev, pass: true }))}
+                        placeholder="••••••••"
+                        required
+                        className={`w-full px-3 py-2.5 bg-white border rounded-xl text-sm focus:ring-4 focus:outline-none transition-all ${
+                          touchedNetbank.pass && !netbankPass
+                            ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                            : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
+                        }`}
+                      />
+                      {touchedNetbank.pass && !netbankPass && (
+                        <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                          ✕ Password is required to authenticate
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEnrollingState("payment")}
+                      className="px-5 py-3 text-xs text-[#0A1F14]/75 font-bold rounded-full border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/45 bg-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!netbankUser || !netbankPass}
+                      onClick={handleConfirmEnrollment}
+                      className="flex-1 py-3 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      <HiLockClosed className="w-4 h-4 text-[#F5B942]" /> Authenticate & Pay {selectedEnroll.price}
+                    </button>
+                  </div>
+                </div>
+              ) : enrollingState === "processing" ? (
+                <div className="text-center py-10 space-y-5">
+                  <div className="relative w-16 h-16 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-4 border-[#1B5E3F]/10 border-t-[#1B5E3F] animate-spin" />
+                    <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                      <HiLockClosed className="w-6 h-6 text-[#1B5E3F] animate-pulse" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-[#0F4A2E]">
+                      Connecting to gateway...
+                    </h4>
+                    <p className="text-xs text-[#0A1F14]/55 mt-1 max-w-xs mx-auto">
+                      Please do not close this window or click back. We are securing your transaction details.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#1B5E3F] bg-[#1B5E3F]/10 px-2.5 py-1 rounded-full">
+                      Step 1: Checkout Overview
+                    </span>
+                    <h3 className="text-2xl font-black mt-2 text-[#0A1F14]">
+                      {selectedEnroll.title}
+                    </h3>
+                    <p className="text-xs text-[#0A1F14]/60 mt-1">
+                      {selectedEnroll.subtitle}
+                    </p>
+                  </div>
+
+                  {/* Pricing Breakdown */}
+                  <div className="p-4 rounded-2xl bg-[#FAFAF7] border border-[#1B5E3F]/10 space-y-2.5">
+                    <div className="flex justify-between text-xs text-[#0A1F14]/70">
+                      <span>Course Price</span>
+                      <span className="font-bold">{selectedEnroll.price}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-[#0A1F14]/70">
+                      <span>Instant Discount</span>
+                      <span className="font-bold text-emerald-600">-{selectedEnroll.originalPrice}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-[#0A1F14]/70">
+                      <span>Access Type</span>
+                      <span className="font-bold text-[#1B5E3F]">Lifetime Access</span>
+                    </div>
+                    <div className="border-t border-[#1B5E3F]/10 pt-2 flex justify-between text-base font-black text-[#0F4A2E]">
+                      <span>Total Due</span>
+                      <span>{selectedEnroll.price}</span>
+                    </div>
+                  </div>
+
+                  {/* Guarantee & Features */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[#0F4A2E]">
+                      <HiShieldCheck className="w-4 h-4 text-[#F5B942]" />
+                      <span>30-Day 100% Money Back Guarantee</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-[#0A1F14]/60">
+                      <HiLockClosed className="w-4 h-4 text-[#1B5E3F]" />
+                      <span>Secure Instant Access · Certificate Included</span>
+                    </div>
+                  </div>
+
+                  {/* Account state alert */}
+                  {!currentUser && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                      <strong>Note:</strong> You are checking out as a guest. You will be prompted to complete your student profile after confirmation.
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEnrollingState("payment");
+                      setActiveModule(0); // Card tab as default
+                    }}
+                    className="w-full py-3.5 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white font-bold text-base rounded-full shadow-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <HiCreditCard className="w-5 h-5" />
+                    Complete Enrollment ({selectedEnroll.price})
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* CTA */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0F4A2E] via-[#1B5E3F] to-[#0F4A2E] text-white relative overflow-hidden">

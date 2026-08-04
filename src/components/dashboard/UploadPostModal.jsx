@@ -127,7 +127,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
 
           {/* Modal panel */}
           <motion.div
-            className="relative z-10 w-full sm:max-w-4xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-y-auto"
+            className="relative z-10 w-full sm:max-w-4xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col"
             initial={{ y: 80, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 80, opacity: 0, scale: 0.97 }}
@@ -135,12 +135,12 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle (mobile) */}
-            <div className="flex justify-center pt-3 sm:hidden">
+            <div className="flex justify-center pt-3 sm:hidden flex-shrink-0">
               <div className="w-10 h-1.5 rounded-full bg-[#0A1F14]/15" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1B5E3F]/10">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
               <div>
                 <h2 className="text-xl font-black text-[#0A1F14]">Create a post</h2>
                 <p className="text-xs text-[#0A1F14]/55 mt-0.5">Share what you're building</p>
@@ -154,38 +154,40 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5">
+            <div className="px-6 py-5 overflow-y-auto flex-1">
               <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_320px] gap-6">
                 {/* Left — composer */}
                 <div className="space-y-4 text-left">
-                  {/* Type toggle */}
-                  <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1">
-                    <button
-                      type="button"
-                      onClick={() => setType("images")}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-2 transition-all ${
-                        type === "images"
-                          ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md"
-                          : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
-                      }`}
-                    >
-                      <HiPhotograph className="w-4 h-4" /> Photos
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setType("text")}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-2 transition-all ${
-                        type === "text"
-                          ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md"
-                          : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
-                      }`}
-                    >
-                      <HiAnnotation className="w-4 h-4" /> Text only
-                    </button>
-                  </div>
+                  {/* Type toggle — hidden when opened from "Thoughts" (text-only mode) */}
+                  {postType !== "text" && (
+                    <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1">
+                      <button
+                        type="button"
+                        onClick={() => setType("images")}
+                        className={`px-5 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-2 transition-all ${
+                          type === "images"
+                            ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force shadow-md"
+                            : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
+                        }`}
+                      >
+                        <HiPhotograph className="w-4 h-4" /> Photos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setType("text")}
+                        className={`px-5 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-2 transition-all ${
+                          type === "text"
+                            ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force shadow-md"
+                            : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
+                        }`}
+                      >
+                        <HiAnnotation className="w-4 h-4" /> Text only
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Image dropzone + grid */}
-                  {type === "images" && (
+                  {/* Image dropzone + grid — never shown in thoughts (text-only) mode */}
+                  {type === "images" && postType !== "text" && (
                     <div>
                       <div
                         onClick={() => fileInputRef.current?.click()}
@@ -232,7 +234,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                               <button
                                 type="button"
                                 onClick={() => removeImage(i)}
-                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white-force flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <HiX className="w-3.5 h-3.5" />
                               </button>
@@ -317,7 +319,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                     disabled={!canSubmit}
                     whileHover={canSubmit ? { y: -2 } : {}}
                     whileTap={canSubmit ? { scale: 0.99 } : {}}
-                    className={`w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md inline-flex items-center justify-center gap-1.5 transition-all ${
+                    className={`w-full py-2.5 rounded-full font-bold text-sm bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md inline-flex items-center justify-center gap-1.5 transition-all ${
                       !canSubmit ? "opacity-50 cursor-not-allowed shadow-none" : ""
                     }`}
                   >

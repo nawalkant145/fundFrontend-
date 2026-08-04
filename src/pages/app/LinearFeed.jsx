@@ -558,7 +558,7 @@ function PitchFeedCard({
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" />
 
           {/* Duration */}
-          <span className="absolute top-3 left-3 px-2 py-0.5 bg-black/55 text-white text-xs font-bold rounded backdrop-blur-sm">
+          <span className="absolute top-3 left-3 px-2 py-0.5 bg-black/55 text-white-force text-xs font-bold rounded backdrop-blur-sm">
             {Math.floor(pitch.duration / 60)}:
             {String(pitch.duration % 60).padStart(2, "0")}
           </span>
@@ -887,7 +887,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
                     />
                   ))}
                 </div>
-                <span className="absolute top-3 right-3 px-2 py-0.5 bg-black/55 text-white text-[10px] font-bold rounded">
+                <span className="absolute top-3 right-3 px-2 py-0.5 bg-black/55 text-white-force text-[10px] font-bold rounded">
                   {imgIdx + 1} / {totalImgs}
                 </span>
               </>
@@ -1080,7 +1080,7 @@ function ShareSheet({ open, onClose, title, url }) {
             </span>
             <button
               onClick={copy}
-              className="px-3.5 py-1.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md shrink-0"
+              className="px-3.5 py-1.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md shrink-0"
             >
               <FaLink className="w-3.5 h-3.5" /> Copy
             </button>
