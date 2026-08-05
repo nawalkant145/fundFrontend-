@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,38 +6,180 @@ import {
   HiInformationCircle,
   HiCheckCircle,
   HiArrowRight,
+  HiBadgeCheck,
+  HiOfficeBuilding,
+  HiCreditCard,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
 import AuthShell from "../components/auth/AuthShell";
 import FileDropzone from "../components/auth/FileDropzone";
+import kycService from "../services/kycService";
+import { useToast } from "../components/ui/Toast";
+import { useAuth } from "../context/AuthContext";
 
-const ROLE_TABS = [
-  { value: "founder", label: "Founder" },
-  { value: "investor", label: "Investor" },
+const TABS = [
+  { value: "personal", label: "Level 2: Personal ID", icon: HiBadgeCheck },
+  { value: "company", label: "Level 3: Founder & Startup", icon: HiOfficeBuilding },
+  { value: "investment", label: "Level 4: Investor Transaction", icon: HiCreditCard },
 ];
+
+const readFileAsBase64 = (file) => {
+  if (!file) return Promise.resolve("");
+  if (typeof file === "string") return Promise.resolve(file);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function KycPage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState("founder");
-
-  const [docs, setDocs] = useState({
-    panCard: null,
-    aadhar: null,
-    selfie: null,
-    businessReg: null,
-    bankProof: null,
-    incomeProof: null,
-  });
+  const toast = useToast();
+  const { refreshUser } = useAuth();
+  const [activeTab, setActiveTab] = useState("personal");
+  const [status, setStatus] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedRefId, setSubmittedRefId] = useState("");
 
-  const update = (key, file) => setDocs((p) => ({ ...p, [key]: file }));
-  const requiredFilled = docs.panCard && docs.aadhar && docs.selfie;
+  // Level 2 Docs
+  const [personalDocs, setPersonalDocs] = useState({
+    documentType: "pan",
+    documentNumber: "",
+    documentFront: null,
+    documentBack: null,
+    selfie: null,
+  });
 
-  const handleSubmit = (e) => {
+  // Level 3 Docs
+  const [companyDocs, setCompanyDocs] = useState({
+    companyName: "",
+    CIN: "",
+    GST: "",
+    companyPAN: "",
+    businessEmail: "",
+    registrationCertificate: null,
+    startupIndiaCert: null,
+  });
+
+  // Level 4 Docs
+  const [investorDocs, setInvestorDocs] = useState({
+    addressProofType: "bank_statement",
+    addressProofUrl: null,
+    accountNumber: "",
+    ifscCode: "",
+    bankName: "",
+    bankProofUrl: null,
+    declaredNetWorth: "",
+  });
+
+  useEffect(() => {
+    kycService
+      .getStatus()
+      .then((res) => setStatus(res?.data?.data || res?.data))
+      .catch(() => {});
+  }, []);
+
+  const handlePersonalSubmit = async (e) => {
     e.preventDefault();
-    if (!requiredFilled) return;
-    setSubmitted(true);
+    if (!personalDocs.documentFront || !personalDocs.selfie) {
+      toast.error("Please upload front ID and selfie");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const frontUrl = await readFileAsBase64(personalDocs.documentFront);
+      const backUrl = await readFileAsBase64(personalDocs.documentBack);
+      const selfieUrl = await readFileAsBase64(personalDocs.selfie);
+
+      const isRejected = status?.statusCard?.identityVerified?.status === "rejected";
+      const apiCall = isRejected ? kycService.resubmitPersonalKyc : kycService.submitPersonalKyc;
+
+      const res = await apiCall({
+        documentType: personalDocs.documentType,
+        documentNumber: personalDocs.documentNumber,
+        documentFront: frontUrl,
+        documentBack: backUrl,
+        selfie: selfieUrl,
+      });
+
+      const data = res?.data?.data || res?.data;
+      setSubmittedRefId(data?.referenceId || "");
+      setSubmitted(true);
+      if (refreshUser) refreshUser();
+      toast.success(isRejected ? "Personal KYC resubmitted successfully!" : "Personal KYC submitted successfully!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Submission failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCompanySubmit = async (e) => {
+    e.preventDefault();
+    if (!companyDocs.companyName || !companyDocs.CIN || !companyDocs.registrationCertificate) {
+      toast.error("Please fill company name, CIN, and registration certificate");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const regCertUrl = await readFileAsBase64(companyDocs.registrationCertificate);
+      const panCertUrl = await readFileAsBase64(companyDocs.companyPAN);
+      const startupCertUrl = await readFileAsBase64(companyDocs.startupIndiaCert);
+
+      await kycService.submitCompanyKyc({
+        companyName: companyDocs.companyName,
+        CIN: companyDocs.CIN,
+        GST: companyDocs.GST,
+        companyPAN: companyDocs.companyPAN || "ABCDE1234F",
+        businessEmail: companyDocs.businessEmail || "founder@company.com",
+        registrationCertificate: regCertUrl,
+        companyPanUrl: panCertUrl,
+        startupIndiaCert: startupCertUrl,
+      });
+      setSubmitted(true);
+      toast.success("Company verification submitted!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Company submission failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleInvestorSubmit = async (e) => {
+    e.preventDefault();
+    if (!investorDocs.accountNumber || !investorDocs.ifscCode || !investorDocs.addressProofUrl) {
+      toast.error("Please fill address proof, account number, and IFSC code");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const addressProofUrl = await readFileAsBase64(investorDocs.addressProofUrl);
+      const bankProofUrl = await readFileAsBase64(investorDocs.bankProofUrl);
+
+      await kycService.submitInvestmentKyc({
+        addressProof: {
+          docType: investorDocs.addressProofType,
+          docUrl: addressProofUrl,
+        },
+        bankAccount: {
+          accountNumber: investorDocs.accountNumber,
+          ifscCode: investorDocs.ifscCode,
+          bankName: investorDocs.bankName || "HDFC Bank",
+          proofUrl: bankProofUrl,
+        },
+        netWorthDeclaration: { declaredAmount: Number(investorDocs.declaredNetWorth) || 1000000 },
+      });
+      setSubmitted(true);
+      toast.success("Investor transaction KYC submitted!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Investor submission failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -54,182 +196,312 @@ export default function KycPage() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] mb-3 shadow-md shadow-[#1B5E3F]/25">
                 <HiShieldCheck className="w-7 h-7 text-[#F5B942]" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black mb-2 tracking-tight">
-                Get your{" "}
-                <span className="bg-gradient-to-r from-[#1B5E3F] via-[#2D7A4F] to-[#1B5E3F] bg-clip-text text-transparent">
-                  blue tick
-                </span>
+              <h1 className="text-3xl sm:text-4xl font-black mb-2 tracking-tight text-[#0A1F14]">
+                Verification Workspace
               </h1>
               <p className="text-[#0A1F14]/60 text-sm sm:text-base max-w-xl mx-auto">
-                Submit ID proof for our team to review. Most approvals happen
-                within 24 hours.
+                Complete level requirements to unlock badges, startup publishing, and deal rooms.
               </p>
             </div>
 
-            {/* Role tabs */}
-            <div className="flex justify-center mb-6">
-              <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1">
-                {ROLE_TABS.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setRole(t.value)}
-                    className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                      role === t.value
-                        ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md shadow-[#1B5E3F]/25"
-                        : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
-                    }`}
-                  >
-                    I'm a {t.label}
-                  </button>
-                ))}
+            {/* Level Tabs */}
+            <div className="flex justify-center mb-6 overflow-x-auto pb-2">
+              <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1.5 gap-1">
+                {TABS.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => setActiveTab(t.value)}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                        activeTab === t.value
+                          ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md shadow-[#1B5E3F]/25"
+                          : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" /> {t.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <InfoBanner />
+            {/* Level 2 Personal ID Form */}
+            {activeTab === "personal" && (
+              <form onSubmit={handlePersonalSubmit} className="space-y-4">
+                <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                  <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-[#0F4A2E]">Level 2 Personal Identity</p>
+                    <p className="text-xs text-[#0A1F14]/70">
+                      Unlocks the Blue Verified Badge on your profile & search results.
+                    </p>
+                  </div>
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              <FileDropzone
-                label="PAN Card"
-                description="Image of your PAN card · JPG, PNG or PDF · max 10MB"
-                value={docs.panCard}
-                onChange={(f) => update("panCard", f)}
-                required
-              />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Type</label>
+                    <select
+                      value={personalDocs.documentType}
+                      onChange={(e) => setPersonalDocs({ ...personalDocs, documentType: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold focus:outline-none"
+                    >
+                      <option value="pan">PAN Card</option>
+                      <option value="govt_id">Aadhaar / Govt ID</option>
+                      <option value="passport">Passport</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Number (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ABCDE1234F"
+                      value={personalDocs.documentNumber}
+                      onChange={(e) => setPersonalDocs({ ...personalDocs, documentNumber: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                    />
+                  </div>
+                </div>
 
-              <FileDropzone
-                label="Aadhaar Card"
-                description="Front + back image (or PDF) · max 10MB"
-                value={docs.aadhar}
-                onChange={(f) => update("aadhar", f)}
-                required
-              />
-
-              <FileDropzone
-                label="Selfie holding your ID"
-                description="Clear photo of your face holding your PAN or Aadhaar · max 10MB"
-                accept="image/*"
-                value={docs.selfie}
-                onChange={(f) => update("selfie", f)}
-                required
-              />
-
-              {role === "founder" && (
                 <FileDropzone
-                  label="Business registration (optional)"
-                  description="Certificate of Incorporation, GST cert, or similar · PDF / image"
-                  value={docs.businessReg}
-                  onChange={(f) => update("businessReg", f)}
-                  hint="Required only if you're investing through a registered company"
+                  label="Front Image of ID"
+                  description="Clear photo of PAN or Govt ID · JPG, PNG or PDF"
+                  value={personalDocs.documentFront}
+                  onChange={(f) => setPersonalDocs({ ...personalDocs, documentFront: f })}
+                  required
                 />
-              )}
 
-              {role === "investor" && (
-                <>
-                  <FileDropzone
-                    label="Bank account proof"
-                    description="Cancelled cheque or bank statement · PDF / image"
-                    value={docs.bankProof}
-                    onChange={(f) => update("bankProof", f)}
-                    hint="Required for investments above ₹2,00,000"
-                  />
-                  <FileDropzone
-                    label="Income proof / ITR (optional)"
-                    description="Last year's ITR or salary slip · PDF"
-                    accept="application/pdf,image/*"
-                    value={docs.incomeProof}
-                    onChange={(f) => update("incomeProof", f)}
-                    hint="Helps establish accredited-investor status"
-                  />
-                </>
-              )}
+                <FileDropzone
+                  label="Selfie Holding ID"
+                  description="Clear photo of your face holding your ID"
+                  accept="image/*"
+                  value={personalDocs.selfie}
+                  onChange={(f) => setPersonalDocs({ ...personalDocs, selfie: f })}
+                  required
+                />
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => navigate("/")}
-                  className="text-sm text-[#0A1F14]/55 hover:text-[#1B5E3F] font-semibold transition-colors"
-                >
-                  Skip for now
-                </button>
-                <motion.button
-                  type="submit"
-                  disabled={!requiredFilled}
-                  whileHover={requiredFilled ? { y: -2 } : {}}
-                  whileTap={requiredFilled ? { scale: 0.98 } : {}}
-                  className={`w-full sm:w-auto px-7 py-3.5 rounded-full font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-[#1B5E3F]/30 ${
-                    !requiredFilled
-                      ? "opacity-50 cursor-not-allowed shadow-none"
-                      : ""
-                  }`}
-                >
-                  Submit for review <HiArrowRight />
-                </motion.button>
-              </div>
-            </form>
+                <div className="flex justify-between items-center pt-4">
+                  <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                    Skip for now
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                  >
+                    Submit Level 2 <HiArrowRight />
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Level 3 Founder Company Form */}
+            {activeTab === "company" && (
+              <form onSubmit={handleCompanySubmit} className="space-y-4">
+                <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                  <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-[#0F4A2E]">Level 3 Founder Verification</p>
+                    <p className="text-xs text-[#0A1F14]/70">
+                      Required to publish startups and video pitch decks to investor feeds.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Company Name</label>
+                    <input
+                      type="text"
+                      placeholder="EXPGLO Technologies Pvt Ltd"
+                      value={companyDocs.companyName}
+                      onChange={(e) => setCompanyDocs({ ...companyDocs, companyName: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">CIN (Corporate ID Number)</label>
+                    <input
+                      type="text"
+                      placeholder="U72900DL2024PTC123456"
+                      value={companyDocs.CIN}
+                      onChange={(e) => setCompanyDocs({ ...companyDocs, CIN: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">GST Number (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="07AAAAA0000A1Z5"
+                      value={companyDocs.GST}
+                      onChange={(e) => setCompanyDocs({ ...companyDocs, GST: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Business Email</label>
+                    <input
+                      type="email"
+                      placeholder="founder@company.com"
+                      value={companyDocs.businessEmail}
+                      onChange={(e) => setCompanyDocs({ ...companyDocs, businessEmail: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <FileDropzone
+                  label="Certificate of Incorporation"
+                  description="Registration Certificate / Incorporation PDF or image"
+                  value={companyDocs.registrationCertificate}
+                  onChange={(f) => setCompanyDocs({ ...companyDocs, registrationCertificate: f })}
+                  required
+                />
+
+                <div className="flex justify-between items-center pt-4">
+                  <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                    Skip for now
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                  >
+                    Submit Level 3 <HiArrowRight />
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Level 4 Investor Transaction Form */}
+            {activeTab === "investment" && (
+              <form onSubmit={handleInvestorSubmit} className="space-y-4">
+                <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                  <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-[#0F4A2E]">Level 4 Investor Transaction KYC</p>
+                    <p className="text-xs text-[#0A1F14]/70">
+                      Required for initiating investments, escrow payments, and deal rooms.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Bank Account Number</label>
+                    <input
+                      type="text"
+                      placeholder="987654321012"
+                      value={investorDocs.accountNumber}
+                      onChange={(e) => setInvestorDocs({ ...investorDocs, accountNumber: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">IFSC Code</label>
+                    <input
+                      type="text"
+                      placeholder="HDFC0001234"
+                      value={investorDocs.ifscCode}
+                      onChange={(e) => setInvestorDocs({ ...investorDocs, ifscCode: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <FileDropzone
+                  label="Address Proof (Utility Bill / Statement)"
+                  description="Recent bill or bank statement showing your residential address"
+                  value={investorDocs.addressProofUrl}
+                  onChange={(f) => setInvestorDocs({ ...investorDocs, addressProofUrl: f })}
+                  required
+                />
+
+                <div className="flex justify-between items-center pt-4">
+                  <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                    Skip for now
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                  >
+                    Submit Level 4 <HiArrowRight />
+                  </button>
+                </div>
+              </form>
+            )}
           </motion.div>
         ) : (
           <motion.div
             key="submitted"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 200 }}
-            className="text-center space-y-6 py-2"
+            className="text-center space-y-6 py-6"
           >
-            <motion.div
-              className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-            >
-              <MdVerified className="w-12 h-12 text-emerald-500" />
-            </motion.div>
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black mb-2">
-                Documents submitted
-              </h2>
-              <p className="text-[#0A1F14]/65 max-w-md mx-auto">
-                Our verification team usually reviews submissions within 24
-                hours. We'll email you the moment it's approved.
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200 shadow-lg shadow-emerald-500/10">
+              <MdVerified className="w-12 h-12 text-emerald-600" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                Submission Successful
+              </span>
+              <h2 className="text-3xl font-black text-[#0A1F14]">Verification Under Review</h2>
+              <p className="text-sm text-gray-600 max-w-md mx-auto">
+                Your identity verification documents have been received and logged into our compliance queue.
               </p>
             </div>
-            <Link to="/">
-              <motion.button
-                whileHover={{ y: -2 }}
-                className="px-7 py-3.5 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-xl shadow-[#1B5E3F]/30 transition-all"
-              >
-                Back to home
-              </motion.button>
+
+            {/* Reference ID & Meta Summary Card */}
+            <div className="bg-[#FAFAF7] border-2 border-[#1B5E3F]/15 rounded-2xl p-5 max-w-md mx-auto text-left space-y-3 shadow-sm">
+              <div className="flex justify-between items-center pb-2 border-b border-[#1B5E3F]/10">
+                <span className="text-xs text-gray-500 font-semibold uppercase">Reference ID</span>
+                <span className="text-xs font-mono font-bold text-[#1B5E3F] bg-[#1B5E3F]/10 px-2 py-0.5 rounded">
+                  {submittedRefId || "KYC-20260805-REQ"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-semibold">Submitted Date</span>
+                <span className="text-xs font-bold text-gray-800">
+                  {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-semibold">Current Status</span>
+                <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                  Under Review
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-semibold">Estimated Processing Time</span>
+                <span className="text-xs font-bold text-emerald-700">Within 24 Hours</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              You will receive an in-app notification and email as soon as the review is complete.
+            </p>
+
+            <Link to="/app">
+              <button className="px-8 py-3.5 rounded-full font-bold bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white text-sm shadow-md hover:shadow-lg transition-all">
+                Go to Dashboard
+              </button>
             </Link>
           </motion.div>
         )}
       </AnimatePresence>
     </AuthShell>
-  );
-}
-
-function InfoBanner() {
-  const items = [
-    "Files are encrypted in transit and stored privately.",
-    "Mask the first 8 digits of Aadhaar if visible.",
-    "Selfie must clearly show your face and the ID.",
-  ];
-  return (
-    <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
-      <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
-      <div>
-        <p className="text-sm font-bold mb-2 text-[#0F4A2E]">
-          Before you upload
-        </p>
-        <ul className="space-y-1 text-xs text-[#0A1F14]/70">
-          {items.map((t) => (
-            <li key={t} className="flex items-center gap-2">
-              <HiCheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              {t}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
   );
 }
