@@ -80,9 +80,9 @@ export default function AvatarProgressRing({
           )}
         </div>
 
-        {/* Blue Verified Badge Overlay (Bottom-Right) */}
+        {/* Verified Badge Overlay (Bottom-Right) */}
         {isVerified && (
-          <div className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow-xs">
+          <div className="absolute bottom-2 right-1 bg-white rounded-full p-0.5 shadow-xs z-10">
             <MdVerified className="w-5 h-5 text-[#0F4A2E]" />
           </div>
         )}

@@ -16,6 +16,7 @@ import AuthShell from "../components/auth/AuthShell";
 import FileDropzone from "../components/auth/FileDropzone";
 import kycService from "../services/kycService";
 import { useToast } from "../components/ui/Toast";
+import { useAuth } from "../context/AuthContext";
 
 const TABS = [
   { value: "personal", label: "Level 2: Personal ID", icon: HiBadgeCheck },
@@ -23,13 +24,26 @@ const TABS = [
   { value: "investment", label: "Level 4: Investor Transaction", icon: HiCreditCard },
 ];
 
+const readFileAsBase64 = (file) => {
+  if (!file) return Promise.resolve("");
+  if (typeof file === "string") return Promise.resolve(file);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 export default function KycPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
   const [status, setStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedRefId, setSubmittedRefId] = useState("");
 
   // Level 2 Docs
   const [personalDocs, setPersonalDocs] = useState({
@@ -77,15 +91,26 @@ export default function KycPage() {
     }
     setSubmitting(true);
     try {
-      await kycService.submitPersonalKyc({
+      const frontUrl = await readFileAsBase64(personalDocs.documentFront);
+      const backUrl = await readFileAsBase64(personalDocs.documentBack);
+      const selfieUrl = await readFileAsBase64(personalDocs.selfie);
+
+      const isRejected = status?.statusCard?.identityVerified?.status === "rejected";
+      const apiCall = isRejected ? kycService.resubmitPersonalKyc : kycService.submitPersonalKyc;
+
+      const res = await apiCall({
         documentType: personalDocs.documentType,
         documentNumber: personalDocs.documentNumber,
-        documentFront: typeof personalDocs.documentFront === "string" ? personalDocs.documentFront : "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-        documentBack: typeof personalDocs.documentBack === "string" ? personalDocs.documentBack : "",
-        selfie: typeof personalDocs.selfie === "string" ? personalDocs.selfie : "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+        documentFront: frontUrl,
+        documentBack: backUrl,
+        selfie: selfieUrl,
       });
+
+      const data = res?.data?.data || res?.data;
+      setSubmittedRefId(data?.referenceId || "");
       setSubmitted(true);
-      toast.success("Personal KYC submitted successfully!");
+      if (refreshUser) refreshUser();
+      toast.success(isRejected ? "Personal KYC resubmitted successfully!" : "Personal KYC submitted successfully!");
     } catch (err) {
       toast.error(err.response?.data?.message || "Submission failed");
     } finally {
@@ -101,13 +126,19 @@ export default function KycPage() {
     }
     setSubmitting(true);
     try {
+      const regCertUrl = await readFileAsBase64(companyDocs.registrationCertificate);
+      const panCertUrl = await readFileAsBase64(companyDocs.companyPAN);
+      const startupCertUrl = await readFileAsBase64(companyDocs.startupIndiaCert);
+
       await kycService.submitCompanyKyc({
         companyName: companyDocs.companyName,
         CIN: companyDocs.CIN,
         GST: companyDocs.GST,
         companyPAN: companyDocs.companyPAN || "ABCDE1234F",
         businessEmail: companyDocs.businessEmail || "founder@company.com",
-        registrationCertificate: typeof companyDocs.registrationCertificate === "string" ? companyDocs.registrationCertificate : "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+        registrationCertificate: regCertUrl,
+        companyPanUrl: panCertUrl,
+        startupIndiaCert: startupCertUrl,
       });
       setSubmitted(true);
       toast.success("Company verification submitted!");
@@ -126,16 +157,19 @@ export default function KycPage() {
     }
     setSubmitting(true);
     try {
+      const addressProofUrl = await readFileAsBase64(investorDocs.addressProofUrl);
+      const bankProofUrl = await readFileAsBase64(investorDocs.bankProofUrl);
+
       await kycService.submitInvestmentKyc({
         addressProof: {
           docType: investorDocs.addressProofType,
-          docUrl: typeof investorDocs.addressProofUrl === "string" ? investorDocs.addressProofUrl : "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+          docUrl: addressProofUrl,
         },
         bankAccount: {
           accountNumber: investorDocs.accountNumber,
           ifscCode: investorDocs.ifscCode,
           bankName: investorDocs.bankName || "HDFC Bank",
-          proofUrl: typeof investorDocs.bankProofUrl === "string" ? investorDocs.bankProofUrl : "",
+          proofUrl: bankProofUrl,
         },
         netWorthDeclaration: { declaredAmount: Number(investorDocs.declaredNetWorth) || 1000000 },
       });
@@ -414,20 +448,55 @@ export default function KycPage() {
             key="submitted"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center space-y-6 py-4"
+            className="text-center space-y-6 py-6"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200">
-              <MdVerified className="w-12 h-12 text-emerald-500" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200 shadow-lg shadow-emerald-500/10">
+              <MdVerified className="w-12 h-12 text-emerald-600" />
             </div>
-            <div>
-              <h2 className="text-2xl font-black text-[#0A1F14]">Submission Received</h2>
-              <p className="text-sm text-gray-600 max-w-md mx-auto mt-1">
-                Our compliance team is reviewing your documents. Most submissions are verified within 24 hours.
+
+            <div className="space-y-2">
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                Submission Successful
+              </span>
+              <h2 className="text-3xl font-black text-[#0A1F14]">Verification Under Review</h2>
+              <p className="text-sm text-gray-600 max-w-md mx-auto">
+                Your identity verification documents have been received and logged into our compliance queue.
               </p>
             </div>
-            <Link to="/">
-              <button className="px-7 py-3 rounded-full font-bold bg-[#1B5E3F] text-white text-sm shadow-lg">
-                Back to Dashboard
+
+            {/* Reference ID & Meta Summary Card */}
+            <div className="bg-[#FAFAF7] border-2 border-[#1B5E3F]/15 rounded-2xl p-5 max-w-md mx-auto text-left space-y-3 shadow-sm">
+              <div className="flex justify-between items-center pb-2 border-b border-[#1B5E3F]/10">
+                <span className="text-xs text-gray-500 font-semibold uppercase">Reference ID</span>
+                <span className="text-xs font-mono font-bold text-[#1B5E3F] bg-[#1B5E3F]/10 px-2 py-0.5 rounded">
+                  {submittedRefId || "KYC-20260805-REQ"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-semibold">Submitted Date</span>
+                <span className="text-xs font-bold text-gray-800">
+                  {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-semibold">Current Status</span>
+                <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                  Under Review
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-semibold">Estimated Processing Time</span>
+                <span className="text-xs font-bold text-emerald-700">Within 24 Hours</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              You will receive an in-app notification and email as soon as the review is complete.
+            </p>
+
+            <Link to="/app">
+              <button className="px-8 py-3.5 rounded-full font-bold bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white text-sm shadow-md hover:shadow-lg transition-all">
+                Go to Dashboard
               </button>
             </Link>
           </motion.div>

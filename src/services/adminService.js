@@ -40,9 +40,9 @@ export const adminService = {
   getOperationalKpis: () => api.get("/admin/kyc/kpis"),
   getPendingQueues: (type) => api.get(`/admin/kyc/queue/${type || "personal"}`),
   getPendingDocuments: () => api.get("/admin/documents/pending"),
-  approveDocuments: (userId) => api.put(`/admin/documents/${userId}/approve`),
-  rejectDocuments: (userId, reason) =>
-    api.put(`/admin/documents/${userId}/reject`, { reason }),
+  approveUserDocuments: (userId, notes = "") => api.put(`/admin/documents/${userId}/approve`, { notes }),
+  rejectUserDocuments: (userId, reason, notes = "") =>
+    api.put(`/admin/documents/${userId}/reject`, { reason, notes }),
   approveCompanyKyc: (companyId) => api.put(`/admin/kyc/company/${companyId}/approve`),
   rejectCompanyKyc: (companyId, reason) => api.put(`/admin/kyc/company/${companyId}/reject`, { reason }),
   approveInvestorKyc: (investmentKycId) => api.put(`/admin/kyc/investor/${investmentKycId}/approve`),
