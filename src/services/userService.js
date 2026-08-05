@@ -27,6 +27,7 @@ export const userService = {
     });
   },
   getVerificationStatus: () => api.get("/user/verification-status"),
+  getProfileCompletion: () => api.get("/user/profile-completion"),
   updateFcmToken: (fcmToken) => api.put("/user/fcm-token", { fcmToken }),
   getPublicProfile: (userId) => api.get(`/user/public/${userId}`),
   getProfileViewers: (params) => api.get("/user/profile-viewers", { params }),
