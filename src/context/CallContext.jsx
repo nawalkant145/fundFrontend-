@@ -137,9 +137,13 @@ export function CallProvider({ children }) {
   const createPeer = (peerId) => {
     if (pcRef.current) {
       try {
-        pcRef.current.getSenders?.().forEach((s) => s.track?.stop());
+        pcRef.current.ontrack = null;
+        pcRef.current.onicecandidate = null;
+        pcRef.current.onconnectionstatechange = null;
         pcRef.current.close();
-      } catch {}
+      } catch (err) {
+        console.error("Error closing previous peer connection:", err);
+      }
       pcRef.current = null;
     }
 
@@ -164,7 +168,6 @@ export function CallProvider({ children }) {
       const st = pc.connectionState;
       if (st === "connected") {
         setStatus("connected");
-        // Sync initial local media state to joining peer
         sendMediaState();
       }
       if (st === "failed" || st === "closed") {
