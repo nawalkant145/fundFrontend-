@@ -526,6 +526,22 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   const { socket } = useSocket() || {};
   const { startCall } = useCall();
   const other = getOtherUser(chat, user);
+  const handleStartCall = (type = "meeting") => {
+    if (!canStartCall(user)) {
+      setCallPaywall(true);
+      return;
+    }
+    if (!other?._id) {
+      toast.error("User not found");
+      return;
+    }
+    startCall({
+      receiverId: other._id,
+      name: other.name,
+      avatar: getAvatar(other),
+      type,
+    });
+  };
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [text, setText] = useState("");
@@ -886,24 +902,6 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
-
-  const handleStartCall = (kind) => {
-    const check = canStartCall();
-    if (!check.allowed) {
-      setCallPaywall(true);
-      return;
-    }
-    if (!other?._id) {
-      toast.error("Cannot identify who to call");
-      return;
-    }
-    startCall({
-      receiverId: other._id,
-      name: other.name,
-      avatar: other.avatar,
-      type: kind,
-    });
-  };
 
   const send = (e) => {
     e?.preventDefault();

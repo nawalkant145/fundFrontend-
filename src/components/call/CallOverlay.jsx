@@ -56,6 +56,18 @@ export default function CallOverlay() {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between text-white overflow-hidden select-none">
+      {/* Dedicated audio element for remote participant audio - ALWAYS active */}
+      {remoteStream && (
+        <audio
+          autoPlay
+          ref={(el) => {
+            if (el && el.srcObject !== remoteStream) {
+              el.srcObject = remoteStream;
+            }
+          }}
+        />
+      )}
+
       {/* ─── MAIN DISPLAY AREA (Remote Video or Screen Share) ─── */}
       <div className="absolute inset-0 flex items-center justify-center bg-[#0b141a]">
         {isMainActive ? (
@@ -63,7 +75,7 @@ export default function CallOverlay() {
             ref={mainVideoRef}
             autoPlay
             playsInline
-            muted={isScreenSharing}
+            muted
             className="w-full h-full object-contain bg-black"
           />
         ) : (
@@ -108,21 +120,15 @@ export default function CallOverlay() {
         )}
       </div>
 
-      {/* Audio element for remote audio stream when main video isn't showing */}
-      {!isMainActive && remoteStream && (
-        <audio
-          autoPlay
-          ref={(el) => {
-            if (el && el.srcObject !== remoteStream) el.srcObject = remoteStream;
-          }}
-        />
-      )}
-
       {/* ─── TOP HEADER BADGES (Fixed Center) ─── */}
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 max-w-[90vw]">
         <div className="px-4 py-1.5 bg-[#182229]/90 border border-gold/30 backdrop-blur-md rounded-full text-xs font-bold text-white shadow-xl flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          Meeting Room · {callInfo?.peerName || "Session"} · {fmt(duration)}
+          {status === "connected"
+            ? `Meeting Room · ${callInfo?.peerName || "Session"} · ${fmt(duration)}`
+            : status === "connecting"
+              ? "Meeting Room · Connecting…"
+              : "Meeting Room · Ringing…"}
         </div>
         {isScreenSharing && (
           <div className="px-3.5 py-1 bg-emerald-600/90 text-white rounded-full text-xs font-extrabold animate-pulse shadow-lg border border-emerald-400/40 flex items-center gap-1.5">
