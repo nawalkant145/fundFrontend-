@@ -21,6 +21,7 @@ import {
   HiPlay,
   HiBookmark,
   HiTrash,
+  HiAcademicCap,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import { isPro } from "../../lib/auth";
@@ -33,9 +34,9 @@ const founderNav = [
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/studio", label: "My Studio", icon: HiCollection },
+  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
   { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
-  { to: "/app/deck-requests", label: "Deck Requests", icon: HiDocumentText },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
   { to: "/app/subscription", label: "Studio Pro", icon: HiSparkles },
@@ -45,6 +46,7 @@ const investorNav = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/discover", label: "Discover", icon: HiSearch },
+  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/saved", label: "Saved", icon: HiBookmark },
   { to: "/app/investments", label: "Investments", icon: HiCurrencyDollar },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },
