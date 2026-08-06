@@ -216,6 +216,10 @@ export function CallProvider({ children }) {
   // ─── Outgoing call ──────────────────────────
   const startCall = useCallback(
     async ({ receiverId, name, avatar, type = "meeting" }) => {
+      if (!receiverId) {
+        toast?.error("Recipient not found. Select a user first.");
+        return;
+      }
       if (!socket) {
         toast?.error("Connection not ready. Try again.");
         return;
