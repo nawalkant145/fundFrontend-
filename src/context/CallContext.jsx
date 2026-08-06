@@ -36,6 +36,7 @@ export function CallProvider({ children }) {
   const [callInfo, setCallInfo] = useState(null); // { callId, peerId, peerName, peerAvatar, type, isCaller }
   const [remoteStream, setRemoteStream] = useState(null);
   const [localStream, setLocalStream] = useState(null);
+  const [screenStream, setScreenStream] = useState(null);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -75,6 +76,7 @@ export function CallProvider({ children }) {
     pendingOffer.current = null;
     iceServersRef.current = FALLBACK_ICE;
     setLocalStream(null);
+    setScreenStream(null);
     setRemoteStream(null);
     setCallInfo(null);
     setStatus("idle");
@@ -321,6 +323,7 @@ export function CallProvider({ children }) {
           await videoSender.replaceTrack(cameraTrack);
         }
       }
+      setScreenStream(null);
       setIsScreenSharing(false);
       toast?.info("Stopped screen sharing");
     } else {
@@ -332,6 +335,7 @@ export function CallProvider({ children }) {
         });
         const screenTrack = displayStream.getVideoTracks()[0];
         screenStreamRef.current = displayStream;
+        setScreenStream(displayStream);
 
         if (pcRef.current) {
           const videoSender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
@@ -354,6 +358,7 @@ export function CallProvider({ children }) {
               videoSender.replaceTrack(cameraTrack);
             }
           }
+          setScreenStream(null);
           setIsScreenSharing(false);
         };
 
@@ -486,6 +491,7 @@ export function CallProvider({ children }) {
     status,
     callInfo,
     localStream,
+    screenStream,
     remoteStream,
     muted,
     cameraOff,
