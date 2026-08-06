@@ -1142,11 +1142,17 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => handleStartCall("meeting")}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#005c4b] hover:bg-[#00a884] text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-[#00a884] via-[#008f6f] to-[#005c4b] hover:from-[#00c096] hover:to-[#00705c] text-white text-xs font-extrabold rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-400/40 hover:scale-105 active:scale-95 cursor-pointer"
             title="Start Meeting Room (Video & Screen Share)"
           >
-            <HiVideoCamera className="w-4 h-4" />
-            <span className="hidden sm:inline">Meeting Room</span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+            <HiVideoCamera className="w-4 h-4 text-white flex-shrink-0" />
+            <span style={{ color: "#ffffff" }} className="hidden sm:inline tracking-wide text-white drop-shadow-sm">
+              Meeting Room
+            </span>
           </button>
           <button
             onClick={() => setShowProfile(true)}
