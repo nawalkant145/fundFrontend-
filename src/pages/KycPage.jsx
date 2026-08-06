@@ -9,6 +9,8 @@ import {
   HiBadgeCheck,
   HiOfficeBuilding,
   HiCreditCard,
+  HiClock,
+  HiXCircle,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
@@ -38,7 +40,7 @@ const readFileAsBase64 = (file) => {
 export default function KycPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
   const [status, setStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +81,10 @@ export default function KycPage() {
   useEffect(() => {
     kycService
       .getStatus()
-      .then((res) => setStatus(res?.data?.data || res?.data))
+      .then((res) => {
+        const sData = res?.data?.data || res?.data;
+        setStatus(sData);
+      })
       .catch(() => {});
   }, []);
 
@@ -141,6 +146,7 @@ export default function KycPage() {
         startupIndiaCert: startupCertUrl,
       });
       setSubmitted(true);
+      if (refreshUser) refreshUser();
       toast.success("Company verification submitted!");
     } catch (err) {
       toast.error(err.response?.data?.message || "Company submission failed");
@@ -174,6 +180,7 @@ export default function KycPage() {
         netWorthDeclaration: { declaredAmount: Number(investorDocs.declaredNetWorth) || 1000000 },
       });
       setSubmitted(true);
+      if (refreshUser) refreshUser();
       toast.success("Investor transaction KYC submitted!");
     } catch (err) {
       toast.error(err.response?.data?.message || "Investor submission failed");
@@ -181,6 +188,20 @@ export default function KycPage() {
       setSubmitting(false);
     }
   };
+
+  // Verification Flags
+  const identitySt = status?.statusCard?.identityVerified?.status || user?.kycStatus;
+  const isPersonalApproved = identitySt === "approved" || identitySt === "completed" || (user?.verificationLevel && user?.verificationLevel >= 2) || user?.verifiedBadge;
+  const isPersonalPending = identitySt === "pending" || identitySt === "under_review" || identitySt === "submitted" || identitySt === "resubmitted";
+  const isPersonalRejected = identitySt === "rejected";
+
+  const companySt = status?.statusCard?.founderVerification?.status || user?.companyVerificationStatus;
+  const isCompanyApproved = companySt === "approved" || companySt === "completed" || (user?.verificationLevel && user?.verificationLevel >= 3);
+  const isCompanyPending = companySt === "pending" || companySt === "under_review";
+
+  const investorSt = status?.statusCard?.investmentKyc?.status || user?.investmentVerificationStatus;
+  const isInvestorApproved = investorSt === "approved" || investorSt === "completed" || (user?.verificationLevel && user?.verificationLevel >= 4);
+  const isInvestorPending = investorSt === "pending" || investorSt === "under_review";
 
   return (
     <AuthShell maxWidth="max-w-4xl">
@@ -204,20 +225,24 @@ export default function KycPage() {
               </p>
             </div>
 
-            {/* Level Tabs */}
+            {/* Level Tabs - Resets submitted state on click to allow smooth navigation */}
             <div className="flex justify-center mb-6 overflow-x-auto pb-2">
               <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1.5 gap-1">
                 {TABS.map((t) => {
                   const Icon = t.icon;
+                  const isSelected = activeTab === t.value;
                   return (
                     <button
                       key={t.value}
                       type="button"
-                      onClick={() => setActiveTab(t.value)}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                        activeTab === t.value
+                      onClick={() => {
+                        setSubmitted(false);
+                        setActiveTab(t.value);
+                      }}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                        isSelected
                           ? "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white shadow-md shadow-[#1B5E3F]/25"
-                          : "text-[#0A1F14]/65 hover:text-[#0F4A2E]"
+                          : "text-[#0A1F14]/65 hover:text-[#0F4A2E] hover:bg-emerald-50/50"
                       }`}
                     >
                       <Icon className="w-4 h-4" /> {t.label}
@@ -227,220 +252,346 @@ export default function KycPage() {
               </div>
             </div>
 
-            {/* Level 2 Personal ID Form */}
+            {/* Level 2 Personal ID Section */}
             {activeTab === "personal" && (
-              <form onSubmit={handlePersonalSubmit} className="space-y-4">
-                <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
-                  <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-[#0F4A2E]">Level 2 Personal Identity</p>
-                    <p className="text-xs text-[#0A1F14]/70">
-                      Unlocks the Blue Verified Badge on your profile & search results.
-                    </p>
-                  </div>
-                </div>
+              <div>
+                {isPersonalApproved ? (
+                  <div className="bg-[#FAFAF7] border-2 border-emerald-500/20 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-200">
+                      <MdVerified className="w-10 h-10 text-[#0F4A2E]" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Level 2 Verified
+                      </span>
+                      <h3 className="text-2xl font-black text-[#0A1F14] mt-2">Identity Verification Complete 🎉</h3>
+                      <p className="text-sm text-slate-600 max-w-md mx-auto">
+                        Your government ID documents have been verified and your profile is awarded the Blue Verified Badge.
+                      </p>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Type</label>
-                    <select
-                      value={personalDocs.documentType}
-                      onChange={(e) => setPersonalDocs({ ...personalDocs, documentType: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold focus:outline-none"
-                    >
-                      <option value="pan">PAN Card</option>
-                      <option value="govt_id">Aadhaar / Govt ID</option>
-                      <option value="passport">Passport</option>
-                    </select>
+                    <div className="pt-3 flex justify-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitted(false);
+                          setActiveTab("company");
+                        }}
+                        className="px-6 py-3 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-full shadow-md transition-all flex items-center gap-2"
+                      >
+                        Proceed to Level 3 Founder Verification <HiArrowRight />
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Number (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. ABCDE1234F"
-                      value={personalDocs.documentNumber}
-                      onChange={(e) => setPersonalDocs({ ...personalDocs, documentNumber: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                ) : isPersonalPending && !isPersonalRejected ? (
+                  <div className="bg-[#FAFAF7] border-2 border-amber-500/20 rounded-3xl p-6 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200">
+                      <HiClock className="w-8 h-8 text-amber-600 animate-pulse" />
+                    </div>
+                    <div>
+                      <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Under Review
+                      </span>
+                      <h3 className="text-xl font-black text-[#0A1F14] mt-2">Documents Under Compliance Inspection</h3>
+                      <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
+                        Our compliance team is verifying your submitted ID documents. Review is typically completed within 24 hours.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handlePersonalSubmit} className="space-y-4">
+                    <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                      <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-[#0F4A2E]">Level 2 Personal Identity</p>
+                        <p className="text-xs text-[#0A1F14]/70">
+                          Unlocks the Blue Verified Badge on your profile & search results.
+                        </p>
+                      </div>
+                    </div>
+
+                    {isPersonalRejected && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 space-y-1">
+                        <p className="font-bold flex items-center gap-1.5 text-sm">
+                          <HiXCircle className="w-5 h-5 text-red-600" /> Action Required: Resubmit Documents
+                        </p>
+                        <p className="text-red-700 font-medium">
+                          Reason: {status?.statusCard?.identityVerified?.rejectionReason || user?.documents?.rejectionReason || "Please upload clearer copies of your ID documents."}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Type</label>
+                        <select
+                          value={personalDocs.documentType}
+                          onChange={(e) => setPersonalDocs({ ...personalDocs, documentType: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold focus:outline-none"
+                        >
+                          <option value="pan">PAN Card</option>
+                          <option value="govt_id">Aadhaar / Govt ID</option>
+                          <option value="passport">Passport</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Number (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. ABCDE1234F"
+                          value={personalDocs.documentNumber}
+                          onChange={(e) => setPersonalDocs({ ...personalDocs, documentNumber: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <FileDropzone
+                      label="Front Image of ID"
+                      description="Clear photo of PAN or Govt ID · JPG, PNG or PDF"
+                      value={personalDocs.documentFront}
+                      onChange={(f) => setPersonalDocs({ ...personalDocs, documentFront: f })}
+                      required
                     />
-                  </div>
-                </div>
 
-                <FileDropzone
-                  label="Front Image of ID"
-                  description="Clear photo of PAN or Govt ID · JPG, PNG or PDF"
-                  value={personalDocs.documentFront}
-                  onChange={(f) => setPersonalDocs({ ...personalDocs, documentFront: f })}
-                  required
-                />
+                    <FileDropzone
+                      label="Selfie Holding ID"
+                      description="Clear photo of your face holding your ID"
+                      accept="image/*"
+                      value={personalDocs.selfie}
+                      onChange={(f) => setPersonalDocs({ ...personalDocs, selfie: f })}
+                      required
+                    />
 
-                <FileDropzone
-                  label="Selfie Holding ID"
-                  description="Clear photo of your face holding your ID"
-                  accept="image/*"
-                  value={personalDocs.selfie}
-                  onChange={(f) => setPersonalDocs({ ...personalDocs, selfie: f })}
-                  required
-                />
-
-                <div className="flex justify-between items-center pt-4">
-                  <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
-                    Skip for now
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
-                  >
-                    Submit Level 2 <HiArrowRight />
-                  </button>
-                </div>
-              </form>
+                    <div className="flex justify-between items-center pt-4">
+                      <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                        Skip for now
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                      >
+                        {isPersonalRejected ? "Resubmit Level 2" : "Submit Level 2"} <HiArrowRight />
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
 
-            {/* Level 3 Founder Company Form */}
+            {/* Level 3 Founder Company Section */}
             {activeTab === "company" && (
-              <form onSubmit={handleCompanySubmit} className="space-y-4">
-                <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
-                  <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-[#0F4A2E]">Level 3 Founder Verification</p>
-                    <p className="text-xs text-[#0A1F14]/70">
-                      Required to publish startups and video pitch decks to investor feeds.
-                    </p>
+              <div>
+                {isCompanyApproved ? (
+                  <div className="bg-[#FAFAF7] border-2 border-emerald-500/20 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-200">
+                      <HiCheckCircle className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Level 3 Verified
+                      </span>
+                      <h3 className="text-2xl font-black text-[#0A1F14] mt-2">Founder & Company Verified 🚀</h3>
+                      <p className="text-sm text-slate-600 max-w-md mx-auto">
+                        Your corporate incorporation documents have been verified. You can publish pitches and startups to the platform.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : isCompanyPending ? (
+                  <div className="bg-[#FAFAF7] border-2 border-amber-500/20 rounded-3xl p-6 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200">
+                      <HiClock className="w-8 h-8 text-amber-600 animate-pulse" />
+                    </div>
+                    <div>
+                      <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Under Review
+                      </span>
+                      <h3 className="text-xl font-black text-[#0A1F14] mt-2">Company Verification Under Review</h3>
+                      <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
+                        Our compliance team is verifying your Certificate of Incorporation and CIN details.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCompanySubmit} className="space-y-4">
+                    <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                      <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-[#0F4A2E]">Level 3 Founder Verification</p>
+                        <p className="text-xs text-[#0A1F14]/70">
+                          Required to publish startups and video pitch decks to investor feeds.
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Company Name</label>
-                    <input
-                      type="text"
-                      placeholder="EXPGLO Technologies Pvt Ltd"
-                      value={companyDocs.companyName}
-                      onChange={(e) => setCompanyDocs({ ...companyDocs, companyName: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Company Name</label>
+                        <input
+                          type="text"
+                          placeholder="EXPGLO Technologies Pvt Ltd"
+                          value={companyDocs.companyName}
+                          onChange={(e) => setCompanyDocs({ ...companyDocs, companyName: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">CIN (Corporate ID Number)</label>
+                        <input
+                          type="text"
+                          placeholder="U72900DL2024PTC123456"
+                          value={companyDocs.CIN}
+                          onChange={(e) => setCompanyDocs({ ...companyDocs, CIN: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">GST Number (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="07AAAAA0000A1Z5"
+                          value={companyDocs.GST}
+                          onChange={(e) => setCompanyDocs({ ...companyDocs, GST: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Business Email</label>
+                        <input
+                          type="email"
+                          placeholder="founder@company.com"
+                          value={companyDocs.businessEmail}
+                          onChange={(e) => setCompanyDocs({ ...companyDocs, businessEmail: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <FileDropzone
+                      label="Certificate of Incorporation"
+                      description="Registration Certificate / Incorporation PDF or image"
+                      value={companyDocs.registrationCertificate}
+                      onChange={(f) => setCompanyDocs({ ...companyDocs, registrationCertificate: f })}
                       required
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">CIN (Corporate ID Number)</label>
-                    <input
-                      type="text"
-                      placeholder="U72900DL2024PTC123456"
-                      value={companyDocs.CIN}
-                      onChange={(e) => setCompanyDocs({ ...companyDocs, CIN: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">GST Number (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="07AAAAA0000A1Z5"
-                      value={companyDocs.GST}
-                      onChange={(e) => setCompanyDocs({ ...companyDocs, GST: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Business Email</label>
-                    <input
-                      type="email"
-                      placeholder="founder@company.com"
-                      value={companyDocs.businessEmail}
-                      onChange={(e) => setCompanyDocs({ ...companyDocs, businessEmail: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <FileDropzone
-                  label="Certificate of Incorporation"
-                  description="Registration Certificate / Incorporation PDF or image"
-                  value={companyDocs.registrationCertificate}
-                  onChange={(f) => setCompanyDocs({ ...companyDocs, registrationCertificate: f })}
-                  required
-                />
-
-                <div className="flex justify-between items-center pt-4">
-                  <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
-                    Skip for now
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
-                  >
-                    Submit Level 3 <HiArrowRight />
-                  </button>
-                </div>
-              </form>
+                    <div className="flex justify-between items-center pt-4">
+                      <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                        Skip for now
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                      >
+                        Submit Level 3 <HiArrowRight />
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
 
-            {/* Level 4 Investor Transaction Form */}
+            {/* Level 4 Investor Transaction Section */}
             {activeTab === "investment" && (
-              <form onSubmit={handleInvestorSubmit} className="space-y-4">
-                <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
-                  <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-[#0F4A2E]">Level 4 Investor Transaction KYC</p>
-                    <p className="text-xs text-[#0A1F14]/70">
-                      Required for initiating investments, escrow payments, and deal rooms.
-                    </p>
+              <div>
+                {isInvestorApproved ? (
+                  <div className="bg-[#FAFAF7] border-2 border-emerald-500/20 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-200">
+                      <HiCheckCircle className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Level 4 Verified
+                      </span>
+                      <h3 className="text-2xl font-black text-[#0A1F14] mt-2">Investor KYC Verified 💼</h3>
+                      <p className="text-sm text-slate-600 max-w-md mx-auto">
+                        Your investor address proof and bank verification are complete. You can enter deal rooms and initiate investments.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : isInvestorPending ? (
+                  <div className="bg-[#FAFAF7] border-2 border-amber-500/20 rounded-3xl p-6 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200">
+                      <HiClock className="w-8 h-8 text-amber-600 animate-pulse" />
+                    </div>
+                    <div>
+                      <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Under Review
+                      </span>
+                      <h3 className="text-xl font-black text-[#0A1F14] mt-2">Investor Verification Under Review</h3>
+                      <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
+                        Our compliance team is verifying your address proof and bank account details.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleInvestorSubmit} className="space-y-4">
+                    <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                      <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-[#0F4A2E]">Level 4 Investor Transaction KYC</p>
+                        <p className="text-xs text-[#0A1F14]/70">
+                          Required for initiating investments, escrow payments, and deal rooms.
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">Bank Account Number</label>
-                    <input
-                      type="text"
-                      placeholder="987654321012"
-                      value={investorDocs.accountNumber}
-                      onChange={(e) => setInvestorDocs({ ...investorDocs, accountNumber: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Bank Account Number</label>
+                        <input
+                          type="text"
+                          placeholder="987654321012"
+                          value={investorDocs.accountNumber}
+                          onChange={(e) => setInvestorDocs({ ...investorDocs, accountNumber: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">IFSC Code</label>
+                        <input
+                          type="text"
+                          placeholder="HDFC0001234"
+                          value={investorDocs.ifscCode}
+                          onChange={(e) => setInvestorDocs({ ...investorDocs, ifscCode: e.target.value })}
+                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <FileDropzone
+                      label="Address Proof (Utility Bill / Statement)"
+                      description="Recent bill or bank statement showing your residential address"
+                      value={investorDocs.addressProofUrl}
+                      onChange={(f) => setInvestorDocs({ ...investorDocs, addressProofUrl: f })}
                       required
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#0A1F14] mb-1">IFSC Code</label>
-                    <input
-                      type="text"
-                      placeholder="HDFC0001234"
-                      value={investorDocs.ifscCode}
-                      onChange={(e) => setInvestorDocs({ ...investorDocs, ifscCode: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
-                      required
-                    />
-                  </div>
-                </div>
 
-                <FileDropzone
-                  label="Address Proof (Utility Bill / Statement)"
-                  description="Recent bill or bank statement showing your residential address"
-                  value={investorDocs.addressProofUrl}
-                  onChange={(f) => setInvestorDocs({ ...investorDocs, addressProofUrl: f })}
-                  required
-                />
-
-                <div className="flex justify-between items-center pt-4">
-                  <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
-                    Skip for now
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
-                  >
-                    Submit Level 4 <HiArrowRight />
-                  </button>
-                </div>
-              </form>
+                    <div className="flex justify-between items-center pt-4">
+                      <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                        Skip for now
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                      >
+                        Submit Level 4 <HiArrowRight />
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
           </motion.div>
         ) : (
@@ -460,7 +611,7 @@ export default function KycPage() {
               </span>
               <h2 className="text-3xl font-black text-[#0A1F14]">Verification Under Review</h2>
               <p className="text-sm text-gray-600 max-w-md mx-auto">
-                Your identity verification documents have been received and logged into our compliance queue.
+                Your verification documents have been received and logged into our compliance queue.
               </p>
             </div>
 
@@ -469,7 +620,7 @@ export default function KycPage() {
               <div className="flex justify-between items-center pb-2 border-b border-[#1B5E3F]/10">
                 <span className="text-xs text-gray-500 font-semibold uppercase">Reference ID</span>
                 <span className="text-xs font-mono font-bold text-[#1B5E3F] bg-[#1B5E3F]/10 px-2 py-0.5 rounded">
-                  {submittedRefId || "KYC-20260805-REQ"}
+                  {submittedRefId || "KYC-20260806-REQ"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -494,11 +645,15 @@ export default function KycPage() {
               You will receive an in-app notification and email as soon as the review is complete.
             </p>
 
-            <Link to="/app">
-              <button className="px-8 py-3.5 rounded-full font-bold bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white text-sm shadow-md hover:shadow-lg transition-all">
-                Go to Dashboard
-              </button>
-            </Link>
+            <button
+              onClick={() => {
+                setSubmitted(false);
+                refreshUser?.();
+              }}
+              className="px-8 py-3.5 rounded-full font-bold bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white text-sm shadow-md hover:shadow-lg transition-all"
+            >
+              Continue to Workspace
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
