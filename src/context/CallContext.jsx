@@ -40,6 +40,11 @@ export function CallProvider({ children }) {
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [peerMediaState, setPeerMediaState] = useState({
+    muted: false,
+    cameraOff: false,
+    isScreenSharing: false,
+  });
   const [duration, setDuration] = useState(0);
 
   const pcRef = useRef(null);
@@ -83,6 +88,7 @@ export function CallProvider({ children }) {
     setMuted(false);
     setCameraOff(false);
     setIsScreenSharing(false);
+    setPeerMediaState({ muted: false, cameraOff: false, isScreenSharing: false });
     setDuration(0);
     stopRingtone();
   }, []);
@@ -129,6 +135,18 @@ export function CallProvider({ children }) {
 
   // ─── Peer connection ────────────────────────
   const createPeer = (peerId) => {
+    if (pcRef.current) {
+      try {
+        pcRef.current.ontrack = null;
+        pcRef.current.onicecandidate = null;
+        pcRef.current.onconnectionstatechange = null;
+        pcRef.current.close();
+      } catch (err) {
+        console.error("Error closing previous peer connection:", err);
+      }
+      pcRef.current = null;
+    }
+
     const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
 
     pc.onicecandidate = (e) => {
@@ -141,14 +159,18 @@ export function CallProvider({ children }) {
     };
 
     pc.ontrack = (e) => {
-      setRemoteStream(e.streams[0]);
+      if (e.streams && e.streams[0]) {
+        setRemoteStream(e.streams[0]);
+      }
     };
 
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState;
-      if (st === "connected") setStatus("connected");
+      if (st === "connected") {
+        setStatus("connected");
+        sendMediaState();
+      }
       if (st === "failed" || st === "closed") {
-        // Connection dropped
         if (callInfoRef.current) handleRemoteEnd();
       }
     };
@@ -288,43 +310,117 @@ export function CallProvider({ children }) {
     cleanup();
   }, [cleanup]);
 
+  // ─── Track Recovery Helpers ─────────────────
+  const ensureCameraTrack = async () => {
+    let track = localStreamRef.current?.getVideoTracks?.()?.[0];
+    if (!track || track.readyState === "ended") {
+      try {
+        const freshStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+        });
+        const newTrack = freshStream.getVideoTracks()[0];
+        if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach((t) => {
+            t.stop();
+            localStreamRef.current.removeTrack(t);
+          });
+          localStreamRef.current.addTrack(newTrack);
+        } else {
+          localStreamRef.current = freshStream;
+        }
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+        track = newTrack;
+      } catch (err) {
+        console.error("Failed to re-acquire camera track:", err);
+      }
+    }
+    return track;
+  };
+
+  const sendMediaState = useCallback(
+    (override) => {
+      const info = callInfoRef.current;
+      if (socket && info?.peerId) {
+        const payload = {
+          targetId: info.peerId,
+          muted: override?.muted ?? muted,
+          cameraOff: override?.cameraOff ?? cameraOff,
+          isScreenSharing: override?.isScreenSharing ?? isScreenSharing,
+        };
+        socket.emit("media_state_change", payload);
+      }
+    },
+    [socket, muted, cameraOff, isScreenSharing],
+  );
+
   // ─── Controls ───────────────────────────────
   const toggleMute = useCallback(() => {
     const s = localStreamRef.current;
     if (!s) return;
     const track = s.getAudioTracks()[0];
     if (track) {
-      track.enabled = !track.enabled;
-      setMuted(!track.enabled);
+      const nextMuted = !muted;
+      track.enabled = !nextMuted;
+      setMuted(nextMuted);
+      sendMediaState({ muted: nextMuted });
     }
-  }, []);
+  }, [muted, sendMediaState]);
 
-  const toggleCamera = useCallback(() => {
-    const s = localStreamRef.current;
-    if (!s) return;
-    const track = s.getVideoTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      setCameraOff(!track.enabled);
+  const toggleCamera = useCallback(async () => {
+    const nextCameraOff = !cameraOff;
+    let track = localStreamRef.current?.getVideoTracks()?.[0];
+
+    if (!nextCameraOff) {
+      // User wants camera ON -> Ensure live track
+      track = await ensureCameraTrack();
+      if (track) {
+        track.enabled = true;
+        if (pcRef.current && !isScreenSharing) {
+          const videoSender = pcRef.current.getSenders().find(
+            (s) => s.track?.kind === "video" || s.track === null,
+          );
+          if (videoSender) {
+            await videoSender.replaceTrack(track);
+          }
+        }
+      }
+    } else {
+      // User wants camera OFF
+      if (track) {
+        track.enabled = false;
+      }
     }
-  }, []);
+
+    setCameraOff(nextCameraOff);
+    sendMediaState({ cameraOff: nextCameraOff });
+  }, [cameraOff, isScreenSharing, sendMediaState]);
 
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
-      // Stop screen share and revert to camera
+      // Stop screen share & revert to camera
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => t.stop());
         screenStreamRef.current = null;
       }
-      if (pcRef.current && localStreamRef.current) {
-        const cameraTrack = localStreamRef.current.getVideoTracks()[0];
-        const videoSender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
-        if (videoSender && cameraTrack) {
-          await videoSender.replaceTrack(cameraTrack);
-        }
-      }
       setScreenStream(null);
       setIsScreenSharing(false);
+
+      const cameraTrack = await ensureCameraTrack();
+      if (pcRef.current) {
+        const videoSender = pcRef.current.getSenders().find(
+          (s) => s.track?.kind === "video" || s.track === null,
+        );
+        if (videoSender) {
+          if (cameraTrack) {
+            cameraTrack.enabled = !cameraOff;
+            await videoSender.replaceTrack(cameraTrack);
+          } else {
+            await videoSender.replaceTrack(null);
+          }
+        }
+      }
+
+      sendMediaState({ isScreenSharing: false });
       toast?.info("Stopped screen sharing");
     } else {
       // Start screen share
@@ -338,7 +434,9 @@ export function CallProvider({ children }) {
         setScreenStream(displayStream);
 
         if (pcRef.current) {
-          const videoSender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+          const videoSender = pcRef.current.getSenders().find(
+            (s) => s.track?.kind === "video" || s.track === null,
+          );
           if (videoSender) {
             await videoSender.replaceTrack(screenTrack);
           } else {
@@ -346,23 +444,34 @@ export function CallProvider({ children }) {
           }
         }
 
-        screenTrack.onended = () => {
+        screenTrack.onended = async () => {
           if (screenStreamRef.current) {
             screenStreamRef.current.getTracks().forEach((t) => t.stop());
             screenStreamRef.current = null;
           }
-          if (pcRef.current && localStreamRef.current) {
-            const cameraTrack = localStreamRef.current.getVideoTracks()[0];
-            const videoSender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
-            if (videoSender && cameraTrack) {
-              videoSender.replaceTrack(cameraTrack);
-            }
-          }
           setScreenStream(null);
           setIsScreenSharing(false);
+
+          const cameraTrack = await ensureCameraTrack();
+          if (pcRef.current) {
+            const videoSender = pcRef.current.getSenders().find(
+              (s) => s.track?.kind === "video" || s.track === null,
+            );
+            if (videoSender) {
+              if (cameraTrack) {
+                cameraTrack.enabled = !cameraOff;
+                await videoSender.replaceTrack(cameraTrack);
+              } else {
+                await videoSender.replaceTrack(null);
+              }
+            }
+          }
+
+          sendMediaState({ isScreenSharing: false });
         };
 
         setIsScreenSharing(true);
+        sendMediaState({ isScreenSharing: true });
         toast?.success("Sharing screen");
       } catch (err) {
         if (err.name !== "NotAllowedError") {
@@ -370,7 +479,7 @@ export function CallProvider({ children }) {
         }
       }
     }
-  }, [isScreenSharing, toast]);
+  }, [isScreenSharing, cameraOff, toast, sendMediaState]);
 
   // ─── Duration timer ─────────────────────────
   useEffect(() => {
@@ -453,6 +562,10 @@ export function CallProvider({ children }) {
       }
     };
 
+    const onMediaStateChange = ({ muted, cameraOff, isScreenSharing }) => {
+      setPeerMediaState({ muted, cameraOff, isScreenSharing });
+    };
+
     const onDeclined = () => {
       toast?.info("Call declined");
       cleanup();
@@ -470,6 +583,7 @@ export function CallProvider({ children }) {
     socket.on("webrtc_offer", onOffer);
     socket.on("webrtc_answer", onAnswer);
     socket.on("ice_candidate", onCandidate);
+    socket.on("media_state_change", onMediaStateChange);
     socket.on("call_declined", onDeclined);
     socket.on("call_ended", onEnded);
     socket.on("call_no_answer", onNoAnswer);
@@ -480,6 +594,7 @@ export function CallProvider({ children }) {
       socket.off("webrtc_offer", onOffer);
       socket.off("webrtc_answer", onAnswer);
       socket.off("ice_candidate", onCandidate);
+      socket.off("media_state_change", onMediaStateChange);
       socket.off("call_declined", onDeclined);
       socket.off("call_ended", onEnded);
       socket.off("call_no_answer", onNoAnswer);
@@ -496,6 +611,7 @@ export function CallProvider({ children }) {
     muted,
     cameraOff,
     isScreenSharing,
+    peerMediaState,
     duration,
     startCall,
     acceptCall,
