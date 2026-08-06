@@ -17,12 +17,12 @@
      so any leftover bg-card-bg / bg-dark-bg / bg-dark-navy classes
      automatically render light without touching every file). */
   --dark-navy: #ffffff;
-  --dark-bg: #fafaf7;
+  --dark-bg: #f3f2ef;
   --card-bg: #ffffff;
 }
 
 body {
-  background-color: #ffffff;
+  background-color: #f3f2ef;
   color: #0a1f14;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
