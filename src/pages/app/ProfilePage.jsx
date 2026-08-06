@@ -23,6 +23,7 @@ import {
   HiHeart,
   HiEye,
   HiChatAlt2,
+  HiAcademicCap,
 } from "react-icons/hi";
 import { FaLinkedin } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
@@ -41,7 +42,7 @@ const FOUNDER_MENU = [
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
   { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
-  { to: "/app/deck-requests", label: "Deck Requests", icon: HiDocumentText },
+  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
   { to: "/app/subscription", label: "Studio Pro", icon: HiSparkles },
   { to: "/app/settings", label: "Settings", icon: HiCog },

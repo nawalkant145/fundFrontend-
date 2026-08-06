@@ -29,6 +29,7 @@ const SubscriptionPage = lazy(() => import("./pages/app/SubscriptionPage"));
 const AnalyticsPage = lazy(() => import("./pages/app/AnalyticsPage"));
 const DealsPage = lazy(() => import("./pages/app/DealsPage"));
 const DeckRequestsPage = lazy(() => import("./pages/app/DeckRequestsPage"));
+const AppCoursesPage = lazy(() => import("./pages/app/AppCoursesPage"));
 const InvestorFeed = lazy(() => import("./pages/app/InvestorFeed"));
 const DiscoverPage = lazy(() => import("./pages/app/DiscoverPage"));
 const SavedPitchesPage = lazy(() => import("./pages/app/SavedPitchesPage"));
@@ -182,6 +183,14 @@ function App() {
             element={
               <ProtectedRoute roles={["founder"]}>
                 <DealsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/courses"
+            element={
+              <ProtectedRoute>
+                <AppCoursesPage />
               </ProtectedRoute>
             }
           />
