@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import EmojiPicker from "emoji-picker-react";
 import {
   HiSearch,
   HiTrash,
@@ -21,6 +22,13 @@ import {
   HiDocument,
   HiPencilAlt,
   HiInformationCircle,
+  HiMicrophone,
+  HiChevronDown,
+  HiReply,
+  HiAnnotation,
+  HiShare,
+  HiDuplicate,
+  HiStar,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
@@ -48,6 +56,47 @@ function getAvatar(userObj) {
   }
   const name = userObj?.name || userObj?.username || "User";
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1B5E3F&color=fff`;
+}
+
+function formatMessageTimestamp(createdAtString) {
+  if (!createdAtString) return "10:45 AM";
+  const date = new Date(createdAtString);
+  if (isNaN(date.getTime())) return "10:45 AM";
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  if (date.toDateString() === today.toDateString()) {
+    return timeStr;
+  }
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday ${timeStr}`;
+  }
+  const dateStr = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  return `${dateStr} ${timeStr}`;
+}
+
+function formatDateSeparator(dateString) {
+  if (!dateString) return "Today";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Today";
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  }
+  if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /**
@@ -410,6 +459,7 @@ export default function MessagesPage() {
             <ActiveChat
               key={activeChat._id}
               chat={activeChat}
+              chats={chats}
               onBack={() => navigate("/app/messages")}
               onConfirmDelete={() => setConfirming(activeChat)}
               onMessageSent={(lastMsg) => {
@@ -469,7 +519,7 @@ function EmptyState() {
 }
 
 // ─── ACTIVE CHAT (right side) ─────────────────
-function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
+function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }) {
   const toast = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -480,13 +530,241 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [text, setText] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [callPaywall, setCallPaywall] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+
+  const [contextMenu, setContextMenu] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [forwardingMsg, setForwardingMsg] = useState(null);
+  const [editingMsg, setEditingMsg] = useState(null);
+  const [msgInfoModal, setMsgInfoModal] = useState(null);
+  const [starredMsgs, setStarredMsgs] = useState({});
+
+  const touchTimer = useRef(null);
+
+  // Outside click listener to dismiss context menu
+  useEffect(() => {
+    const handleCloseMenu = () => setContextMenu(null);
+    window.addEventListener("click", handleCloseMenu);
+    window.addEventListener("scroll", handleCloseMenu, true);
+    return () => {
+      window.removeEventListener("click", handleCloseMenu);
+      window.removeEventListener("scroll", handleCloseMenu, true);
+    };
+  }, []);
+
+  const handleContextMenu = (e, m) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: Math.min(e.clientX, window.innerWidth - 220),
+      y: Math.min(e.clientY, window.innerHeight - 320),
+      message: m,
+    });
+  };
+
+  const handleTouchStart = (e, m) => {
+    const touch = e.touches[0];
+    touchTimer.current = setTimeout(() => {
+      setContextMenu({
+        x: Math.min(touch.clientX, window.innerWidth - 220),
+        y: Math.min(touch.clientY, window.innerHeight - 320),
+        message: m,
+      });
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimer.current) clearTimeout(touchTimer.current);
+  };
+
+  const handleDeleteMsg = async (messageId, deleteForEveryone = false) => {
+    try {
+      if (socket && socket.connected) {
+        socket.emit("delete_message", { messageId, deleteForEveryone });
+      } else {
+        await chatService.deleteMessage(chat._id, messageId, deleteForEveryone);
+      }
+
+      if (deleteForEveryone) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === messageId
+              ? { ...m, deletedEveryone: true, text: "This message was deleted", message: "This message was deleted" }
+              : m
+          )
+        );
+      } else {
+        setMessages((prev) => prev.filter((m) => m._id !== messageId));
+      }
+      toast.success(deleteForEveryone ? "Message deleted for everyone" : "Message deleted");
+    } catch (err) {
+      toast.error("Failed to delete message");
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMsg || !editingMsg.text.trim()) return;
+    try {
+      if (socket && socket.connected) {
+        socket.emit("edit_message", { messageId: editingMsg.messageId, message: editingMsg.text });
+      } else {
+        await chatService.editMessage(chat._id, editingMsg.messageId, editingMsg.text);
+      }
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === editingMsg.messageId
+            ? { ...m, text: editingMsg.text, message: editingMsg.text, edited: true }
+            : m
+        )
+      );
+      toast.success("Message edited");
+      setEditingMsg(null);
+    } catch (err) {
+      toast.error("Failed to edit message");
+    }
+  };
+
+  const handleForwardTo = async (targetChat) => {
+    if (!forwardingMsg) return;
+    try {
+      const fwdText = forwardingMsg.text || forwardingMsg.message || "Attachment";
+      const fwdType = forwardingMsg.type || forwardingMsg.messageType || "text";
+      const fwdAttachment = forwardingMsg.attachment;
+
+      if (socket && socket.connected) {
+        socket.emit("send_message", {
+          chatId: targetChat._id,
+          message: fwdText,
+          text: fwdText,
+          messageType: fwdType,
+          type: fwdType,
+          attachment: fwdAttachment,
+        });
+      } else {
+        await chatService.sendMessage(targetChat._id, {
+          message: fwdText,
+          text: fwdText,
+          messageType: fwdType,
+          type: fwdType,
+          attachment: fwdAttachment,
+        });
+      }
+      toast.success(`Forwarded to ${getOtherUser(targetChat, user).name}`);
+      setForwardingMsg(null);
+    } catch (err) {
+      toast.error("Failed to forward message");
+    }
+  };
+
+  const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   const endRef = useRef(null);
   const typingTimeout = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      toast.error("Microphone permission denied or unavailable");
+    }
+  };
+
+  const stopAndSendRecording = () => {
+    if (!mediaRecorderRef.current) return;
+    const mediaRecorder = mediaRecorderRef.current;
+
+    mediaRecorder.onstop = async () => {
+      clearInterval(recordingIntervalRef.current);
+      setIsRecording(false);
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      const audioFile = new File([audioBlob], `Voice_Note_${Date.now()}.webm`, {
+        type: "audio/webm",
+      });
+
+      if (mediaRecorder.stream) {
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      }
+
+      sendFile(audioFile, "audio");
+    };
+
+    mediaRecorder.stop();
+  };
+
+  const cancelRecording = () => {
+    if (!mediaRecorderRef.current) return;
+    clearInterval(recordingIntervalRef.current);
+    setIsRecording(false);
+    if (mediaRecorderRef.current.stream) {
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+    }
+    audioChunksRef.current = [];
+  };
+
+  const formatRecordingTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  // Outside click listener to dismiss emoji picker
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target) &&
+        !e.target.closest(".emoji-trigger-btn")
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleEmojiSelect = (emojiData) => {
+    const emoji = emojiData.emoji;
+    const input = inputRef.current;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const newText = text.substring(0, start) + emoji + text.substring(end);
+      setText(newText);
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        input.focus();
+      }, 0);
+    } else {
+      setText((prev) => prev + emoji);
+    }
+  };
 
   // Fetch real messages on mount / chat change
   useEffect(() => {
@@ -555,15 +833,47 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     };
     const handleStopTyping = () => setTyping(false);
 
+    const handleSeen = ({ chatId: cId, messageId }) => {
+      if (!cId || cId.toString() === chat._id.toString()) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            !messageId || m._id === messageId || m._id?.toString() === messageId?.toString()
+              ? { ...m, status: "seen", isRead: true, isSeen: true }
+              : m
+          )
+        );
+      }
+    };
+
+    const handleDelivered = ({ chatId: cId, messageId }) => {
+      if (!cId || cId.toString() === chat._id.toString()) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.status !== "seen" && (!messageId || m._id === messageId || m._id?.toString() === messageId?.toString())
+              ? { ...m, status: "delivered" }
+              : m
+          )
+        );
+      }
+    };
+
     socket.on("new_message", handleNewMsg);
+    socket.on("receive_message", handleNewMsg);
     socket.on("user_typing", handleTyping);
     socket.on("user_stop_typing", handleStopTyping);
+    socket.on("message_seen", handleSeen);
+    socket.on("messages_read", handleSeen);
+    socket.on("message_delivered", handleDelivered);
 
     return () => {
       socket.emit("leave_chat", { chatId: chat._id });
       socket.off("new_message", handleNewMsg);
+      socket.off("receive_message", handleNewMsg);
       socket.off("user_typing", handleTyping);
       socket.off("user_stop_typing", handleStopTyping);
+      socket.off("message_seen", handleSeen);
+      socket.off("messages_read", handleSeen);
+      socket.off("message_delivered", handleDelivered);
     };
   }, [socket, chat._id, user?._id]);
 
@@ -599,7 +909,9 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     e?.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) return;
+    const currentReply = replyingTo;
     setText("");
+    setReplyingTo(null);
     if (socket && socket.connected) socket.emit("stop_typing", { chatId: chat._id });
 
     // Optimistic UI — add the message locally right away
@@ -608,7 +920,10 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
       chatId: chat._id,
       senderId: user?._id,
       text: trimmed,
+      message: trimmed,
       type: "text",
+      messageType: "text",
+      replyTo: currentReply,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
@@ -618,14 +933,25 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     if (isConnected) {
       socket.emit(
         "send_message",
-        { chatId: chat._id, text: trimmed, type: "text" },
+        {
+          chatId: chat._id,
+          text: trimmed,
+          message: trimmed,
+          type: "text",
+          messageType: "text",
+          replyTo: currentReply?._id,
+        },
         (res) => {
           if (res?.ok && res?.message) {
             handleNewMsg(res.message);
           } else if (!res?.ok) {
             // Fallback: use REST API
             chatService
-              .sendMessage(chat._id, { text: trimmed })
+              .sendMessage(chat._id, {
+                text: trimmed,
+                message: trimmed,
+                replyTo: currentReply?._id,
+              })
               .then((res) => {
                 const data = res?.data?.data;
                 const msg = data?.message || data;
@@ -638,7 +964,11 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     } else {
       // Socket not connected — use REST API directly
       chatService
-        .sendMessage(chat._id, { text: trimmed })
+        .sendMessage(chat._id, {
+          text: trimmed,
+          message: trimmed,
+          replyTo: currentReply?._id,
+        })
         .then((res) => {
           const data = res?.data?.data;
           const msg = data?.message || data;
@@ -660,17 +990,69 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
     }
   };
 
-  const sendFile = (file, kind) => {
+  const sendFile = async (file, kind) => {
     if (!file) return;
-    chatService
-      .uploadAttachment(chat._id, file)
-      .then((res) => {
-        const data = res?.data?.data;
-        const msg = data?.message || data;
-        if (msg) setMessages((prev) => [...prev, msg]);
-        toast.success(`${kind === "image" ? "Image" : "File"} sent`);
-      })
-      .catch(() => toast.error("Failed to send file"));
+    try {
+      const res = await chatService.uploadAttachment(chat._id, file);
+      const data = res?.data?.data || res?.data;
+      const attachment = data?.attachment || {
+        url: data?.url || data?.fileUrl || "",
+        name: file.name,
+        size: file.size,
+        mimeType: file.type,
+      };
+      const messageType = data?.messageType || data?.type || kind || "file";
+      const fileText = kind === "audio" ? "Voice Note" : file.name || "Attachment";
+
+      const isConnected = socket && socket.connected;
+      if (isConnected) {
+        socket.emit(
+          "send_message",
+          {
+            chatId: chat._id,
+            message: fileText,
+            text: fileText,
+            messageType,
+            type: messageType,
+            attachment,
+          },
+          (ack) => {
+            if (ack?.ok && ack?.message) {
+              const ackIdStr = (ack.message._id?._id || ack.message._id)?.toString();
+              setMessages((prev) => {
+                if (prev.some((m) => (m._id?._id || m._id)?.toString() === ackIdStr)) {
+                  return prev;
+                }
+                return [...prev, ack.message];
+              });
+            }
+          }
+        );
+      } else {
+        const msgRes = await chatService.sendMessage(chat._id, {
+          message: fileText,
+          text: fileText,
+          messageType,
+          type: messageType,
+          attachment,
+          fileUrl: attachment.url,
+        });
+        const sentMsg = msgRes?.data?.data?.message || msgRes?.data?.data || msgRes?.data;
+        if (sentMsg) {
+          const sentIdStr = (sentMsg._id?._id || sentMsg._id)?.toString();
+          setMessages((prev) => {
+            if (prev.some((m) => (m._id?._id || m._id)?.toString() === sentIdStr)) {
+              return prev;
+            }
+            return [...prev, sentMsg];
+          });
+        }
+      }
+      toast.success(`${kind === "image" ? "Image" : kind === "audio" ? "Voice note" : "File"} sent`);
+    } catch (err) {
+      console.error("Upload attachment error:", err);
+      toast.error(err?.response?.data?.message || "Failed to send file");
+    }
   };
 
   const menuItems = [
@@ -783,79 +1165,232 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
         </div>
       </div>
 
-      {/* Avatar + name centered intro (Instagram style) */}
-      <div className="text-center py-6 border-b border-gold/5">
-        <img
-          src={getAvatar(other)}
-          alt={other.name}
-          className="w-20 h-20 rounded-full mx-auto mb-2 object-cover"
-        />
-        <p className="font-bold text-base flex items-center justify-center gap-1">
-          {other.name}
-          <MdVerified className="w-4 h-4 text-gold" />
-        </p>
-        <p className="text-xs text-gray-400 mt-0.5">EXPGLO FUND member</p>
-        <button
-          onClick={() => setShowProfile(true)}
-          className="mt-3 px-4 py-1.5 bg-card-bg border border-gold/20 hover:border-gold/50 rounded-lg text-xs font-bold"
-        >
-          View profile
-        </button>
-      </div>
+      {/* Avatar + name centered intro card (ONLY when 0 messages exist) */}
+      {messages.length === 0 && (
+        <div className="text-center py-6 border-b border-gold/5">
+          <img
+            src={getAvatar(other)}
+            alt={other.name}
+            className="w-20 h-20 rounded-full mx-auto mb-2 object-cover"
+          />
+          <p className="font-bold text-base flex items-center justify-center gap-1">
+            {other.name}
+            <MdVerified className="w-4 h-4 text-gold" />
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">EXPGLO FUND member</p>
+          <button
+            onClick={() => setShowProfile(true)}
+            className="mt-3 px-4 py-1.5 bg-card-bg border border-gold/20 hover:border-gold/50 rounded-lg text-xs font-bold"
+          >
+            View profile
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
-        {messages.map((m, i) => {
-          const isMe =
-            (m.senderId?._id || m.senderId || "").toString() ===
-            user?._id?.toString();
-          const prev = messages[i - 1];
-          const prevSender = (
-            prev?.senderId?._id ||
-            prev?.senderId ||
-            ""
-          ).toString();
-          const curSender = (m.senderId?._id || m.senderId || "").toString();
-          const showAvatar = !isMe && prevSender !== curSender;
-          return (
-            <motion.div
-              key={m._id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex ${isMe ? "justify-end" : "justify-start"} gap-2 items-end`}
-            >
-              {!isMe && (
-                <img
-                  src={getAvatar(other)}
-                  alt=""
-                  className={`w-7 h-7 rounded-full object-cover ${
-                    showAvatar ? "" : "invisible"
-                  }`}
-                />
-              )}
-              <div
-                className={`max-w-[70%] rounded-2xl px-3.5 py-2 ${
-                  isMe ? "bg-primary-green text-white" : "bg-card-bg text-white"
-                }`}
+        {(() => {
+          const grouped = [];
+          let currentDayStr = null;
+
+          messages.forEach((m, idx) => {
+            const rawDate = m.createdAt || Date.now();
+            const dayStr = new Date(rawDate).toDateString();
+
+            if (dayStr !== currentDayStr) {
+              currentDayStr = dayStr;
+              grouped.push({
+                type: "separator",
+                date: rawDate,
+                id: `sep_${dayStr}_${m._id || idx}`,
+              });
+            }
+
+            grouped.push({
+              type: "message",
+              data: m,
+              id: m._id || idx,
+              idx,
+            });
+          });
+
+          return grouped.map((item) => {
+            if (item.type === "separator") {
+              return (
+                <div key={item.id} className="flex justify-center my-3">
+                  <span className="bg-dark-bg/80 text-gray-300 text-[11px] font-bold px-3.5 py-1 rounded-full border border-gold/15 shadow-sm">
+                    {formatDateSeparator(item.date)}
+                  </span>
+                </div>
+              );
+            }
+
+            const m = item.data;
+            const i = item.idx;
+            const isMe =
+              (m.senderId?._id || m.senderId || "").toString() ===
+              user?._id?.toString();
+            const prev = messages[i - 1];
+            const prevSender = (
+              prev?.senderId?._id ||
+              prev?.senderId ||
+              ""
+            ).toString();
+            const curSender = (m.senderId?._id || m.senderId || "").toString();
+            const showAvatar = !isMe && prevSender !== curSender;
+
+            return (
+              <motion.div
+                key={m._id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${isMe ? "justify-end" : "justify-start"} gap-2 items-end group`}
               >
-                {m.type === "file" || m.type === "image" ? (
-                  <div className="flex items-center gap-2">
-                    {m.type === "image" ? (
-                      <HiPhotograph className="w-5 h-5" />
-                    ) : (
-                      <HiDocument className="w-5 h-5" />
-                    )}
-                    <span className="font-semibold text-sm">{m.fileUrl}</span>
-                  </div>
-                ) : (
-                  <p className="text-sm leading-snug whitespace-pre-line">
-                    {m.text}
-                  </p>
+                {!isMe && (
+                  <img
+                    src={getAvatar(other)}
+                    alt=""
+                    className={`w-7 h-7 rounded-full object-cover ${
+                      showAvatar ? "" : "invisible"
+                    }`}
+                  />
                 )}
-              </div>
-            </motion.div>
-          );
-        })}
+                <div
+                  onContextMenu={(e) => handleContextMenu(e, m)}
+                  onTouchStart={(e) => handleTouchStart(e, m)}
+                  onTouchEnd={handleTouchEnd}
+                  style={{
+                    backgroundColor: isMe ? "#005c4b" : "#ffffff",
+                    color: isMe ? "#ffffff" : "#111827",
+                  }}
+                  className={`relative max-w-[70%] rounded-xl px-3.5 py-2 shadow-sm break-words ${
+                    isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100"
+                  }`}
+                >
+                  {/* Context Menu Chevron Button */}
+                  <button
+                    onClick={(e) => handleContextMenu(e, m)}
+                    style={{ color: isMe ? "#ffffff" : "#111827" }}
+                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-0.5 rounded-full hover:bg-black/10 transition-opacity"
+                    title="Message options"
+                  >
+                    <HiChevronDown className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Reply Quote Preview inside bubble (only if message itself is NOT deleted) */}
+                  {!m.deletedEveryone && m.replyTo && (
+                    <div
+                      style={{
+                        backgroundColor: isMe ? "rgba(0, 0, 0, 0.25)" : "#f3f4f6",
+                        borderLeftColor: isMe ? "#25d366" : "#00a884",
+                      }}
+                      className="mb-1.5 p-2 rounded-lg border-l-4 text-xs"
+                    >
+                      <p
+                        style={{ color: isMe ? "#25d366" : "#00a884" }}
+                        className="font-bold text-[10px]"
+                      >
+                        {(m.replyTo.senderId?._id || m.replyTo.senderId || "").toString() === user?._id?.toString()
+                          ? "You"
+                          : other.name}
+                      </p>
+                      <p
+                        style={{ color: isMe ? "#ffffff" : "#374151" }}
+                        className="truncate text-xs mt-0.5 font-medium"
+                      >
+                        {m.replyTo.deletedEveryone || m.replyTo.isDeleted
+                          ? "🚫 This message was deleted"
+                          : m.replyTo.text || m.replyTo.message || `[${m.replyTo.type || m.replyTo.messageType || "Attachment"}]`}
+                      </p>
+                    </div>
+                  )}
+
+                  {m.deletedEveryone ? (
+                    <p
+                      style={{ color: isMe ? "rgba(255, 255, 255, 0.8)" : "#6b7280" }}
+                      className="text-sm italic"
+                    >
+                      🚫 This message was deleted
+                    </p>
+                  ) : m.type === "audio" || (m.attachment && m.attachment.mimeType?.startsWith("audio")) ? (
+                    <div className="my-1 flex flex-col gap-1 min-w-[200px]">
+                      <span
+                        style={{ color: isMe ? "#ffffff" : "#111827" }}
+                        className="text-xs font-semibold flex items-center gap-1"
+                      >
+                        🎙️ Voice Note
+                      </span>
+                      <audio
+                        controls
+                        src={m.fileUrl || m.attachment?.url}
+                        className="w-full h-8 rounded-lg outline-none"
+                      />
+                    </div>
+                  ) : m.type === "file" || m.type === "image" ? (
+                    <div className="flex items-center gap-2">
+                      {m.type === "image" ? (
+                        <HiPhotograph className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <HiDocument className="w-5 h-5 text-emerald-400" />
+                      )}
+                      <span
+                        style={{ color: isMe ? "#ffffff" : "#111827" }}
+                        className="font-semibold text-sm"
+                      >
+                        {m.fileUrl}
+                      </span>
+                    </div>
+                  ) : (
+                    <p
+                      style={{ color: isMe ? "#ffffff" : "#111827" }}
+                      className="text-sm leading-snug whitespace-pre-line break-words pr-3 font-normal"
+                    >
+                      {m.text || m.message}
+                      {m.edited && (
+                        <span
+                          style={{ color: isMe ? "rgba(255, 255, 255, 0.75)" : "#6b7280" }}
+                          className="text-[10px] italic"
+                        >
+                          {" "}(edited)
+                        </span>
+                      )}
+                    </p>
+                  )}
+
+                  <div
+                    style={{ color: isMe ? "rgba(255, 255, 255, 0.85)" : "#6b7280" }}
+                    className="flex items-center justify-end gap-1.5 mt-1 text-[10px]"
+                  >
+                    {starredMsgs[m._id] && <HiStar className="w-3 h-3 text-gold flex-shrink-0" />}
+                    <span>{formatMessageTimestamp(m.createdAt)}</span>
+                    {isMe && (() => {
+                      const status = m.status || (m.isSeen || m.isRead ? "seen" : "sent");
+                      if (status === "seen") {
+                        return (
+                          <span className="font-bold text-[11px] text-[#53bdeb]" title="Seen (Blue)">
+                            ✓✓
+                          </span>
+                        );
+                      }
+                      if (status === "delivered") {
+                        return (
+                          <span className="font-bold text-[11px] text-white/90" title="Delivered">
+                            ✓✓
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="font-bold text-[11px] text-white/90" title="Sent">
+                          ✓
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          });
+        })()}
         {typing && (
           <div className="flex items-center gap-2 pl-9 text-xs text-gray-400">
             <span className="flex gap-0.5">
@@ -878,10 +1413,33 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
         <div ref={endRef} />
       </div>
 
+      {/* Reply Preview Banner */}
+      {replyingTo && (
+        <div className="px-4 py-2 bg-[#1f2c34] border-t border-gold/15 flex items-center justify-between animate-fadeIn">
+          <div className="border-l-4 border-[#00a884] pl-3 min-w-0 flex-1">
+            <span className="text-xs font-bold text-[#00a884]">
+              {(replyingTo.senderId?._id || replyingTo.senderId || "").toString() === user?._id?.toString()
+                ? "Replying to yourself"
+                : `Replying to ${other?.name || "User"}`}
+            </span>
+            <p className="text-xs text-gray-200 truncate mt-0.5 font-medium">
+              {replyingTo.text || replyingTo.message || `[${replyingTo.type || replyingTo.messageType || "Attachment"}]`}
+            </p>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="p-1.5 hover:text-red-400 text-gray-400 transition-colors text-sm font-bold flex-shrink-0"
+            title="Cancel reply"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Composer */}
       <form
         onSubmit={send}
-        className="border-t border-gold/10 p-3 flex items-center gap-2"
+        className="relative border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40"
       >
         <input
           ref={fileInputRef}
@@ -896,14 +1454,26 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
           className="hidden"
           onChange={(e) => sendFile(e.target.files?.[0], "image")}
         />
+
+        {/* Emoji Button */}
+        <button
+          type="button"
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          className="p-2 text-gray-400 hover:text-gold transition-colors rounded-full hover:bg-card-bg/60 emoji-trigger-btn flex-shrink-0"
+          title="Emojis"
+        >
+          <HiEmojiHappy className="w-6 h-6" />
+        </button>
+
+        {/* Attachment Dropdown Button */}
         <DropdownMenu
           align="left"
           placement="top"
-          trigger={<HiPaperClip className="w-5 h-5" />}
-          triggerClass="p-2 text-gray-400 hover:text-gold transition-colors"
+          trigger={<HiPaperClip className="w-6 h-6 rotate-45" />}
+          triggerClass="p-2 text-gray-400 hover:text-gold transition-colors rounded-full hover:bg-card-bg/60 flex-shrink-0"
           items={[
             {
-              label: "Photo",
+              label: "Photo / Video",
               icon: HiPhotograph,
               onClick: () => imageInputRef.current?.click(),
             },
@@ -914,29 +1484,284 @@ function ActiveChat({ chat, onBack, onConfirmDelete, onMessageSent }) {
             },
           ]}
         />
-        <div className="flex-1 flex items-center bg-dark-bg/60 border border-gold/15 rounded-full px-1">
-          <button
-            type="button"
-            className="p-2 text-gray-400 hover:text-gold transition-colors"
+
+        {/* Emoji Picker Popup */}
+        {showEmojiPicker && (
+          <div
+            className="absolute bottom-16 left-3 z-50 shadow-2xl rounded-xl overflow-hidden border border-gold/20"
+            ref={emojiPickerRef}
           >
-            <HiEmojiHappy className="w-5 h-5" />
+            <EmojiPicker
+              onEmojiClick={handleEmojiSelect}
+              searchDisabled={false}
+              skinTonesDisabled
+              width={340}
+              height={380}
+              theme="dark"
+            />
+          </div>
+        )}
+
+        {isRecording ? (
+          <div className="flex-1 flex items-center justify-between bg-card-bg/90 border border-emerald-500/40 rounded-full px-5 py-1.5 animate-pulse">
+            <div className="flex items-center gap-3 text-red-500 font-bold text-sm">
+              <span className="w-3 h-3 rounded-full bg-red-500 animate-ping flex-shrink-0" />
+              <span>Recording {formatRecordingTime(recordingTime)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={cancelRecording}
+                className="p-2 text-gray-400 hover:text-red-400 rounded-full hover:bg-dark-bg/60 transition-colors"
+                title="Cancel recording"
+              >
+                <HiTrash className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={stopAndSendRecording}
+                className="p-2.5 bg-[#005c4b] hover:bg-[#00a884] text-white rounded-full transition-colors shadow-md flex items-center justify-center"
+                title="Send voice note"
+              >
+                <HiPaperAirplane className="w-4 h-4 rotate-90" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Rounded Input Field */}
+            <div className="flex-1 flex items-center bg-card-bg/80 border border-gold/15 rounded-full px-4 py-1.5 focus-within:border-gold">
+              <input
+                ref={inputRef}
+                value={text}
+                onChange={handleTextChange}
+                placeholder="Type a message"
+                className="w-full bg-transparent text-sm text-white placeholder-gray-400 focus:outline-none"
+              />
+            </div>
+
+            {/* Send or Voice Button */}
+            {text.trim() ? (
+              <button
+                type="submit"
+                className="p-3 bg-[#005c4b] hover:bg-[#00a884] text-white rounded-full flex-shrink-0 transition-colors shadow-md flex items-center justify-center"
+                title="Send message"
+              >
+                <HiPaperAirplane className="w-5 h-5 rotate-90" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="p-3 bg-card-bg/80 text-gray-400 hover:text-gold rounded-full flex-shrink-0 transition-colors flex items-center justify-center"
+                title="Voice message"
+                onClick={startRecording}
+              >
+                <HiMicrophone className="w-5 h-5" />
+              </button>
+            )}
+          </>
+        )}
+      </form>
+
+      {/* Floating Context Menu */}
+      {contextMenu && (
+        <div
+          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+          className="fixed z-[100] w-52 bg-[#233138] border border-gold/20 rounded-xl shadow-2xl py-1 text-sm text-gray-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 1. Reply */}
+          <button
+            onClick={() => {
+              setReplyingTo(contextMenu.message);
+              setContextMenu(null);
+              inputRef.current?.focus();
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+          >
+            <HiAnnotation className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>Reply</span>
           </button>
-          <input
-            value={text}
-            onChange={handleTextChange}
-            placeholder="Message…"
-            className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 focus:outline-none py-2"
-          />
-          {text.trim() && (
+
+          {/* 2. Forward */}
+          <button
+            onClick={() => {
+              setForwardingMsg(contextMenu.message);
+              setContextMenu(null);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+          >
+            <HiShare className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <span>Forward</span>
+          </button>
+
+          {/* 3. Copy */}
+          <button
+            onClick={() => {
+              const textToCopy = contextMenu.message.text || contextMenu.message.message || "";
+              navigator.clipboard.writeText(textToCopy);
+              toast.success("Message copied");
+              setContextMenu(null);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+          >
+            <HiDuplicate className="w-4 h-4 text-purple-400 flex-shrink-0" />
+            <span>Copy</span>
+          </button>
+
+          {/* 4. Star */}
+          <button
+            onClick={() => {
+              const mId = contextMenu.message._id;
+              const isStarred = !!starredMsgs[mId];
+              const nextStarred = !isStarred;
+              setStarredMsgs((prev) => ({ ...prev, [mId]: nextStarred }));
+              toast.success(nextStarred ? "Message starred" : "Message unstarred");
+              setContextMenu(null);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+          >
+            <HiStar className={`w-4 h-4 flex-shrink-0 ${starredMsgs[contextMenu.message._id] ? "text-gold" : "text-gray-400"}`} />
+            <span>{starredMsgs[contextMenu.message._id] ? "Unstar" : "Star"}</span>
+          </button>
+
+          {/* 5. Edit (only sender) */}
+          {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === user?._id?.toString() && !contextMenu.message.deletedEveryone && (
             <button
-              type="submit"
-              className="px-3 py-1 text-gold hover:text-bright-gold font-bold text-sm"
+              onClick={() => {
+                setEditingMsg({
+                  messageId: contextMenu.message._id,
+                  text: contextMenu.message.text || contextMenu.message.message || "",
+                });
+                setContextMenu(null);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
             >
-              Send
+              <HiPencilAlt className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span>Edit</span>
             </button>
           )}
+
+          <div className="my-1 border-t border-gray-700/50" />
+
+          {/* 6. Delete for Me */}
+          <button
+            onClick={() => {
+              handleDeleteMsg(contextMenu.message._id, false);
+              setContextMenu(null);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 text-red-400 transition-colors"
+          >
+            <HiTrash className="w-4 h-4 flex-shrink-0" />
+            <span>Delete for Me</span>
+          </button>
+
+          {/* 7. Delete for Everyone (only sender) */}
+          {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === user?._id?.toString() && !contextMenu.message.deletedEveryone && (
+            <button
+              onClick={() => {
+                handleDeleteMsg(contextMenu.message._id, true);
+                setContextMenu(null);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 text-red-400 transition-colors"
+            >
+              <HiTrash className="w-4 h-4 flex-shrink-0" />
+              <span>Delete for Everyone</span>
+            </button>
+          )}
+
+          <div className="my-1 border-t border-gray-700/50" />
+
+          {/* 8. Message Info */}
+          <button
+            onClick={() => {
+              setMsgInfoModal(contextMenu.message);
+              setContextMenu(null);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+          >
+            <HiInformationCircle className="w-4 h-4 text-sky-400 flex-shrink-0" />
+            <span>Message Info</span>
+          </button>
         </div>
-      </form>
+      )}
+
+      {/* Forward Modal */}
+      <Modal open={!!forwardingMsg} onClose={() => setForwardingMsg(null)} title="Forward message to...">
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {chats.map((c) => {
+            const otherUser = getOtherUser(c, user);
+            return (
+              <button
+                key={c._id}
+                onClick={() => handleForwardTo(c)}
+                className="w-full flex items-center gap-3 p-2.5 hover:bg-gold/10 rounded-xl transition-colors text-left"
+              >
+                <img src={getAvatar(otherUser)} alt="" className="w-10 h-10 rounded-full object-cover" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-white truncate">{otherUser.name}</p>
+                  <p className="text-xs text-gray-400">Click to forward message</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
+
+      {/* Edit Message Modal */}
+      <Modal open={!!editingMsg} onClose={() => setEditingMsg(null)} title="Edit Message">
+        {editingMsg && (
+          <div className="space-y-3">
+            <textarea
+              rows={3}
+              value={editingMsg.text}
+              onChange={(e) => setEditingMsg({ ...editingMsg, text: e.target.value })}
+              className="w-full bg-dark-bg border border-gold/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEditingMsg(null)}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-gold hover:bg-bright-gold text-dark-navy"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Message Info Modal */}
+      <Modal open={!!msgInfoModal} onClose={() => setMsgInfoModal(null)} title="Message Info">
+        {msgInfoModal && (
+          <div className="space-y-4 text-sm">
+            <div className="p-3 bg-dark-bg/60 rounded-xl border border-gold/15">
+              <p className="text-gray-300 italic">
+                "{msgInfoModal.text || msgInfoModal.message || `[${msgInfoModal.type || "Attachment"}]`}"
+              </p>
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between py-1.5 border-b border-gray-800">
+                <span className="text-gray-400">Sent:</span>
+                <span className="font-semibold text-white">{formatMessageTimestamp(msgInfoModal.createdAt)}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-gray-800">
+                <span className="text-gray-400">Status:</span>
+                <span className="font-semibold text-emerald-400 capitalize">{msgInfoModal.status || "Sent"}</span>
+              </div>
+              <div className="flex justify-between py-1.5">
+                <span className="text-gray-400">Message ID:</span>
+                <span className="font-mono text-gray-400 text-[10px] select-all">{msgInfoModal._id}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Profile modal */}
       <Modal
