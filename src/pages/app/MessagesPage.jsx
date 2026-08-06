@@ -1141,18 +1141,12 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
-            onClick={() => handleStartCall("audio")}
-            className="p-2 hover:bg-dark-bg/60 rounded-lg"
-            title="Audio call"
+            onClick={() => handleStartCall("meeting")}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#005c4b] hover:bg-[#00a884] text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+            title="Start Meeting Room (Video & Screen Share)"
           >
-            <HiPhone className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => handleStartCall("video")}
-            className="p-2 hover:bg-dark-bg/60 rounded-lg"
-            title="Video call"
-          >
-            <HiVideoCamera className="w-5 h-5" />
+            <HiVideoCamera className="w-4 h-4" />
+            <span className="hidden sm:inline">Meeting Room</span>
           </button>
           <button
             onClick={() => setShowProfile(true)}

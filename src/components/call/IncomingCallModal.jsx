@@ -31,12 +31,8 @@ export default function IncomingCallModal({ info, onAccept, onDecline }) {
           {info.peerName || "Unknown"}
         </h2>
         <p className="text-[#F5B942] mt-1 font-semibold inline-flex items-center gap-1.5 justify-center">
-          {isVideo ? (
-            <HiVideoCamera className="w-4 h-4" />
-          ) : (
-            <HiPhone className="w-4 h-4" />
-          )}
-          Incoming {isVideo ? "video" : "audio"} call…
+          <HiVideoCamera className="w-4 h-4" />
+          Incoming Meeting Room Request…
         </p>
 
         <div className="flex items-center justify-center gap-8 mt-8">
