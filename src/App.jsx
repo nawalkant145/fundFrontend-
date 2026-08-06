@@ -141,7 +141,7 @@ function App() {
           <Route
             path="/app/post/new"
             element={
-              <ProtectedRoute roles={["founder"]}>
+              <ProtectedRoute roles={["founder", "investor"]}>
                 <UploadPostPage />
               </ProtectedRoute>
             }
@@ -189,7 +189,7 @@ function App() {
           <Route
             path="/app/courses"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["founder"]}>
                 <AppCoursesPage />
               </ProtectedRoute>
             }

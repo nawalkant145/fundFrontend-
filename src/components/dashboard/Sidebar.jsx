@@ -46,7 +46,7 @@ const investorNav = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/discover", label: "Discover", icon: HiSearch },
-  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
+  // { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/saved", label: "Saved", icon: HiBookmark },
   { to: "/app/investments", label: "Investments", icon: HiCurrencyDollar },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },

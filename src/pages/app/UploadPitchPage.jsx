@@ -136,7 +136,7 @@ export default function UploadPitchPage() {
   return (
     <DashboardShell
       title="Upload your pitch"
-      subtitle="60–120 seconds. Vertical video works best."
+      subtitle="10–120 seconds. Vertical video works best."
     >
       <form onSubmit={submit} className="max-w-3xl space-y-6">
         {/* Tips */}
@@ -163,7 +163,7 @@ export default function UploadPitchPage() {
           </label>
           {!videoFile ? (
             <FileDropzone
-              description="MP4, MOV or WEBM · 60-120 seconds · max 200MB"
+              description="MP4, MOV or WEBM · 10-120 seconds · max 200MB"
               accept="video/*"
               value={videoFile}
               onChange={setVideoFile}
@@ -186,9 +186,9 @@ export default function UploadPitchPage() {
                   {videoDuration > 0 && ` · ${Math.round(videoDuration)}s`}
                 </p>
                 {videoDuration > 0 &&
-                  (videoDuration < 60 || videoDuration > 120) && (
+                  (videoDuration < 10 || videoDuration > 120) && (
                     <p className="text-xs text-red-400 mt-1">
-                      ⚠ Duration must be between 60 and 120 seconds
+                      ⚠ Duration must be between 10 and 120 seconds
                     </p>
                   )}
               </div>

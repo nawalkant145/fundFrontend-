@@ -161,7 +161,7 @@ export default function UploadPitchModal({ open, onClose }) {
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
               <div>
                 <h2 className="text-xl font-black text-[#0A1F14]">Upload your pitch</h2>
-                <p className="text-xs text-[#0A1F14]/55 mt-0.5">60–120 seconds · Vertical video works best</p>
+                <p className="text-xs text-[#0A1F14]/55 mt-0.5">10–120 seconds · Vertical video works best</p>
               </div>
               <button
                 onClick={onClose}
@@ -224,7 +224,7 @@ export default function UploadPitchModal({ open, onClose }) {
                     </label>
                     {!videoFile ? (
                       <FileDropzone
-                        description="MP4, MOV or WEBM · 60-120 seconds · max 200MB"
+                        description="MP4, MOV or WEBM · 10-120 seconds · max 200MB"
                         accept="video/*"
                         value={videoFile}
                         onChange={setVideoFile}
@@ -246,8 +246,8 @@ export default function UploadPitchModal({ open, onClose }) {
                             {(videoFile.size / 1024 / 1024).toFixed(2)} MB
                             {videoDuration > 0 && ` · ${Math.round(videoDuration)}s`}
                           </p>
-                          {videoDuration > 0 && (videoDuration < 60 || videoDuration > 120) && (
-                            <p className="text-xs text-red-500 mt-1">⚠ Duration must be 60–120 seconds</p>
+                          {videoDuration > 0 && (videoDuration < 10 || videoDuration > 120) && (
+                            <p className="text-xs text-red-500 mt-1">⚠ Duration must be 10–120 seconds</p>
                           )}
                         </div>
                         <button
