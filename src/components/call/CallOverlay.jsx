@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { HiPhone, HiVideoCamera, HiX, HiMicrophone } from "react-icons/hi";
+import { HiPhone, HiVideoCamera, HiX, HiMicrophone, HiDesktopComputer } from "react-icons/hi";
 import { useCall } from "../../context/CallContext";
 
 /**
- * Active-call overlay. Shows the remote stream full-screen, a local PIP,
- * and call controls (mute, camera, hang up). Driven entirely by CallContext.
+ * Active meeting room overlay. Shows the remote stream full-screen, a local PIP,
+ * and meeting controls (mute, camera, screen share, hang up).
  */
 export default function CallOverlay() {
   const {
@@ -15,16 +15,18 @@ export default function CallOverlay() {
     remoteStream,
     muted,
     cameraOff,
+    isScreenSharing,
     duration,
     endCall,
     toggleMute,
     toggleCamera,
+    toggleScreenShare,
   } = useCall();
 
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
 
-  const isVideo = callInfo?.type === "video";
+  const isVideo = true; // All meeting rooms support video and screen sharing
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
@@ -45,10 +47,10 @@ export default function CallOverlay() {
     status === "calling"
       ? "Ringing…"
       : status === "connecting"
-        ? "Connecting…"
+        ? "Connecting Meeting Room…"
         : fmt(duration);
 
-  const showRemoteVideo = isVideo && remoteStream && status === "connected";
+  const showRemoteVideo = remoteStream && status === "connected";
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col text-white">
@@ -77,8 +79,7 @@ export default function CallOverlay() {
         )}
       </div>
 
-      {/* Audio element for remote audio (always present so audio plays even
-          when there's no remote video element rendered) */}
+      {/* Audio element for remote audio */}
       {!showRemoteVideo && remoteStream && (
         <audio
           autoPlay
@@ -111,22 +112,27 @@ export default function CallOverlay() {
           </h2>
           <p className="text-[#F5B942] mt-1 font-semibold">{statusLabel}</p>
           <p className="text-gray-300 mt-1 text-sm">
-            {isVideo ? "Video call" : "Audio call"}
+            Meeting Room Session
           </p>
         </div>
       )}
 
-      {/* Timer pill when remote video is showing */}
+      {/* Timer pill & Screen share indicator when remote video is showing */}
       {showRemoteVideo && (
-        <div className="relative z-10 flex justify-center pt-6">
-          <span className="px-4 py-1.5 bg-black/50 backdrop-blur rounded-full text-sm font-semibold">
-            {callInfo?.peerName} · {fmt(duration)}
+        <div className="relative z-10 flex flex-col items-center gap-2 pt-6">
+          <span className="px-4 py-1.5 bg-black/60 backdrop-blur rounded-full text-sm font-semibold border border-gold/20">
+            Meeting Room · {callInfo?.peerName} · {fmt(duration)}
           </span>
+          {isScreenSharing && (
+            <span className="px-3 py-1 bg-emerald-600/90 text-white rounded-full text-xs font-bold animate-pulse shadow-md">
+              🖥️ You are sharing your screen
+            </span>
+          )}
         </div>
       )}
 
-      {/* Local PIP (video only) */}
-      {isVideo && localStream && (
+      {/* Local PIP (video / camera) */}
+      {localStream && (
         <div className="absolute top-6 right-6 w-28 h-40 sm:w-36 sm:h-52 rounded-2xl overflow-hidden border-2 border-[#F5B942]/40 shadow-2xl bg-black z-20">
           {cameraOff ? (
             <div className="w-full h-full flex items-center justify-center bg-[#0A1F14] text-xs text-gray-400">
@@ -142,7 +148,7 @@ export default function CallOverlay() {
             />
           )}
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/60 text-[10px] rounded-full">
-            You
+            {isScreenSharing ? "Sharing" : "You"}
           </div>
         </div>
       )}
@@ -158,23 +164,29 @@ export default function CallOverlay() {
           label={muted ? "Unmute" : "Mute"}
         />
 
-        {isVideo && (
-          <CtrlBtn
-            active={cameraOff}
-            activeBg="bg-red-500/30 text-red-400 border-red-500/50"
-            icon={HiVideoCamera}
-            slash={cameraOff}
-            onClick={toggleCamera}
-            label={cameraOff ? "Start video" : "Stop video"}
-          />
-        )}
+        <CtrlBtn
+          active={cameraOff}
+          activeBg="bg-red-500/30 text-red-400 border-red-500/50"
+          icon={HiVideoCamera}
+          slash={cameraOff}
+          onClick={toggleCamera}
+          label={cameraOff ? "Start camera" : "Stop camera"}
+        />
+
+        <CtrlBtn
+          active={isScreenSharing}
+          activeBg="bg-emerald-500/40 text-emerald-300 border-emerald-500/70"
+          icon={HiDesktopComputer}
+          onClick={toggleScreenShare}
+          label={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+        />
 
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={endCall}
           className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-xl shadow-red-600/40"
-          title="End call"
+          title="End Meeting Room Session"
         >
           <HiPhone className="w-7 h-7 rotate-[135deg]" />
         </motion.button>
