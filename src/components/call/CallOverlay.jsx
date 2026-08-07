@@ -18,6 +18,7 @@ export default function CallOverlay() {
     muted,
     cameraOff,
     isScreenSharing,
+    peerMediaState,
     duration,
     endCall,
     toggleMute,
@@ -35,12 +36,14 @@ export default function CallOverlay() {
   useEffect(() => {
     if (mainVideoRef.current && activeMainStream) {
       mainVideoRef.current.srcObject = activeMainStream;
+      mainVideoRef.current.play().catch(() => {});
     }
-  }, [activeMainStream]);
+  }, [activeMainStream, peerMediaState.isScreenSharing]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => {});
     }
   }, [localStream]);
 
@@ -130,10 +133,14 @@ export default function CallOverlay() {
               ? "Meeting Room · Connecting…"
               : "Meeting Room · Ringing…"}
         </div>
-        {isScreenSharing && (
+        {(isScreenSharing || peerMediaState.isScreenSharing) && (
           <div className="px-3.5 py-1 bg-emerald-600/90 text-white rounded-full text-xs font-extrabold animate-pulse shadow-lg border border-emerald-400/40 flex items-center gap-1.5">
             <HiDesktopComputer className="w-4 h-4" />
-            <span>You are sharing your screen</span>
+            <span>
+              {isScreenSharing
+                ? "You are sharing your screen"
+                : `${callInfo?.peerName || "Participant"} is sharing screen`}
+            </span>
           </div>
         )}
       </div>
