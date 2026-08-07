@@ -1502,8 +1502,8 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                   ) : m.type === "audio" || m.messageType === "audio" || (m.attachment && m.attachment.mimeType?.startsWith("audio")) ? (
                     <VoiceNoteMessageItem
                       audioUrl={m.fileUrl || m.attachment?.url}
-                      senderAvatar={isMe ? getAvatar(user) : getAvatar(otherUser)}
-                      senderName={isMe ? user?.name : otherUser?.name}
+                      senderAvatar={isMe ? getAvatar(user) : getAvatar(other)}
+                      senderName={isMe ? user?.name : other?.name}
                       isMe={isMe}
                     />
                   ) : m.type === "file" || m.type === "image" ? (
