@@ -140,6 +140,193 @@ function getOtherUser(chat, currentUser) {
   return chat.otherUser || {};
 }
 
+// WhatsApp-style Call Log Card Component (Screenshot 1)
+function CallLogMessageItem({ message, isMe }) {
+  const text = message.text || message.message || "";
+  const lower = text.toLowerCase();
+  const isVideo = lower.includes("video") || text.includes("📹");
+  const isMissed = lower.includes("missed");
+  const isDeclined = lower.includes("declined") || lower.includes("rejected");
+
+  let title = isVideo ? "Video call" : "Voice call";
+  if (isMissed) title = isVideo ? "Missed video call" : "Missed voice call";
+
+  let subtitle = isVideo ? "Video call" : "Voice call";
+  if (isMissed) {
+    subtitle = "Missed";
+  } else if (isDeclined) {
+    subtitle = "Declined";
+  } else {
+    const match = text.match(/\((.*?)\)/);
+    if (match && match[1]) {
+      subtitle = match[1];
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3 py-1 px-1 min-w-[210px]">
+      <div
+        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
+          isMissed ? "bg-red-50 text-red-500" : "bg-white text-gray-900"
+        }`}
+      >
+        {isMissed ? (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M19.59 7L12 14.59 6.41 9H11V7H3v8h2v-4.59l7 7 9-9z" />
+          </svg>
+        ) : isVideo ? (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M9 5v2h6.59L4 18.59 5.41 20 17 8.41V15h2V5H9z" />
+          </svg>
+        )}
+      </div>
+      <div className="flex flex-col">
+        <span
+          style={{ color: isMe ? "#ffffff" : "#111827" }}
+          className="font-semibold text-sm leading-tight"
+        >
+          {title}
+        </span>
+        <span
+          style={{ color: isMe ? "rgba(255, 255, 255, 0.85)" : "#6b7280" }}
+          className="text-xs mt-0.5"
+        >
+          {subtitle}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// WhatsApp-style Voice Note Component (Screenshot 2)
+function VoiceNoteMessageItem({ audioUrl, senderAvatar, senderName, isMe }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef(null);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) setDuration(audioRef.current.duration || 0);
+  };
+
+  const handleSeek = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const newTime = (clickX / width) * duration;
+    if (audioRef.current && isFinite(newTime)) {
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const fmtTime = (secs) => {
+    if (!secs || isNaN(secs)) return "0:00";
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-2.5 py-1 px-0.5 min-w-[240px] max-w-[320px]">
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        }}
+      />
+      <div className="relative w-11 h-11 flex-shrink-0">
+        <img
+          src={senderAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName || "U")}`}
+          alt={senderName || "User"}
+          className="w-11 h-11 rounded-full object-cover shadow-sm"
+        />
+        <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-[#00a884] border border-white flex items-center justify-center shadow-xs">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="#fff">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+          </svg>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-1">
+        <button
+          onClick={togglePlay}
+          type="button"
+          className="p-1.5 focus:outline-none flex items-center justify-center"
+          style={{ color: isMe ? "#ffffff" : "#111827" }}
+        >
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </button>
+
+        <div className="relative flex-1 h-7 flex items-center cursor-pointer" onClick={handleSeek}>
+          <div className="flex items-center gap-0.5 w-full h-full">
+            {[35, 60, 40, 80, 55, 95, 70, 45, 85, 50, 75, 65, 40, 90, 60, 80, 50, 70, 45, 85, 65, 90, 40, 75, 55, 80, 60, 45, 70, 50, 65, 40].map(
+              (heightPct, idx) => {
+                const barPct = (idx / 32) * 100;
+                const isFilled = barPct <= progressPct;
+                return (
+                  <div
+                    key={idx}
+                    className="flex-1 rounded-xs transition-colors duration-100"
+                    style={{
+                      height: `${heightPct}%`,
+                      backgroundColor: isFilled ? "#34b7f1" : isMe ? "rgba(255, 255, 255, 0.4)" : "#cbd5e1",
+                    }}
+                  />
+                );
+              },
+            )}
+          </div>
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#34b7f1] shadow-md pointer-events-none"
+            style={{ left: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+      <div
+        className="text-[11px] whitespace-nowrap self-end mb-1"
+        style={{ color: isMe ? "rgba(255, 255, 255, 0.85)" : "#6b7280" }}
+      >
+        {fmtTime(currentTime || duration)}
+      </div>
+    </div>
+  );
+}
+
 export default function MessagesPage() {
   const { chatId } = useParams();
   const navigate = useNavigate();
@@ -1310,20 +1497,15 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     >
                       🚫 This message was deleted
                     </p>
-                  ) : m.type === "audio" || (m.attachment && m.attachment.mimeType?.startsWith("audio")) ? (
-                    <div className="my-1 flex flex-col gap-1 min-w-[200px]">
-                      <span
-                        style={{ color: isMe ? "#ffffff" : "#111827" }}
-                        className="text-xs font-semibold flex items-center gap-1"
-                      >
-                        🎙️ Voice Note
-                      </span>
-                      <audio
-                        controls
-                        src={m.fileUrl || m.attachment?.url}
-                        className="w-full h-8 rounded-lg outline-none"
-                      />
-                    </div>
+                  ) : m.type === "system" || m.messageType === "system" || m.type === "call" || m.messageType === "call" || (m.text && (m.text.includes("call") || m.text.includes("Call") || m.text.includes("📞") || m.text.includes("📹"))) || (m.message && (m.message.includes("call") || m.message.includes("Call") || m.message.includes("📞") || m.message.includes("📹"))) ? (
+                    <CallLogMessageItem message={m} isMe={isMe} />
+                  ) : m.type === "audio" || m.messageType === "audio" || (m.attachment && m.attachment.mimeType?.startsWith("audio")) ? (
+                    <VoiceNoteMessageItem
+                      audioUrl={m.fileUrl || m.attachment?.url}
+                      senderAvatar={isMe ? getAvatar(user) : getAvatar(otherUser)}
+                      senderName={isMe ? user?.name : otherUser?.name}
+                      isMe={isMe}
+                    />
                   ) : m.type === "file" || m.type === "image" ? (
                     <div className="flex items-center gap-2">
                       {m.type === "image" ? (
