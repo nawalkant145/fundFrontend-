@@ -391,10 +391,14 @@ export function CallProvider({ children }) {
         track.enabled = true;
         if (pcRef.current && !isScreenSharing) {
           const videoSender = pcRef.current.getSenders().find(
-            (s) => s.track?.kind === "video" || s.track === null,
-          );
+            (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+          ) || pcRef.current.getSenders().find((s) => s.track === null);
+
           if (videoSender) {
             await videoSender.replaceTrack(track);
+          } else {
+            pcRef.current.addTrack(track, localStreamRef.current);
+            await renegotiate();
           }
         }
       }
@@ -405,9 +409,12 @@ export function CallProvider({ children }) {
       }
     }
 
+    if (localStreamRef.current) {
+      setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+    }
     setCameraOff(nextCameraOff);
     sendMediaState({ cameraOff: nextCameraOff });
-  }, [cameraOff, isScreenSharing, sendMediaState]);
+  }, [cameraOff, isScreenSharing, sendMediaState, renegotiate]);
 
   const renegotiate = useCallback(async () => {
     const pc = pcRef.current;
