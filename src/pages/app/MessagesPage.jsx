@@ -629,7 +629,7 @@ export default function MessagesPage() {
           }`}
         >
           {chatId ? (
-            <ChatView chat={activeChat || { _id: chatId }} user={user} refreshChats={refreshChats} />
+            <ChatView chat={activeChat || { _id: chatId }} user={user} refreshChats={refreshChats} chats={chats} />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <div className="w-20 h-20 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 shadow-inner">
@@ -650,7 +650,7 @@ export default function MessagesPage() {
 /**
  * Inner ChatView component handling messages, socket listeners, typing, and actions.
  */
-function ChatView({ chat, user, refreshChats }) {
+function ChatView({ chat, user, refreshChats, chats = [] }) {
   const navigate = useNavigate();
   const toast = useToast();
   const { socket } = useSocket() || {};
