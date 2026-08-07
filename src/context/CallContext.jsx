@@ -367,6 +367,19 @@ export function CallProvider({ children }) {
     [socket, muted, cameraOff, isScreenSharing],
   );
 
+  const renegotiate = useCallback(async () => {
+    const pc = pcRef.current;
+    const info = callInfoRef.current;
+    if (!pc || !info?.peerId || !socket) return;
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("webrtc_offer", { targetId: info.peerId, offer });
+    } catch (err) {
+      console.error("Renegotiation failed:", err);
+    }
+  }, [socket]);
+
   // ─── Controls ───────────────────────────────
   const toggleMute = useCallback(() => {
     const s = localStreamRef.current;
@@ -415,19 +428,6 @@ export function CallProvider({ children }) {
     setCameraOff(nextCameraOff);
     sendMediaState({ cameraOff: nextCameraOff });
   }, [cameraOff, isScreenSharing, sendMediaState, renegotiate]);
-
-  const renegotiate = useCallback(async () => {
-    const pc = pcRef.current;
-    const info = callInfoRef.current;
-    if (!pc || !info?.peerId || !socket) return;
-    try {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit("webrtc_offer", { targetId: info.peerId, offer });
-    } catch (err) {
-      console.error("Renegotiation failed:", err);
-    }
-  }, [socket]);
 
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
