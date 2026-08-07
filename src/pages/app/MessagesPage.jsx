@@ -105,39 +105,38 @@ function formatDateSeparator(dateString) {
  * Mobile: only one of the two visible at a time, route-based.
  */
 function getOtherUser(chat, currentUser) {
-  if (!chat) return {};
-  const currentUid = (currentUser?._id || "").toString();
+  if (!chat) return { name: "User", avatar: null };
+  const currentUid = (currentUser?._id || currentUser?.id || "").toString();
 
-  // If currentUser is not ready yet, return founderId or investorId if available
-  if (!currentUid) {
-    if (chat.founderId && typeof chat.founderId === "object" && chat.founderId.name) return chat.founderId;
-    if (chat.investorId && typeof chat.investorId === "object" && chat.investorId.name) return chat.investorId;
-    return {};
+  const founder = chat.founderId && typeof chat.founderId === "object" ? chat.founderId : null;
+  const investor = chat.investorId && typeof chat.investorId === "object" ? chat.investorId : null;
+
+  if (founder && founder._id && founder._id.toString() !== currentUid && (founder.name || founder.username)) {
+    return founder;
+  }
+  if (investor && investor._id && investor._id.toString() !== currentUid && (investor.name || investor.username)) {
+    return investor;
   }
 
-  // If founderId & investorId are populated user objects
-  if (chat.founderId && typeof chat.founderId === "object" && chat.founderId._id) {
-    const founderIdStr = chat.founderId._id.toString();
-    if (founderIdStr !== currentUid && chat.founderId.name) return chat.founderId;
-  }
-  if (chat.investorId && typeof chat.investorId === "object" && chat.investorId._id) {
-    const investorIdStr = chat.investorId._id.toString();
-    if (investorIdStr !== currentUid && chat.investorId.name) return chat.investorId;
-  }
-
-  // Check participants array next
   if (Array.isArray(chat.participants)) {
     const otherPart = chat.participants.find(
       (p) => p && typeof p === "object" && p._id && p._id.toString() !== currentUid
     );
-    if (otherPart && otherPart.name) return otherPart;
+    if (otherPart && (otherPart.name || otherPart.username)) return otherPart;
   }
 
-  // Fallback
-  const isFounder = currentUser?.role === "founder";
-  const partner = isFounder ? chat.investorId : chat.founderId;
-  if (partner && typeof partner === "object" && partner.name) return partner;
-  return chat.otherUser || {};
+  if (chat.otherUser && typeof chat.otherUser === "object" && (chat.otherUser.name || chat.otherUser.username)) {
+    return chat.otherUser;
+  }
+
+  if (founder && currentUid && founder._id.toString() === currentUid && investor) {
+    return investor;
+  }
+  if (investor && currentUid && investor._id.toString() === currentUid && founder) {
+    return founder;
+  }
+
+  return { name: "User", username: "user", avatar: null };
 }
 
 // WhatsApp-style Call Log Card Component (Screenshot 1)
