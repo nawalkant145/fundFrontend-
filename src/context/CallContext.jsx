@@ -181,6 +181,16 @@ export function CallProvider({ children }) {
         .getTracks()
         .forEach((t) => pc.addTrack(t, localStreamRef.current));
     }
+
+    // Ensure a video transceiver exists so screen sharing can replace/send video track seamlessly
+    const senders = pc.getSenders();
+    const hasVideoSender = senders.some((s) => s.track?.kind === "video");
+    if (!hasVideoSender) {
+      try {
+        pc.addTransceiver("video", { direction: "sendrecv" });
+      } catch {}
+    }
+
     pcRef.current = pc;
     return pc;
   };
@@ -399,6 +409,19 @@ export function CallProvider({ children }) {
     sendMediaState({ cameraOff: nextCameraOff });
   }, [cameraOff, isScreenSharing, sendMediaState]);
 
+  const renegotiate = useCallback(async () => {
+    const pc = pcRef.current;
+    const info = callInfoRef.current;
+    if (!pc || !info?.peerId || !socket) return;
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("webrtc_offer", { targetId: info.peerId, offer });
+    } catch (err) {
+      console.error("Renegotiation failed:", err);
+    }
+  }, [socket]);
+
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
       // Stop screen share & revert to camera
@@ -412,8 +435,9 @@ export function CallProvider({ children }) {
       const cameraTrack = await ensureCameraTrack();
       if (pcRef.current) {
         const videoSender = pcRef.current.getSenders().find(
-          (s) => s.track?.kind === "video" || s.track === null,
-        );
+          (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+        ) || pcRef.current.getSenders().find((s) => s.track === null);
+
         if (videoSender) {
           if (cameraTrack) {
             cameraTrack.enabled = !cameraOff;
@@ -421,6 +445,9 @@ export function CallProvider({ children }) {
           } else {
             await videoSender.replaceTrack(null);
           }
+        } else if (cameraTrack) {
+          pcRef.current.addTrack(cameraTrack, localStreamRef.current);
+          await renegotiate();
         }
       }
 
@@ -430,8 +457,8 @@ export function CallProvider({ children }) {
       // Start screen share
       try {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
+          video: { cursor: "always" },
+          audio: false,
         });
         const screenTrack = displayStream.getVideoTracks()[0];
         screenStreamRef.current = displayStream;
@@ -439,12 +466,14 @@ export function CallProvider({ children }) {
 
         if (pcRef.current) {
           const videoSender = pcRef.current.getSenders().find(
-            (s) => s.track?.kind === "video" || s.track === null,
-          );
+            (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+          ) || pcRef.current.getSenders().find((s) => s.track === null);
+
           if (videoSender) {
             await videoSender.replaceTrack(screenTrack);
           } else {
             pcRef.current.addTrack(screenTrack, displayStream);
+            await renegotiate();
           }
         }
 
@@ -459,8 +488,9 @@ export function CallProvider({ children }) {
           const cameraTrack = await ensureCameraTrack();
           if (pcRef.current) {
             const videoSender = pcRef.current.getSenders().find(
-              (s) => s.track?.kind === "video" || s.track === null,
-            );
+              (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+            ) || pcRef.current.getSenders().find((s) => s.track === null);
+
             if (videoSender) {
               if (cameraTrack) {
                 cameraTrack.enabled = !cameraOff;
@@ -483,7 +513,7 @@ export function CallProvider({ children }) {
         }
       }
     }
-  }, [isScreenSharing, cameraOff, toast, sendMediaState]);
+  }, [isScreenSharing, cameraOff, toast, sendMediaState, renegotiate]);
 
   // ─── Duration timer ─────────────────────────
   useEffect(() => {
