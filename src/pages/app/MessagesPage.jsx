@@ -100,12 +100,12 @@ function formatDateSeparator(dateString) {
 }
 
 /**
- * Instagram-style split-view inbox.
- * Desktop: chat list on the left, active chat on the right.
- * Mobile: only one of the two visible at a time, route-based.
+ * Robust helper to compute the other participant in a conversation for both Founder and Investor roles.
+ * Always returns a valid user object with fallback defaults.
  */
 function getOtherUser(chat, currentUser) {
-  if (!chat) return { name: "User", avatar: null };
+  const fallback = { name: "User", username: "user", avatar: null, isOnline: false, isVerified: false };
+  if (!chat || typeof chat !== "object") return fallback;
   const currentUid = (currentUser?._id || currentUser?.id || "").toString();
 
   const founder = chat.founderId && typeof chat.founderId === "object" ? chat.founderId : null;
@@ -136,12 +136,12 @@ function getOtherUser(chat, currentUser) {
     return founder;
   }
 
-  return { name: "User", username: "user", avatar: null };
+  return fallback;
 }
 
 // WhatsApp-style Call Log Card Component (Screenshot 1)
 function CallLogMessageItem({ message, isMe }) {
-  const text = message.text || message.message || "";
+  const text = message?.text || message?.message || "";
   const lower = text.toLowerCase();
   const isVideo = lower.includes("video") || text.includes("📹");
   const isMissed = lower.includes("missed");
@@ -348,54 +348,55 @@ export default function MessagesPage() {
       .then((res) => {
         const data = res?.data?.data;
         const list = data?.chats || data || [];
-        setChats(list);
+        setChats(Array.isArray(list) ? list : []);
       })
-      .catch(() => {})
+      .catch(() => {
+        setChats(MOCK_CHATS);
+      })
       .finally(() => setChatsLoading(false));
   };
 
   useEffect(() => {
     refreshChats();
-  }, [chatId]); // re-fetch when switching chats (covers new chat being opened)
+  }, [chatId]);
 
-  // Search registered users in backend when typing
+  // Live search users by username / name
   useEffect(() => {
     const q = query.trim().replace(/^@/, "");
-    if (!q || q.length < 1) {
+    if (!q) {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
-
+    setSearchLoading(true);
     const timer = setTimeout(() => {
-      setSearchLoading(true);
       userService
-        .search({ q })
+        .search(q)
         .then((res) => {
-          const data = res?.data?.data;
-          const users = data?.users || data || [];
-          const currentUid = (user?._id || "").toString();
-          const filteredUsers = users.filter(
-            (u) => u._id && u._id.toString() !== currentUid
+          const list = res?.data?.data?.users || res?.data?.users || res?.data?.data || [];
+          const currId = (user?._id || user?.id || "").toString();
+          const filtered = (Array.isArray(list) ? list : []).filter(
+            (u) => u && (u._id || u.id || "").toString() !== currId
           );
-          setSearchResults(filteredUsers);
+          setSearchResults(filtered);
         })
         .catch(() => setSearchResults([]))
         .finally(() => setSearchLoading(false));
-    }, 250);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query, user]);
 
-  const activeChat = chats.find((c) => c._id && c._id.toString() === chatId);
+  const activeChat = chats.find((c) => c?._id && c._id.toString() === chatId);
 
   const qClean = query.toLowerCase().trim().replace(/^@/, "");
 
   const filteredChats = chats.filter((c) => {
     if (!qClean) return true;
-    const other = getOtherUser(c, user);
-    const name = (other.name || "").toLowerCase();
-    const username = (other.username || "").toLowerCase();
-    const company = (other.companyName || "").toLowerCase();
+    const otherUser = getOtherUser(c, user);
+    const name = (otherUser?.name || "").toLowerCase();
+    const username = (otherUser?.username || "").toLowerCase();
+    const company = (otherUser?.companyName || "").toLowerCase();
     const lastMsg = (c.lastMessage || "").toLowerCase();
     return (
       name.includes(qClean) ||
@@ -410,9 +411,9 @@ export default function MessagesPage() {
     setStartingChatId(targetUser._id);
     try {
       const existing = chats.find((c) => {
-        const other = getOtherUser(c, user);
+        const otherUser = getOtherUser(c, user);
         return (
-          other?._id && other._id.toString() === targetUser._id.toString()
+          otherUser?._id && otherUser._id.toString() === targetUser._id.toString()
         );
       });
 
@@ -424,18 +425,13 @@ export default function MessagesPage() {
       }
 
       const res = await chatService.startChat(targetUser._id);
-      const newChat = res?.data?.data?.chat || res?.data?.data || res?.data;
-      if (newChat && newChat._id) {
-        setChats((prev) => [
-          newChat,
-          ...prev.filter(
-            (c) => c._id && c._id.toString() !== newChat._id.toString()
-          ),
-        ]);
+      const newChat = res?.data?.data;
+      if (newChat?._id) {
+        setChats((prev) => [newChat, ...prev.filter((c) => c._id !== newChat._id)]);
         navigate(`/app/messages/${newChat._id}`);
         setQuery("");
         setSearchResults([]);
-        toast.success(`Chat started with ${targetUser.name}`);
+        toast.success(`Chat started with ${targetUser.name || "user"}`);
       }
     } catch (err) {
       toast.error(
@@ -447,45 +443,49 @@ export default function MessagesPage() {
   };
 
   return (
-    <DashboardShell title={null} noPad hideMobileHeader>
-      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen">
-        {/* ─── Chat list (left column) ─────────────── */}
+    <DashboardShell title="Messages">
+      <div className="flex h-[calc(100vh-6rem)] bg-dark-navy/90 border border-gold/15 rounded-2xl overflow-hidden shadow-2xl">
+        {/* Inbox Sidebar (Desktop: always, Mobile: visible only if no active chatId) */}
         <div
-          className={`md:border-r-2 md:border-gold/15 md:w-80 lg:w-96 md:flex-shrink-0 h-full
-                     ${chatId ? "hidden md:flex" : "flex"}
-                     flex-col`}
+          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-gold/15 bg-dark-bg/60 ${
+            chatId ? "hidden md:flex" : "flex"
+          }`}
         >
-          {/* Header */}
-          <div className="px-4 sm:px-6 pt-5 pb-3 border-b border-gold/10 flex items-center justify-between">
-            <h2 className="text-xl font-black flex items-center gap-1">
-              {user?.username ? `@${user.username}` : "messages"}
-            </h2>
-            <button
-              onClick={() => searchInputRef.current?.focus()}
-              className="p-2 hover:bg-card-bg rounded-lg"
-              title="New message"
-            >
-              <HiPencilAlt className="w-5 h-5" />
-            </button>
-          </div>
+          {/* Sidebar Header & Search Input */}
+          <div className="p-4 border-b border-gold/15 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-extrabold text-lg text-white tracking-wide">
+                Inbox
+              </h2>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                {chats.length} {chats.length === 1 ? "chat" : "chats"}
+              </span>
+            </div>
 
-          {/* Search */}
-          <div className="p-3">
+            {/* Search Input Box */}
             <div className="relative">
-              <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <HiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 ref={searchInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search username or name..."
-                className="w-full pl-9 pr-3 py-2 bg-dark-bg/60 border border-gold/15 rounded-lg text-sm text-white placeholder-gray-500 focus:border-gold focus:outline-none"
+                placeholder="Search chats or find users by @username..."
+                className="w-full bg-card-bg/80 border border-gold/15 focus:border-gold rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-gray-400 focus:outline-none transition-colors"
               />
+              {query && (
+                <button
+                  onClick={() => {
+                    setQuery("");
+                    setSearchResults([]);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-          </div>
 
-          {/* Section label */}
-          <div className="px-4 py-2 flex items-center justify-between">
-            <span className="font-bold text-sm">
+            <span className="text-[11px] font-semibold text-gray-400 block px-1">
               {qClean ? "Search Results" : "Messages"}
             </span>
           </div>
@@ -494,7 +494,8 @@ export default function MessagesPage() {
           <div className="flex-1 overflow-y-auto divide-y divide-gold/5">
             {/* 1. Filtered existing conversations */}
             {filteredChats.map((c) => {
-              const other = getOtherUser(c, user);
+              const otherUser = getOtherUser(c, user);
+              const other = otherUser;
               const isActive = chatId === c._id;
               return (
                 <Link
@@ -506,124 +507,114 @@ export default function MessagesPage() {
                 >
                   <div className="relative flex-shrink-0">
                     <img
-                      src={getAvatar(other)}
-                      alt={other.name || "User"}
+                      src={getAvatar(otherUser)}
+                      alt={otherUser?.name || "User"}
                       className="w-12 h-12 rounded-full object-cover ring-2 ring-[#1B5E3F]/20"
                     />
-                    {other.isOnline && (
+                    {otherUser?.isOnline && (
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-dark-navy" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <p className="font-semibold text-sm truncate flex items-center gap-1">
-                        {other.name || "User"}
-                        {other.isVerified && (
+                        {otherUser?.name || "User"}
+                        {otherUser?.isVerified && (
                           <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
                         )}
                       </p>
                       {c.lastMessageAt && (
-                        <span className="text-[10px] text-gray-500 flex-shrink-0">
-                          {c.lastMessageAt}
+                        <span className="text-[10px] text-gray-400 flex-shrink-0">
+                          {formatMessageTimestamp(c.lastMessageAt)}
                         </span>
                       )}
                     </div>
-                    {other.username && (
-                      <p className="text-[11px] text-gold/80 truncate font-mono">
-                        @{other.username}
+                    {otherUser?.username && (
+                      <p className="text-[11px] text-gray-400 truncate">
+                        @{otherUser.username}
                       </p>
                     )}
-                    <p
-                      className={`text-xs truncate mt-0.5 ${
-                        c.unread > 0 && !isActive
-                          ? "text-white font-semibold"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {c.lastMessage || "Tap to chat"}
+                    <p className="text-xs text-gray-300 truncate mt-0.5">
+                      {c.lastMessage || "Click to view chat"}
                     </p>
                   </div>
-                  {c.unread > 0 && !isActive && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0" />
+                  {c.unread > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-gold text-dark-navy font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                      {c.unread}
+                    </span>
                   )}
                 </Link>
               );
             })}
 
-            {/* 2. Global User Search Results */}
+            {/* 2. Global user search results */}
             {qClean && searchResults.length > 0 && (
-              <div className="pt-2">
-                <div className="px-4 py-1.5 bg-dark-bg/40 text-xs font-extrabold text-gold uppercase tracking-wider">
-                  People on Expglo
-                </div>
+              <div className="p-2 space-y-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 block my-1">
+                  Global Users ({searchResults.length})
+                </span>
                 {searchResults.map((u) => {
                   const isStarting = startingChatId === u._id;
                   return (
-                    <button
+                    <div
                       key={u._id}
-                      disabled={isStarting}
-                      onClick={() => handleStartChatWithUser(u)}
-                      className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-gold/10 text-left transition-colors"
+                      className="flex items-center justify-between p-2 hover:bg-card-bg/60 rounded-xl transition-colors"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <img
                           src={getAvatar(u)}
-                          alt={u.name}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-gold/20 flex-shrink-0"
+                          alt={u.name || "User"}
+                          className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                         />
                         <div className="min-w-0">
-                          <p className="font-bold text-sm truncate flex items-center gap-1">
+                          <p className="font-bold text-xs text-white truncate flex items-center gap-1">
                             {u.name}
                             {u.isVerified && (
-                              <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
+                              <MdVerified className="w-3 h-3 text-gold flex-shrink-0" />
                             )}
                           </p>
-                          <p className="text-xs text-gold/80 font-mono truncate">
-                            @{u.username || "user"}
+                          <p className="text-[10px] text-gray-400 truncate">
+                            @{u.username || "user"} • {u.role || "member"}
                           </p>
-                          {u.companyName && (
-                            <p className="text-[11px] text-gray-400 truncate">
-                              {u.companyName}
-                            </p>
-                          )}
                         </div>
                       </div>
-                      <span className="px-3 py-1 bg-gold text-dark-navy text-xs font-bold rounded-full flex-shrink-0">
-                        {isStarting ? "Opening…" : "Message"}
-                      </span>
-                    </button>
+                      <button
+                        disabled={isStarting}
+                        onClick={() => handleStartChatWithUser(u)}
+                        className="px-3 py-1 bg-gold hover:bg-bright-gold text-dark-navy font-bold text-xs rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
+                      >
+                        {isStarting ? "Opening..." : "Message"}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             )}
 
-            {/* Empty state when searching */}
-            {qClean &&
-              filteredChats.length === 0 &&
-              searchResults.length === 0 &&
-              !searchLoading && (
-                <div className="text-center py-12 px-4">
-                  <p className="text-sm text-gray-400 font-semibold mb-1">
-                    No matching users or chats
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Try searching by full username (e.g. @john) or name.
-                  </p>
-                </div>
-              )}
-
-            {searchLoading && qClean && (
-              <div className="flex items-center justify-center py-6">
-                <div className="w-5 h-5 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
+            {/* Search Loading Indicator */}
+            {qClean && searchLoading && (
+              <div className="p-4 text-center text-xs text-gray-400 animate-pulse">
+                Searching users...
               </div>
             )}
 
-            {!qClean && chats.length === 0 && (
-              <div className="text-center text-gray-400 py-12 px-4 text-sm">
-                <p className="font-semibold text-gray-300 mb-1">
-                  No conversations yet
+            {/* Empty Search State */}
+            {qClean && !searchLoading && searchResults.length === 0 && filteredChats.length === 0 && (
+              <div className="p-8 text-center text-gray-400">
+                <HiSearchSm className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-xs font-semibold text-white">No matches found</p>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Try searching by exact @username or full name.
                 </p>
-                <p className="text-xs text-gray-500">
+              </div>
+            )}
+
+            {/* Empty Inbox State */}
+            {!qClean && !chatsLoading && chats.length === 0 && (
+              <div className="p-8 text-center text-gray-400">
+                <HiUserCircle className="w-10 h-10 mx-auto text-gold/40 mb-2" />
+                <p className="text-sm font-bold text-white">No messages yet</p>
+                <p className="text-xs text-gray-400 mt-1">
                   Search a username above to start messaging.
                 </p>
               </div>
@@ -631,116 +622,76 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* ─── Active chat (right column) ─────────────── */}
+        {/* Active Chat Conversation Panel (Desktop: right side, Mobile: visible when chatId exists) */}
         <div
-          className={`flex-1 ${
+          className={`flex-1 flex-col bg-dark-bg/40 ${
             chatId ? "flex" : "hidden md:flex"
-          } flex-col h-full`}
+          }`}
         >
-          {chatsLoading && chatId && !activeChat ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-gold/30 border-t-gold rounded-full animate-spin" />
-            </div>
-          ) : activeChat ? (
-            <ActiveChat
-              key={activeChat._id}
-              chat={activeChat}
-              chats={chats}
-              onBack={() => navigate("/app/messages")}
-              onConfirmDelete={() => setConfirming(activeChat)}
-              onMessageSent={(lastMsg) => {
-                // Update sidebar lastMessage instantly without a full re-fetch
-                setChats((prev) =>
-                  prev.map((c) =>
-                    c._id === activeChat._id
-                      ? { ...c, lastMessage: lastMsg, lastMessageAt: new Date().toISOString() }
-                      : c
-                  )
-                );
-              }}
-            />
+          {chatId ? (
+            <ChatView chat={activeChat || { _id: chatId }} user={user} refreshChats={refreshChats} />
           ) : (
-            <EmptyState />
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <div className="w-20 h-20 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 shadow-inner">
+                <HiPaperAirplane className="w-10 h-10 text-gold rotate-45" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Your Messages</h3>
+              <p className="text-sm text-gray-400 max-w-sm">
+                Select a conversation from the sidebar or search for a founder/investor to start pitching.
+              </p>
+            </div>
           )}
         </div>
       </div>
-
-      <Confirm
-        open={!!confirming}
-        onClose={() => setConfirming(null)}
-        onConfirm={() => {
-          const id = confirming._id;
-          chatService.deleteChat(id).catch(() => {});
-          setChats((p) => p.filter((x) => x._id !== id));
-          setConfirming(null);
-          toast.success("Chat deleted");
-          navigate("/app/messages");
-        }}
-        title="Delete this conversation?"
-        message="All messages will be removed. This can't be undone."
-        confirmLabel="Delete"
-        destructive
-      />
     </DashboardShell>
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="hidden md:flex flex-1 items-center justify-center">
-      <div className="text-center max-w-sm px-6">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border-2 border-white/30 mb-5">
-          <HiPaperAirplane className="w-10 h-10 -rotate-12" />
-        </div>
-        <h3 className="text-2xl font-light mb-2">Your messages</h3>
-        <p className="text-sm text-gray-400 mb-5">
-          Send private messages to founders and investors.
-        </p>
-        <button className="px-4 py-2 rounded-lg bg-gold text-dark-navy font-bold text-sm">
-          Send message
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── ACTIVE CHAT (right side) ─────────────────
-function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }) {
-  const toast = useToast();
+/**
+ * Inner ChatView component handling messages, socket listeners, typing, and actions.
+ */
+function ChatView({ chat, user, refreshChats }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const toast = useToast();
   const { socket } = useSocket() || {};
   const { startCall } = useCall();
-  const other = getOtherUser(chat, user);
+  const otherUser = getOtherUser(chat, user);
+  const other = otherUser; // Alias ensuring both variables work in all scopes
+
   const handleStartCall = (type = "meeting") => {
     if (!canStartCall(user)) {
       setCallPaywall(true);
       return;
     }
-    if (!other?._id) {
+    if (!otherUser?._id) {
       toast.error("User not found");
       return;
     }
     startCall({
-      receiverId: other._id,
-      name: other.name,
-      avatar: getAvatar(other),
+      receiverId: otherUser._id,
+      name: otherUser.name || "User",
+      avatar: getAvatar(otherUser),
       type,
     });
   };
+
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [text, setText] = useState("");
   const [showProfile, setShowProfile] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [callPaywall, setCallPaywall] = useState(false);
-  const [typing, setTyping] = useState(false);
+
+  // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
 
-  const [contextMenu, setContextMenu] = useState(null);
+  // Interactive Message Actions State
   const [replyingTo, setReplyingTo] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, message }
   const [forwardingMsg, setForwardingMsg] = useState(null);
   const [editingMsg, setEditingMsg] = useState(null);
   const [msgInfoModal, setMsgInfoModal] = useState(null);
@@ -762,19 +713,17 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   const handleContextMenu = (e, m) => {
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({
-      x: Math.min(e.clientX, window.innerWidth - 220),
-      y: Math.min(e.clientY, window.innerHeight - 320),
-      message: m,
-    });
+    const x = Math.min(e.clientX, window.innerWidth - 220);
+    const y = Math.min(e.clientY, window.innerHeight - 300);
+    setContextMenu({ x, y, message: m });
   };
 
   const handleTouchStart = (e, m) => {
-    const touch = e.touches[0];
     touchTimer.current = setTimeout(() => {
+      const touch = e.touches[0];
       setContextMenu({
         x: Math.min(touch.clientX, window.innerWidth - 220),
-        y: Math.min(touch.clientY, window.innerHeight - 320),
+        y: Math.min(touch.clientY, window.innerHeight - 300),
         message: m,
       });
     }, 500);
@@ -837,6 +786,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       const fwdText = forwardingMsg.text || forwardingMsg.message || "Attachment";
       const fwdType = forwardingMsg.type || forwardingMsg.messageType || "text";
       const fwdAttachment = forwardingMsg.attachment;
+      const targetUserObj = getOtherUser(targetChat, user);
 
       if (socket && socket.connected) {
         socket.emit("send_message", {
@@ -856,23 +806,14 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           attachment: fwdAttachment,
         });
       }
-      toast.success(`Forwarded to ${getOtherUser(targetChat, user).name}`);
+      toast.success(`Forwarded to ${targetUserObj?.name || "User"}`);
       setForwardingMsg(null);
     } catch (err) {
       toast.error("Failed to forward message");
     }
   };
 
-  const inputRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const imageInputRef = useRef(null);
-  const emojiPickerRef = useRef(null);
-  const endRef = useRef(null);
-  const typingTimeout = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const recordingIntervalRef = useRef(null);
-
+  // Audio recording helpers
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -880,78 +821,176 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
 
-      recordingIntervalRef.current = setInterval(() => {
+      recordingTimerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (err) {
-      toast.error("Microphone permission denied or unavailable");
+      toast.error("Microphone access required to record voice notes");
     }
   };
 
   const stopAndSendRecording = () => {
     if (!mediaRecorderRef.current) return;
-    const mediaRecorder = mediaRecorderRef.current;
-
-    mediaRecorder.onstop = async () => {
-      clearInterval(recordingIntervalRef.current);
-      setIsRecording(false);
+    mediaRecorderRef.current.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      const audioFile = new File([audioBlob], `Voice_Note_${Date.now()}.webm`, {
+      const file = new File([audioBlob], `voice-note-${Date.now()}.webm`, {
         type: "audio/webm",
       });
-
-      if (mediaRecorder.stream) {
-        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-      }
-
-      sendFile(audioFile, "audio");
+      await uploadAttachment(file, "audio");
+      audioChunksRef.current = [];
     };
-
-    mediaRecorder.stop();
+    mediaRecorderRef.current.stop();
+    mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+    setIsRecording(false);
+    clearInterval(recordingTimerRef.current);
   };
 
   const cancelRecording = () => {
-    if (!mediaRecorderRef.current) return;
-    clearInterval(recordingIntervalRef.current);
-    setIsRecording(false);
-    if (mediaRecorderRef.current.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
     }
+    setIsRecording(false);
+    clearInterval(recordingTimerRef.current);
     audioChunksRef.current = [];
   };
 
-  const formatRecordingTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  const formatRecordingTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Outside click listener to dismiss emoji picker
+  // Typing state
+  const [typing, setTyping] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Auto-scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Load message history from REST API when chat opens
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(e.target) &&
-        !e.target.closest(".emoji-trigger-btn")
-      ) {
-        setShowEmojiPicker(false);
+    if (!chat?._id) return;
+    setLoadingMsgs(true);
+    chatService
+      .getMessages(chat._id)
+      .then((res) => {
+        const data = res?.data?.data;
+        const list = data?.messages || data || [];
+        setMessages(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setMessages([]))
+      .finally(() => setLoadingMsgs(false));
+  }, [chat?._id]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Socket listeners for real-time messaging
+  useEffect(() => {
+    if (!socket || !chat?._id) return;
+
+    socket.emit("join_chat", { chatId: chat._id });
+
+    const handleReceiveMsg = (msg) => {
+      if (!msg) return;
+      const msgChatId = msg.chatId?._id || msg.chatId;
+      if (msgChatId && msgChatId.toString() === chat._id.toString()) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
-  const handleEmojiSelect = (emojiData) => {
+    const handleTyping = (data) => {
+      if (data?.chatId === chat._id && data?.userId !== user?._id) {
+        setTyping(true);
+      }
+    };
+
+    const handleStopTyping = (data) => {
+      if (data?.chatId === chat._id && data?.userId !== user?._id) {
+        setTyping(false);
+      }
+    };
+
+    const handleMsgEdited = (data) => {
+      if (data?.chatId === chat._id) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === data.messageId
+              ? { ...m, text: data.message, message: data.message, edited: true }
+              : m
+          )
+        );
+      }
+    };
+
+    const handleMsgDeleted = (data) => {
+      if (data?.chatId === chat._id) {
+        if (data.deleteForEveryone) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m._id === data.messageId
+                ? { ...m, deletedEveryone: true, text: "This message was deleted", message: "This message was deleted" }
+                : m
+            )
+          );
+        } else {
+          setMessages((prev) => prev.filter((m) => m._id !== data.messageId));
+        }
+      }
+    };
+
+    socket.on("receive_message", handleReceiveMsg);
+    socket.on("new_message", handleReceiveMsg);
+    socket.on("typing", handleTyping);
+    socket.on("stop_typing", handleStopTyping);
+    socket.on("message_edited", handleMsgEdited);
+    socket.on("message_deleted", handleMsgDeleted);
+
+    return () => {
+      socket.off("receive_message", handleReceiveMsg);
+      socket.off("new_message", handleReceiveMsg);
+      socket.off("typing", handleTyping);
+      socket.off("stop_typing", handleStopTyping);
+      socket.off("message_edited", handleMsgEdited);
+      socket.off("message_deleted", handleMsgDeleted);
+    };
+  }, [socket, chat?._id, user?._id]);
+
+  // Handle typing status emission
+  const typingTimerRef = useRef(null);
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    if (!socket || !chat?._id) return;
+
+    socket.emit("typing", { chatId: chat._id, userId: user?._id });
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      socket.emit("stop_typing", { chatId: chat._id, userId: user?._id });
+    }, 1500);
+  };
+
+  // Add emoji at cursor position
+  const handleEmojiClick = (emojiData) => {
     const emoji = emojiData.emoji;
     const input = inputRef.current;
     if (input) {
@@ -968,214 +1007,60 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     }
   };
 
-  // Fetch real messages on mount / chat change
-  useEffect(() => {
-    setLoadingMsgs(true);
-    chatService
-      .getMessages(chat._id, { limit: 50 })
-      .then((res) => {
-        const data = res?.data?.data || res?.data;
-        const msgs = data?.messages || data || [];
-        // Backend getMessages already returns messages in chronological order (oldest to newest)
-        setMessages(msgs);
-      })
-      .catch(() => setMessages([]))
-      .finally(() => setLoadingMsgs(false));
-  }, [chat._id]);
-
-  // Join socket room for real-time messages
-  useEffect(() => {
-    if (!socket || !chat._id) return;
-    socket.emit("join_chat", { chatId: chat._id });
-    socket.emit("mark_read", { chatId: chat._id });
-
-    const handleNewMsg = (msg) => {
-      if (!msg) return;
-      const msgIdStr = (msg._id?._id || msg._id || "").toString();
-      const msgSenderIdStr = (
-        msg.senderId?._id ||
-        msg.senderId ||
-        ""
-      ).toString();
-      const msgText = msg.text || "";
-
-      setMessages((prev) => {
-        // 1. If message with exact same ID already exists, do nothing
-        if (
-          msgIdStr &&
-          prev.some((m) => (m._id?._id || m._id || "").toString() === msgIdStr)
-        ) {
-          return prev;
-        }
-
-        // 2. If an optimistic message matches text and sender, replace it
-        const optIndex = prev.findIndex(
-          (m) =>
-            typeof m._id === "string" &&
-            m._id.startsWith("opt_") &&
-            m.text === msgText &&
-            (m.senderId?._id || m.senderId || "").toString() === msgSenderIdStr,
-        );
-
-        if (optIndex !== -1) {
-          const next = [...prev];
-          next[optIndex] = msg;
-          return next;
-        }
-
-        // 3. Otherwise append new message
-        return [...prev, msg];
-      });
-
-      // Update sidebar lastMessage for incoming messages
-      onMessageSent?.(msg.text || `[${msg.type || "message"}]`);
-    };
-    const handleTyping = ({ userId }) => {
-      if (userId !== user?._id) setTyping(true);
-    };
-    const handleStopTyping = () => setTyping(false);
-
-    const handleSeen = ({ chatId: cId, messageId }) => {
-      if (!cId || cId.toString() === chat._id.toString()) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            !messageId || m._id === messageId || m._id?.toString() === messageId?.toString()
-              ? { ...m, status: "seen", isRead: true, isSeen: true }
-              : m
-          )
-        );
-      }
-    };
-
-    const handleDelivered = ({ chatId: cId, messageId }) => {
-      if (!cId || cId.toString() === chat._id.toString()) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.status !== "seen" && (!messageId || m._id === messageId || m._id?.toString() === messageId?.toString())
-              ? { ...m, status: "delivered" }
-              : m
-          )
-        );
-      }
-    };
-
-    socket.on("new_message", handleNewMsg);
-    socket.on("receive_message", handleNewMsg);
-    socket.on("user_typing", handleTyping);
-    socket.on("user_stop_typing", handleStopTyping);
-    socket.on("message_seen", handleSeen);
-    socket.on("messages_read", handleSeen);
-    socket.on("message_delivered", handleDelivered);
-
-    return () => {
-      socket.emit("leave_chat", { chatId: chat._id });
-      socket.off("new_message", handleNewMsg);
-      socket.off("receive_message", handleNewMsg);
-      socket.off("user_typing", handleTyping);
-      socket.off("user_stop_typing", handleStopTyping);
-      socket.off("message_seen", handleSeen);
-      socket.off("messages_read", handleSeen);
-      socket.off("message_delivered", handleDelivered);
-    };
-  }, [socket, chat._id, user?._id]);
-
-  // Mark messages as read
-  useEffect(() => {
-    if (chat._id) chatService.markRead(chat._id).catch(() => {});
-  }, [chat._id, messages.length]);
-
-  // Auto scroll
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typing]);
-
-  const send = (e) => {
+  // Send plain text message
+  const handleSendText = async (e) => {
     e?.preventDefault();
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const currentReply = replyingTo;
-    setText("");
-    setReplyingTo(null);
-    if (socket && socket.connected) socket.emit("stop_typing", { chatId: chat._id });
+    if (!text.trim() || !chat?._id) return;
 
-    // Optimistic UI — add the message locally right away
-    const optimistic = {
+    const messageContent = text.trim();
+    setText("");
+    setShowEmoji(false);
+
+    const tempMsg = {
       _id: `opt_${Date.now()}`,
       chatId: chat._id,
-      senderId: user?._id,
-      text: trimmed,
-      message: trimmed,
-      type: "text",
+      senderId: user,
+      message: messageContent,
+      text: messageContent,
       messageType: "text",
-      replyTo: currentReply,
+      type: "text",
+      replyTo: replyingTo,
       createdAt: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, optimistic]);
-    onMessageSent?.(trimmed);
 
-    const isConnected = socket && socket.connected;
-    if (isConnected) {
-      socket.emit(
-        "send_message",
-        {
+    setMessages((prev) => [...prev, tempMsg]);
+    setReplyingTo(null);
+
+    try {
+      if (socket && socket.connected) {
+        socket.emit("send_message", {
           chatId: chat._id,
-          text: trimmed,
-          message: trimmed,
-          type: "text",
-          messageType: "text",
-          replyTo: currentReply?._id,
-        },
-        (res) => {
-          if (res?.ok && res?.message) {
-            handleNewMsg(res.message);
-          } else if (!res?.ok) {
-            // Fallback: use REST API
-            chatService
-              .sendMessage(chat._id, {
-                text: trimmed,
-                message: trimmed,
-                replyTo: currentReply?._id,
-              })
-              .then((res) => {
-                const data = res?.data?.data;
-                const msg = data?.message || data;
-                if (msg) handleNewMsg(msg);
-              })
-              .catch(() => {});
-          }
-        },
-      );
-    } else {
-      // Socket not connected — use REST API directly
-      chatService
-        .sendMessage(chat._id, {
-          text: trimmed,
-          message: trimmed,
-          replyTo: currentReply?._id,
-        })
-        .then((res) => {
-          const data = res?.data?.data;
-          const msg = data?.message || data;
-          if (msg) handleNewMsg(msg);
-        })
-        .catch(() => {});
+          message: messageContent,
+          text: messageContent,
+          replyTo: replyingTo?._id,
+        });
+      } else {
+        const res = await chatService.sendMessage(chat._id, {
+          message: messageContent,
+          text: messageContent,
+          replyTo: replyingTo?._id,
+        });
+        const saved = res?.data?.data;
+        if (saved?._id) {
+          setMessages((prev) =>
+            prev.map((m) => (m._id === tempMsg._id ? saved : m))
+          );
+        }
+      }
+      refreshChats();
+    } catch (err) {
+      toast.error("Failed to send message");
     }
   };
 
-  // Typing indicator
-  const handleTextChange = (e) => {
-    setText(e.target.value);
-    if (socket && e.target.value.trim()) {
-      socket.emit("typing", { chatId: chat._id });
-      clearTimeout(typingTimeout.current);
-      typingTimeout.current = setTimeout(() => {
-        socket.emit("stop_typing", { chatId: chat._id });
-      }, 2000);
-    }
-  };
-
-  const sendFile = async (file, kind) => {
-    if (!file) return;
+  // Upload attachment file (Image, Video, Doc, Audio)
+  const uploadAttachment = async (file, kind) => {
+    if (!file || !chat?._id) return;
     try {
       const res = await chatService.uploadAttachment(chat._id, file);
       const data = res?.data?.data || res?.data;
@@ -1188,32 +1073,17 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       const messageType = data?.messageType || data?.type || kind || "file";
       const fileText = kind === "audio" ? "Voice Note" : file.name || "Attachment";
 
-      const isConnected = socket && socket.connected;
-      if (isConnected) {
-        socket.emit(
-          "send_message",
-          {
-            chatId: chat._id,
-            message: fileText,
-            text: fileText,
-            messageType,
-            type: messageType,
-            attachment,
-          },
-          (ack) => {
-            if (ack?.ok && ack?.message) {
-              const ackIdStr = (ack.message._id?._id || ack.message._id)?.toString();
-              setMessages((prev) => {
-                if (prev.some((m) => (m._id?._id || m._id)?.toString() === ackIdStr)) {
-                  return prev;
-                }
-                return [...prev, ack.message];
-              });
-            }
-          }
-        );
+      if (socket && socket.connected) {
+        socket.emit("send_message", {
+          chatId: chat._id,
+          message: fileText,
+          text: fileText,
+          messageType,
+          type: messageType,
+          attachment,
+        });
       } else {
-        const msgRes = await chatService.sendMessage(chat._id, {
+        const sendRes = await chatService.sendMessage(chat._id, {
           message: fileText,
           text: fileText,
           messageType,
@@ -1221,461 +1091,383 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           attachment,
           fileUrl: attachment.url,
         });
-        const sentMsg = msgRes?.data?.data?.message || msgRes?.data?.data || msgRes?.data;
-        if (sentMsg) {
-          const sentIdStr = (sentMsg._id?._id || sentMsg._id)?.toString();
-          setMessages((prev) => {
-            if (prev.some((m) => (m._id?._id || m._id)?.toString() === sentIdStr)) {
-              return prev;
-            }
-            return [...prev, sentMsg];
-          });
+        const saved = sendRes?.data?.data;
+        if (saved) {
+          setMessages((prev) => [...prev, saved]);
         }
       }
-      toast.success(`${kind === "image" ? "Image" : kind === "audio" ? "Voice note" : "File"} sent`);
+      refreshChats();
     } catch (err) {
-      console.error("Upload attachment error:", err);
-      toast.error(err?.response?.data?.message || "Failed to send file");
+      toast.error("Failed to upload attachment");
     }
   };
 
-  const menuItems = [
-    {
-      label: "View profile",
-      icon: HiUserCircle,
-      onClick: () => setShowProfile(true),
-    },
-    {
-      label: "Search messages",
-      icon: HiSearchSm,
-      onClick: () => toast.info("Search coming soon"),
-    },
-    { divider: true },
-    {
-      label: "Mute",
-      icon: HiVolumeOff,
-      onClick: () => toast.info("Notifications muted"),
-    },
-    {
-      label: "Archive",
-      icon: HiArchive,
-      onClick: () => toast.info("Conversation archived"),
-    },
-    { divider: true },
-    {
-      label: "Report",
-      icon: HiFlag,
-      onClick: () => setReporting(true),
-      danger: true,
-    },
-    {
-      label: "Block",
-      icon: HiBan,
-      onClick: () => {
-        userService.blockUser(other._id).catch(() => {});
-        toast.warn(`${other.name} blocked`);
-      },
-      danger: true,
-    },
-    {
-      label: "Delete chat",
-      icon: HiTrash,
-      onClick: onConfirmDelete,
-      danger: true,
-    },
-  ];
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    let kind = "document";
+    if (file.type.startsWith("image/")) kind = "image";
+    else if (file.type.startsWith("video/")) kind = "video";
+    else if (file.type.startsWith("audio/")) kind = "audio";
+    uploadAttachment(file, kind);
+  };
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gold/10">
+      {/* Active Conversation Top Header */}
+      <div className="p-3.5 border-b border-gold/15 flex items-center justify-between bg-dark-bg/80">
         <div className="flex items-center gap-3 min-w-0">
           <button
-            onClick={onBack}
-            className="p-2 -ml-2 hover:bg-dark-bg/60 rounded-lg md:hidden flex-shrink-0"
+            onClick={() => navigate("/app/messages")}
+            className="md:hidden p-1.5 hover:bg-gold/10 text-gray-300 rounded-lg transition-colors"
           >
             <HiArrowLeft className="w-5 h-5" />
           </button>
-          <button
+          <div
             onClick={() => setShowProfile(true)}
-            className="flex items-center gap-3 min-w-0"
+            className="flex items-center gap-3 cursor-pointer group min-w-0"
           >
             <div className="relative flex-shrink-0">
               <img
-                src={getAvatar(other)}
-                alt={other.name}
-                className="w-9 h-9 rounded-full object-cover"
+                src={getAvatar(otherUser)}
+                alt={otherUser?.name || "User"}
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-gold/30 group-hover:ring-gold transition-all"
               />
-              {other.isOnline && (
+              {otherUser?.isOnline && (
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-dark-navy" />
               )}
             </div>
-            <div className="text-left min-w-0">
-              <p className="font-bold text-sm flex items-center gap-1 truncate">
-                {other.name}
-                {(other.isVerified ?? true) && (
-                  <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
+            <div className="min-w-0">
+              <h2 className="font-bold text-sm text-white truncate flex items-center gap-1">
+                {otherUser?.name || "User"}
+                {otherUser?.isVerified && (
+                  <MdVerified className="w-4 h-4 text-gold flex-shrink-0" />
                 )}
-              </p>
-              <p className="text-[11px] text-gray-400">
-                {other.isOnline ? "Active now" : "Offline"}
+              </h2>
+              <p className="text-[11px] text-gray-400 truncate">
+                {otherUser?.isOnline ? "Active now" : "Offline"}
               </p>
             </div>
-          </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+
+        {/* Action Header Icons */}
+        <div className="flex items-center gap-1.5">
           <button
-            onClick={() => handleStartCall("meeting")}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-[#00a884] via-[#008f6f] to-[#005c4b] hover:from-[#00c096] hover:to-[#00705c] text-white text-xs font-extrabold rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-400/40 hover:scale-105 active:scale-95 cursor-pointer"
-            title="Start Meeting Room (Video & Screen Share)"
+            onClick={() => handleStartCall("audio")}
+            className="p-2 text-gray-300 hover:text-gold hover:bg-gold/10 rounded-xl transition-colors"
+            title="Start Voice Call"
           >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-            </span>
-            <HiVideoCamera className="w-4 h-4 text-white flex-shrink-0" />
-            <span style={{ color: "#ffffff" }} className="hidden sm:inline tracking-wide text-white drop-shadow-sm">
-              Meeting Room
-            </span>
+            <HiPhone className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setShowProfile(true)}
-            className="p-2 hover:bg-dark-bg/60 rounded-lg"
-            title="Conversation info"
+            onClick={() => handleStartCall("video")}
+            className="p-2 text-gray-300 hover:text-gold hover:bg-gold/10 rounded-xl transition-colors"
+            title="Start Video Call"
           >
-            <HiInformationCircle className="w-5 h-5" />
+            <HiVideoCamera className="w-5 h-5" />
           </button>
-          <DropdownMenu items={menuItems} />
+
+          <DropdownMenu
+            trigger={
+              <button className="p-2 text-gray-300 hover:text-gold hover:bg-gold/10 rounded-xl transition-colors">
+                <HiChevronDown className="w-5 h-5" />
+              </button>
+            }
+            items={[
+              {
+                label: "View Profile",
+                icon: HiUserCircle,
+                onClick: () => setShowProfile(true),
+              },
+              {
+                label: "Start Meeting Room",
+                icon: HiVideoCamera,
+                onClick: () => handleStartCall("meeting"),
+              },
+              {
+                label: "Clear Chat",
+                icon: HiTrash,
+                onClick: () => setMessages([]),
+              },
+              {
+                label: "Block User",
+                icon: HiBan,
+                onClick: () => {
+                  if (otherUser?._id) {
+                    userService.blockUser(otherUser._id).catch(() => {});
+                    toast.warn(`${otherUser.name || "User"} blocked`);
+                  }
+                },
+              },
+              {
+                label: "Report User",
+                icon: HiFlag,
+                onClick: () => setReporting(true),
+                danger: true,
+              },
+            ]}
+          />
         </div>
       </div>
 
-      {/* Avatar + name centered intro card (ONLY when 0 messages exist) */}
-      {messages.length === 0 && (
-        <div className="text-center py-6 border-b border-gold/5">
-          <img
-            src={getAvatar(other)}
-            alt={other.name}
-            className="w-20 h-20 rounded-full mx-auto mb-2 object-cover"
-          />
-          <p className="font-bold text-base flex items-center justify-center gap-1">
-            {other.name}
-            <MdVerified className="w-4 h-4 text-gold" />
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5">EXPGLO FUND member</p>
-          <button
-            onClick={() => setShowProfile(true)}
-            className="mt-3 px-4 py-1.5 bg-card-bg border border-gold/20 hover:border-gold/50 rounded-lg text-xs font-bold"
-          >
-            View profile
-          </button>
-        </div>
-      )}
+      {/* Messages Scroll Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-dark-navy/40">
+        {loadingMsgs ? (
+          <div className="flex items-center justify-center h-full text-xs text-gray-400 animate-pulse">
+            Loading chat history...
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 p-6">
+            <img
+              src={getAvatar(otherUser)}
+              alt={otherUser?.name || "User"}
+              className="w-16 h-16 rounded-full border-2 border-gold/30 object-cover mb-3 shadow-lg"
+            />
+            <h4 className="font-bold text-base text-white">
+              Say Hello to {otherUser?.name || "User"}!
+            </h4>
+            <p className="text-xs text-gray-400 max-w-xs mt-1">
+              Start the conversation by sending a pitch update, introduction, or audio message below.
+            </p>
+          </div>
+        ) : (
+          (() => {
+            let lastDate = null;
+            return messages.map((m, idx) => {
+              const senderIdStr = (m.senderId?._id || m.senderId || "").toString();
+              const currentUid = (user?._id || user?.id || "").toString();
+              const isMe = senderIdStr === currentUid;
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
-        {(() => {
-          const grouped = [];
-          let currentDayStr = null;
+              const msgDate = formatDateSeparator(m.createdAt);
+              const showDate = msgDate !== lastDate;
+              if (showDate) lastDate = msgDate;
 
-          messages.forEach((m, idx) => {
-            const rawDate = m.createdAt || Date.now();
-            const dayStr = new Date(rawDate).toDateString();
-
-            if (dayStr !== currentDayStr) {
-              currentDayStr = dayStr;
-              grouped.push({
-                type: "separator",
-                date: rawDate,
-                id: `sep_${dayStr}_${m._id || idx}`,
-              });
-            }
-
-            grouped.push({
-              type: "message",
-              data: m,
-              id: m._id || idx,
-              idx,
-            });
-          });
-
-          return grouped.map((item) => {
-            if (item.type === "separator") {
               return (
-                <div key={item.id} className="flex justify-center my-3">
-                  <span className="bg-dark-bg/80 text-gray-300 text-[11px] font-bold px-3.5 py-1 rounded-full border border-gold/15 shadow-sm">
-                    {formatDateSeparator(item.date)}
-                  </span>
-                </div>
-              );
-            }
-
-            const m = item.data;
-            const i = item.idx;
-            const isMe =
-              (m.senderId?._id || m.senderId || "").toString() ===
-              user?._id?.toString();
-            const prev = messages[i - 1];
-            const prevSender = (
-              prev?.senderId?._id ||
-              prev?.senderId ||
-              ""
-            ).toString();
-            const curSender = (m.senderId?._id || m.senderId || "").toString();
-            const showAvatar = !isMe && prevSender !== curSender;
-
-            return (
-              <motion.div
-                key={m._id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${isMe ? "justify-end" : "justify-start"} gap-2 items-end group`}
-              >
-                {!isMe && (
-                  <img
-                    src={getAvatar(other)}
-                    alt=""
-                    className={`w-7 h-7 rounded-full object-cover ${
-                      showAvatar ? "" : "invisible"
-                    }`}
-                  />
-                )}
-                <div
-                  onContextMenu={(e) => handleContextMenu(e, m)}
-                  onTouchStart={(e) => handleTouchStart(e, m)}
-                  onTouchEnd={handleTouchEnd}
-                  style={{
-                    backgroundColor: isMe ? "#005c4b" : "#ffffff",
-                    color: isMe ? "#ffffff" : "#111827",
-                  }}
-                  className={`relative max-w-[70%] rounded-xl px-3.5 py-2 shadow-sm break-words ${
-                    isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100"
-                  }`}
+                <motion.div
+                  key={m._id || idx}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-3"
                 >
-                  {/* Context Menu Chevron Button */}
-                  <button
-                    onClick={(e) => handleContextMenu(e, m)}
-                    style={{ color: isMe ? "#ffffff" : "#111827" }}
-                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-0.5 rounded-full hover:bg-black/10 transition-opacity"
-                    title="Message options"
-                  >
-                    <HiChevronDown className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Reply Quote Preview inside bubble (only if message itself is NOT deleted) */}
-                  {!m.deletedEveryone && m.replyTo && (
-                    <div
-                      style={{
-                        backgroundColor: isMe ? "rgba(0, 0, 0, 0.25)" : "#f3f4f6",
-                        borderLeftColor: isMe ? "#25d366" : "#00a884",
-                      }}
-                      className="mb-1.5 p-2 rounded-lg border-l-4 text-xs"
-                    >
-                      <p
-                        style={{ color: isMe ? "#25d366" : "#00a884" }}
-                        className="font-bold text-[10px]"
-                      >
-                        {(m.replyTo.senderId?._id || m.replyTo.senderId || "").toString() === user?._id?.toString()
-                          ? "You"
-                          : other.name}
-                      </p>
-                      <p
-                        style={{ color: isMe ? "#ffffff" : "#374151" }}
-                        className="truncate text-xs mt-0.5 font-medium"
-                      >
-                        {m.replyTo.deletedEveryone || m.replyTo.isDeleted
-                          ? "🚫 This message was deleted"
-                          : m.replyTo.text || m.replyTo.message || `[${m.replyTo.type || m.replyTo.messageType || "Attachment"}]`}
-                      </p>
-                    </div>
-                  )}
-
-                  {m.deletedEveryone ? (
-                    <p
-                      style={{ color: isMe ? "rgba(255, 255, 255, 0.8)" : "#6b7280" }}
-                      className="text-sm italic"
-                    >
-                      🚫 This message was deleted
-                    </p>
-                  ) : m.type === "system" || m.messageType === "system" || m.type === "call" || m.messageType === "call" || (m.text && (m.text.includes("call") || m.text.includes("Call") || m.text.includes("📞") || m.text.includes("📹"))) || (m.message && (m.message.includes("call") || m.message.includes("Call") || m.message.includes("📞") || m.message.includes("📹"))) ? (
-                    <CallLogMessageItem message={m} isMe={isMe} />
-                  ) : m.type === "audio" || m.messageType === "audio" || (m.attachment && m.attachment.mimeType?.startsWith("audio")) ? (
-                    <VoiceNoteMessageItem
-                      audioUrl={m.fileUrl || m.attachment?.url}
-                      senderAvatar={isMe ? getAvatar(user) : getAvatar(other)}
-                      senderName={isMe ? user?.name : other?.name}
-                      isMe={isMe}
-                    />
-                  ) : m.type === "file" || m.type === "image" ? (
-                    <div className="flex items-center gap-2">
-                      {m.type === "image" ? (
-                        <HiPhotograph className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <HiDocument className="w-5 h-5 text-emerald-400" />
-                      )}
-                      <span
-                        style={{ color: isMe ? "#ffffff" : "#111827" }}
-                        className="font-semibold text-sm"
-                      >
-                        {m.fileUrl}
+                  {/* Date Separator Pill */}
+                  {showDate && (
+                    <div className="flex justify-center my-3">
+                      <span className="text-[10px] font-bold tracking-wide uppercase bg-dark-bg/80 border border-gold/15 text-gold/90 px-3 py-1 rounded-full shadow-xs">
+                        {msgDate}
                       </span>
                     </div>
-                  ) : (
-                    <p
-                      style={{ color: isMe ? "#ffffff" : "#111827" }}
-                      className="text-sm leading-snug whitespace-pre-line break-words pr-3 font-normal"
-                    >
-                      {m.text || m.message}
-                      {m.edited && (
-                        <span
-                          style={{ color: isMe ? "rgba(255, 255, 255, 0.75)" : "#6b7280" }}
-                          className="text-[10px] italic"
-                        >
-                          {" "}(edited)
-                        </span>
-                      )}
-                    </p>
                   )}
 
+                  {/* Single Message Row */}
                   <div
-                    style={{ color: isMe ? "rgba(255, 255, 255, 0.85)" : "#6b7280" }}
-                    className="flex items-center justify-end gap-1.5 mt-1 text-[10px]"
+                    onTouchStart={(e) => handleTouchStart(e, m)}
+                    onTouchEnd={handleTouchEnd}
+                    className={`flex ${isMe ? "justify-end" : "justify-start"} gap-2 items-end group`}
                   >
-                    {starredMsgs[m._id] && <HiStar className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400 flex-shrink-0" />}
-                    <span>{formatMessageTimestamp(m.createdAt)}</span>
-                    {isMe && (() => {
-                      const status = m.status || (m.isSeen || m.isRead ? "seen" : "sent");
-                      if (status === "seen") {
-                        return (
-                          <span className="font-bold text-[11px] text-[#53bdeb]" title="Seen (Blue)">
-                            ✓✓
+                    {!isMe && (
+                      <img
+                        src={getAvatar(otherUser)}
+                        alt={otherUser?.name || "User"}
+                        className="w-7 h-7 rounded-full object-cover mb-1 flex-shrink-0 ring-1 ring-gold/20"
+                      />
+                    )}
+
+                    {/* WhatsApp style message bubble */}
+                    <div
+                      style={{
+                        backgroundColor: isMe ? "#005c4b" : "#202c33",
+                        color: isMe ? "#ffffff" : "#e9edef",
+                      }}
+                      className={`relative max-w-[70%] rounded-xl px-3.5 py-2 shadow-sm break-words ${
+                        isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100/5"
+                      }`}
+                    >
+                      {/* Context Menu Chevron Button */}
+                      <button
+                        onClick={(e) => handleContextMenu(e, m)}
+                        style={{ color: isMe ? "#ffffff" : "#111827" }}
+                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-0.5 rounded-full hover:bg-black/10 transition-opacity"
+                        title="Message options"
+                      >
+                        <HiChevronDown className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Reply Quote Preview inside bubble */}
+                      {!m.deletedEveryone && m.replyTo && (
+                        <div
+                          style={{
+                            backgroundColor: isMe ? "rgba(0, 0, 0, 0.25)" : "#111b21",
+                            borderLeftColor: isMe ? "#25d366" : "#00a884",
+                          }}
+                          className="mb-1.5 p-2 rounded-lg border-l-4 text-xs"
+                        >
+                          <p
+                            style={{ color: isMe ? "#25d366" : "#00a884" }}
+                            className="font-bold text-[10px]"
+                          >
+                            {(m.replyTo.senderId?._id || m.replyTo.senderId || "").toString() === currentUid
+                              ? "You"
+                              : (otherUser?.name || "User")}
+                          </p>
+                          <p
+                            style={{ color: isMe ? "#ffffff" : "#e9edef" }}
+                            className="truncate text-xs mt-0.5 font-medium"
+                          >
+                            {m.replyTo.deletedEveryone || m.replyTo.isDeleted
+                              ? "🚫 This message was deleted"
+                              : m.replyTo.text || m.replyTo.message || `[${m.replyTo.type || m.replyTo.messageType || "Attachment"}]`}
+                          </p>
+                        </div>
+                      )}
+
+                      {m.deletedEveryone ? (
+                        <p
+                          style={{ color: isMe ? "rgba(255, 255, 255, 0.8)" : "#8696a0" }}
+                          className="text-sm italic"
+                        >
+                          🚫 This message was deleted
+                        </p>
+                      ) : m.type === "system" || m.messageType === "system" || m.type === "call" || m.messageType === "call" || (m.text && (m.text.includes("call") || m.text.includes("Call") || m.text.includes("📞") || m.text.includes("📹"))) || (m.message && (m.message.includes("call") || m.message.includes("Call") || m.message.includes("📞") || m.message.includes("📹"))) ? (
+                        <CallLogMessageItem message={m} isMe={isMe} />
+                      ) : m.type === "audio" || m.messageType === "audio" || (m.attachment && m.attachment.mimeType?.startsWith("audio")) ? (
+                        <VoiceNoteMessageItem
+                          audioUrl={m.fileUrl || m.attachment?.url}
+                          senderAvatar={isMe ? getAvatar(user) : getAvatar(otherUser)}
+                          senderName={isMe ? user?.name : (otherUser?.name || "User")}
+                          isMe={isMe}
+                        />
+                      ) : m.type === "file" || m.type === "image" ? (
+                        <div className="flex items-center gap-2">
+                          {m.type === "image" ? (
+                            <HiPhotograph className="w-5 h-5 text-emerald-400" />
+                          ) : (
+                            <HiDocument className="w-5 h-5 text-emerald-400" />
+                          )}
+                          <span
+                            style={{ color: isMe ? "#ffffff" : "#e9edef" }}
+                            className="font-semibold text-sm"
+                          >
+                            {m.fileUrl}
                           </span>
-                        );
-                      }
-                      if (status === "delivered") {
-                        return (
-                          <span className="font-bold text-[11px] text-white/90" title="Delivered">
-                            ✓✓
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="font-bold text-[11px] text-white/90" title="Sent">
-                          ✓
-                        </span>
-                      );
-                    })()}
+                        </div>
+                      ) : (
+                        <p
+                          style={{ color: isMe ? "#ffffff" : "#e9edef" }}
+                          className="text-sm leading-snug whitespace-pre-line break-words pr-3 font-normal"
+                        >
+                          {m.text || m.message}
+                          {m.edited && (
+                            <span
+                              style={{ color: isMe ? "rgba(255, 255, 255, 0.75)" : "#8696a0" }}
+                              className="text-[10px] italic"
+                            >
+                              {" "}(edited)
+                            </span>
+                          )}
+                        </p>
+                      )}
+
+                      <div
+                        style={{ color: isMe ? "rgba(255, 255, 255, 0.85)" : "#8696a0" }}
+                        className="flex items-center justify-end gap-1.5 mt-1 text-[10px]"
+                      >
+                        {starredMsgs[m._id] && <HiStar className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400 flex-shrink-0" />}
+                        <span>{formatMessageTimestamp(m.createdAt)}</span>
+                        {isMe && (() => {
+                          const status = m.status || (m.isSeen || m.isRead ? "seen" : "sent");
+                          if (status === "seen") {
+                            return (
+                              <span className="font-bold text-[11px] text-[#53bdeb]" title="Seen (Blue)">
+                                ✓✓
+                              </span>
+                            );
+                          }
+                          if (status === "delivered") {
+                            return (
+                              <span className="font-bold text-[11px] text-white/90" title="Delivered">
+                                ✓✓
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="font-bold text-[11px] text-white/90" title="Sent">
+                              ✓
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          });
-        })()}
+                </motion.div>
+              );
+            });
+          })()
+        )}
         {typing && (
           <div className="flex items-center gap-2 pl-9 text-xs text-gray-400">
-            <span className="flex gap-0.5">
-              <span
-                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
-                style={{ animationDelay: "0ms" }}
-              />
-              <span
-                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
-                style={{ animationDelay: "150ms" }}
-              />
-              <span
-                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
-                style={{ animationDelay: "300ms" }}
-              />
-            </span>
-            typing…
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>{otherUser?.name || "User"} is typing...</span>
           </div>
         )}
-        <div ref={endRef} />
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Reply Preview Banner */}
+      {/* Reply Banner Indicator */}
       {replyingTo && (
-        <div className="px-4 py-2 bg-[#1f2c34] border-t border-gold/15 flex items-center justify-between animate-fadeIn">
-          <div className="border-l-4 border-[#00a884] pl-3 min-w-0 flex-1">
-            <span className="text-xs font-bold text-[#00a884]">
-              {(replyingTo.senderId?._id || replyingTo.senderId || "").toString() === user?._id?.toString()
-                ? "Replying to yourself"
-                : `Replying to ${other?.name || "User"}`}
+        <div className="px-4 py-2 bg-dark-bg/90 border-t border-gold/15 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-emerald-400 min-w-0">
+            <HiReply className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">
+              Replying to <strong className="text-white">{replyingTo.senderId === user?._id ? "yourself" : (otherUser?.name || "User")}</strong>: "{replyingTo.text || replyingTo.message}"
             </span>
-            <p className="text-xs text-gray-200 truncate mt-0.5 font-medium">
-              {replyingTo.text || replyingTo.message || `[${replyingTo.type || replyingTo.messageType || "Attachment"}]`}
-            </p>
           </div>
           <button
             onClick={() => setReplyingTo(null)}
-            className="p-1.5 hover:text-red-400 text-gray-400 transition-colors text-sm font-bold flex-shrink-0"
-            title="Cancel reply"
+            className="text-gray-400 hover:text-white font-bold px-2 py-0.5 rounded-full hover:bg-black/20"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Composer */}
+      {/* Message Input Footer Form */}
       <form
-        onSubmit={send}
-        className="relative border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40"
+        onSubmit={handleSendText}
+        className="p-3 border-t border-gold/15 flex items-center gap-2 bg-dark-bg/90 relative"
       >
+        {/* Attachment Upload Button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2.5 text-gray-400 hover:text-gold rounded-full hover:bg-card-bg/60 transition-colors"
+          title="Attach file"
+        >
+          <HiPaperClip className="w-5 h-5" />
+        </button>
         <input
           ref={fileInputRef}
           type="file"
           className="hidden"
-          onChange={(e) => sendFile(e.target.files?.[0], "file")}
-        />
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => sendFile(e.target.files?.[0], "image")}
+          onChange={handleFileChange}
         />
 
-        {/* Emoji Button */}
+        {/* Emoji Picker Trigger Button */}
         <button
           type="button"
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="p-2 text-gray-400 hover:text-gold transition-colors rounded-full hover:bg-card-bg/60 emoji-trigger-btn flex-shrink-0"
-          title="Emojis"
+          onClick={() => setShowEmoji((prev) => !prev)}
+          className="p-2.5 text-gray-400 hover:text-gold rounded-full hover:bg-card-bg/60 transition-colors"
+          title="Insert Emoji"
         >
-          <HiEmojiHappy className="w-6 h-6" />
+          <HiEmojiHappy className="w-5 h-5" />
         </button>
 
-        {/* Attachment Dropdown Button */}
-        <DropdownMenu
-          align="left"
-          placement="top"
-          trigger={<HiPaperClip className="w-6 h-6 rotate-45" />}
-          triggerClass="p-2 text-gray-400 hover:text-gold transition-colors rounded-full hover:bg-card-bg/60 flex-shrink-0"
-          items={[
-            {
-              label: "Photo / Video",
-              icon: HiPhotograph,
-              onClick: () => imageInputRef.current?.click(),
-            },
-            {
-              label: "Document",
-              icon: HiDocument,
-              onClick: () => fileInputRef.current?.click(),
-            },
-          ]}
-        />
-
-        {/* Emoji Picker Popup */}
-        {showEmojiPicker && (
-          <div
-            className="absolute bottom-16 left-3 z-50 shadow-2xl rounded-xl overflow-hidden border border-gold/20"
-            ref={emojiPickerRef}
-          >
+        {/* Emoji Picker Popover Window */}
+        {showEmoji && (
+          <div className="absolute bottom-16 left-4 z-50 shadow-2xl rounded-2xl border border-gold/20 overflow-hidden">
             <EmojiPicker
-              onEmojiClick={handleEmojiSelect}
-              searchDisabled={false}
-              skinTonesDisabled
-              width={340}
-              height={380}
+              onEmojiClick={handleEmojiClick}
               theme="dark"
             />
           </div>
@@ -1805,7 +1597,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           </button>
 
           {/* 5. Edit (only sender) */}
-          {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === user?._id?.toString() && !contextMenu.message.deletedEveryone && (
+          {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === (user?._id || user?.id || "").toString() && !contextMenu.message.deletedEveryone && (
             <button
               onClick={() => {
                 setEditingMsg({
@@ -1821,30 +1613,28 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             </button>
           )}
 
-          <div className="my-1 border-t border-gray-700/50" />
-
           {/* 6. Delete for Me */}
           <button
             onClick={() => {
               handleDeleteMsg(contextMenu.message._id, false);
               setContextMenu(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 text-red-400 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
           >
-            <HiTrash className="w-4 h-4 flex-shrink-0" />
+            <HiTrash className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <span>Delete for Me</span>
           </button>
 
           {/* 7. Delete for Everyone (only sender) */}
-          {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === user?._id?.toString() && !contextMenu.message.deletedEveryone && (
+          {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === (user?._id || user?.id || "").toString() && !contextMenu.message.deletedEveryone && (
             <button
               onClick={() => {
                 handleDeleteMsg(contextMenu.message._id, true);
                 setContextMenu(null);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 text-red-400 transition-colors"
+              className="w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-400 flex items-center gap-2.5 transition-colors"
             >
-              <HiTrash className="w-4 h-4 flex-shrink-0" />
+              <HiTrash className="w-4 h-4 text-red-400 flex-shrink-0" />
               <span>Delete for Everyone</span>
             </button>
           )}
@@ -1869,16 +1659,16 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       <Modal open={!!forwardingMsg} onClose={() => setForwardingMsg(null)} title="Forward message to...">
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {chats.map((c) => {
-            const otherUser = getOtherUser(c, user);
+            const targetUserObj = getOtherUser(c, user);
             return (
               <button
                 key={c._id}
                 onClick={() => handleForwardTo(c)}
                 className="w-full flex items-center gap-3 p-2.5 hover:bg-gold/10 rounded-xl transition-colors text-left"
               >
-                <img src={getAvatar(otherUser)} alt="" className="w-10 h-10 rounded-full object-cover" />
+                <img src={getAvatar(targetUserObj)} alt="" className="w-10 h-10 rounded-full object-cover" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-white truncate">{otherUser.name}</p>
+                  <p className="font-bold text-sm text-white truncate">{targetUserObj?.name || "User"}</p>
                   <p className="text-xs text-gray-400">Click to forward message</p>
                 </div>
               </button>
@@ -1951,16 +1741,16 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       >
         <div className="text-center">
           <img
-            src={getAvatar(other)}
-            alt={other.name}
+            src={getAvatar(otherUser)}
+            alt={otherUser?.name || "User"}
             className="w-24 h-24 rounded-full mx-auto border-4 border-gold/40 object-cover mb-3"
           />
           <h3 className="text-xl font-bold flex items-center justify-center gap-1">
-            {other.name}
+            {otherUser?.name || "User"}
             <MdVerified className="w-5 h-5 text-gold" />
           </h3>
           <p className="text-sm text-gray-400 mb-4">
-            {other.isOnline ? "● Online" : "Offline"}
+            {otherUser?.isOnline ? "● Online" : "Offline"}
           </p>
           <div className="flex justify-center gap-2 mb-4">
             <button
@@ -1993,9 +1783,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                 onClick={() => {
                   reportService
                     .create({
-                      reportedUser: other?._id,
+                      reportedUser: otherUser?._id,
                       type: r.toLowerCase().replace(/[\s/]+/g, "_"),
-                      description: `Reported ${other?.name || "user"} as: ${r}`,
+                      description: `Reported ${otherUser?.name || "user"} as: ${r}`,
                     })
                     .catch(() => {});
                   setReporting(false);
