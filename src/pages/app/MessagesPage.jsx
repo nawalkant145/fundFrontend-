@@ -1541,7 +1541,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     style={{ color: isMe ? "rgba(255, 255, 255, 0.85)" : "#6b7280" }}
                     className="flex items-center justify-end gap-1.5 mt-1 text-[10px]"
                   >
-                    {starredMsgs[m._id] && <HiStar className="w-3 h-3 text-gold flex-shrink-0" />}
+                    {starredMsgs[m._id] && <HiStar className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400 flex-shrink-0" />}
                     <span>{formatMessageTimestamp(m.createdAt)}</span>
                     {isMe && (() => {
                       const status = m.status || (m.isSeen || m.isRead ? "seen" : "sent");
@@ -1801,7 +1801,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             }}
             className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
           >
-            <HiStar className={`w-4 h-4 flex-shrink-0 ${starredMsgs[contextMenu.message._id] ? "text-gold" : "text-gray-400"}`} />
+            <HiStar className={`w-4 h-4 flex-shrink-0 ${starredMsgs[contextMenu.message._id] ? "text-yellow-400 fill-yellow-400" : "text-gray-400"}`} />
             <span>{starredMsgs[contextMenu.message._id] ? "Unstar" : "Star"}</span>
           </button>
 
