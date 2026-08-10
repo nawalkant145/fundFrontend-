@@ -287,23 +287,42 @@ export function PhoneInput({
   name = "phone",
   required,
   defaultCountry = "IN",
+  error: externalError,
 }) {
   const [selectedIso, setSelectedIso] = useState(defaultCountry.toUpperCase());
   const [rawInput, setRawInput] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // If initial value starts with +, detect country automatically
+  // Synchronize country if defaultCountry prop changes
   useEffect(() => {
-    if (value && typeof value === "string" && value.startsWith("+")) {
-      try {
-        const parsed = parsePhoneNumber(value);
-        if (parsed?.country) {
-          setSelectedIso(parsed.country);
-          setRawInput(parsed.nationalNumber || "");
-        }
-      } catch {}
+    if (defaultCountry && typeof defaultCountry === "string") {
+      const iso = defaultCountry.toUpperCase().trim();
+      if (ALL_COUNTRIES.some((c) => c.iso === iso)) {
+        setSelectedIso(iso);
+      }
     }
-  }, []);
+  }, [defaultCountry]);
+
+  // Synchronize input if value prop changes externally (e.g. international format)
+  useEffect(() => {
+    if (value && typeof value === "string") {
+      if (value.startsWith("+")) {
+        try {
+          const parsed = parsePhoneNumber(value);
+          if (parsed?.country) {
+            setSelectedIso(parsed.country);
+            setRawInput(parsed.nationalNumber || value);
+            return;
+          }
+        } catch {}
+      }
+      // If value is national or E.164 formatted for selected country
+      const selectedObj = ALL_COUNTRIES.find((c) => c.iso === selectedIso);
+      if (selectedObj && value.startsWith(selectedObj.callingCode)) {
+        setRawInput(value.slice(selectedObj.callingCode.length));
+      }
+    }
+  }, [value, selectedIso]);
 
   const selectedCountryObj = ALL_COUNTRIES.find((c) => c.iso === selectedIso) || {
     iso: "IN",
@@ -312,57 +331,57 @@ export function PhoneInput({
     flag: "🇮🇳",
   };
 
-  // Derive live validation state
-  const validationState = (() => {
-    if (!rawInput) return { isValid: false, e164: "", error: null };
-    const currentStr = rawInput.startsWith("+")
-      ? rawInput
-      : `${selectedCountryObj.callingCode}${rawInput}`;
+  // Current phone string for validation
+  const currentFullStr = rawInput.startsWith("+")
+    ? rawInput
+    : rawInput
+      ? `${selectedCountryObj.callingCode}${rawInput}`
+      : "";
 
-    try {
-      const isValid = getPhoneIsValid(currentStr, selectedIso);
-      const parsed = rawInput.startsWith("+")
-        ? parsePhoneNumber(rawInput)
-        : parsePhoneNumber(rawInput, selectedIso);
+  const isValid = rawInput ? getPhoneIsValid(currentFullStr, selectedIso) : false;
 
-      const e164 = isValid && parsed ? parsed.format("E.164") : "";
-      const error =
-        touched && !isValid
-          ? "Please enter a valid phone number for the selected country."
-          : null;
+  // Determine error visibility:
+  // 1. External error prop passed from parent form
+  // 2. Field touched (onBlur) and rawInput is invalid
+  // 3. User entered enough digits (>= 6 digits or '+' format) and number is invalid
+  const shouldShowError = (() => {
+    if (externalError) return true;
+    if (!rawInput) return false;
+    if (isValid) return false;
 
-      return { isValid, e164, error };
-    } catch {
-      return {
-        isValid: false,
-        e164: "",
-        error: touched
-          ? "Please enter a valid phone number for the selected country."
-          : null,
-      };
+    const cleanDigits = rawInput.replace(/\D/g, "");
+    if (touched || cleanDigits.length >= 6 || rawInput.startsWith("+")) {
+      return true;
     }
+    return false;
   })();
+
+  const errorMessage =
+    externalError ||
+    (shouldShowError
+      ? "Please enter a valid phone number for the selected country."
+      : null);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
 
-    // International mode (starts with '+')
+    // International format (starts with '+')
     if (val.startsWith("+")) {
       setRawInput(val);
-      let detectedIso = selectedIso;
+      let activeIso = selectedIso;
       try {
         const parsed = parsePhoneNumber(val);
         if (parsed?.country) {
-          detectedIso = parsed.country;
+          activeIso = parsed.country;
           setSelectedIso(parsed.country);
         }
       } catch {}
 
-      const isValid = getPhoneIsValid(val, detectedIso);
+      const valid = getPhoneIsValid(val, activeIso);
       let e164 = "";
       try {
         const p = parsePhoneNumber(val);
-        if (isValid && p) e164 = p.format("E.164");
+        if (valid && p) e164 = p.format("E.164");
       } catch {}
 
       onChange?.({
@@ -371,15 +390,15 @@ export function PhoneInput({
       return;
     }
 
-    // National mode (strip non-digits)
+    // National format (strip non-digits)
     const cleanedDigits = val.replace(/\D/g, "");
     setRawInput(cleanedDigits);
 
-    const fullNationalStr = `${selectedCountryObj.callingCode}${cleanedDigits}`;
-    const isValid = getPhoneIsValid(fullNationalStr, selectedIso);
+    const fullStr = `${selectedCountryObj.callingCode}${cleanedDigits}`;
+    const valid = getPhoneIsValid(fullStr, selectedIso);
 
     let e164 = "";
-    if (cleanedDigits && isValid) {
+    if (cleanedDigits && valid) {
       try {
         const parsed = parsePhoneNumber(cleanedDigits, selectedIso);
         if (parsed && parsed.isValid()) {
@@ -401,9 +420,35 @@ export function PhoneInput({
   const handleCountryChange = (e) => {
     const newIso = e.target.value;
     setSelectedIso(newIso);
-    setRawInput("");
-    setTouched(false);
-    onChange?.({ target: { name, value: "" } });
+    setTouched(true);
+
+    const newCountryObj =
+      ALL_COUNTRIES.find((c) => c.iso === newIso) || selectedCountryObj;
+    const fullStr = rawInput.startsWith("+")
+      ? rawInput
+      : rawInput
+        ? `${newCountryObj.callingCode}${rawInput}`
+        : "";
+    const valid = getPhoneIsValid(fullStr, newIso);
+
+    let e164 = "";
+    if (rawInput && valid) {
+      try {
+        const parsed = rawInput.startsWith("+")
+          ? parsePhoneNumber(rawInput)
+          : parsePhoneNumber(rawInput, newIso);
+        if (parsed && parsed.isValid()) e164 = parsed.format("E.164");
+      } catch {}
+    }
+
+    onChange?.({
+      target: {
+        name,
+        value:
+          e164 ||
+          (rawInput ? `${newCountryObj.callingCode}${rawInput}` : ""),
+      },
+    });
   };
 
   return (
@@ -431,21 +476,21 @@ export function PhoneInput({
             onBlur={() => setTouched(true)}
             placeholder={`e.g. ${selectedCountryObj.callingCode} 9876543210`}
             required={required}
-            aria-invalid={!!validationState.error}
+            aria-invalid={!!errorMessage}
             aria-describedby={`${name}-hint`}
             className={`w-full px-4 py-3.5 bg-white border rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:ring-4 focus:outline-none transition-all text-base ${
-              validationState.error
+              errorMessage
                 ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                : validationState.isValid
+                : isValid
                   ? "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-100"
                   : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
             }`}
           />
         </div>
       </div>
-      {validationState.error ? (
-        <p id={`${name}-hint`} className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-          <span>✕</span> {validationState.error}
+      {errorMessage ? (
+        <p id={`${name}-hint`} className="text-xs text-red-500 font-semibold mt-1.5 flex items-center gap-1">
+          <span>✕</span> {errorMessage}
         </p>
       ) : (
         <p id={`${name}-hint`} className="text-xs text-[#0A1F14]/45 mt-1.5">
