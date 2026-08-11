@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   HiCheckCircle,
@@ -129,11 +130,13 @@ export default function UploadPitchModal({ open, onClose }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return ReactDOM.createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-6 sm:pt-4"
+          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-6 sm:pt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -376,7 +379,8 @@ export default function UploadPitchModal({ open, onClose }) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

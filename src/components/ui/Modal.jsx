@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiX } from "react-icons/hi";
 
@@ -33,7 +34,9 @@ export default function Modal({
     };
   }, [open, onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return ReactDOM.createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -41,7 +44,7 @@ export default function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-[150] bg-black/75 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4"
+          className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
         >
           <motion.div
             initial={{ y: 30, scale: 0.96, opacity: 0 }}
@@ -49,7 +52,7 @@ export default function Modal({
             exit={{ y: 30, scale: 0.96, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
             data-light-app="true"
-            className={`w-full ${widthClass} bg-white border border-[#1B5E3F]/15 rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]`}
+            className={`w-full ${widthClass} bg-white border border-[#1B5E3F]/15 rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh]`}
           >
             {(title || !hideClose) && (
               <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
@@ -75,6 +78,7 @@ export default function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

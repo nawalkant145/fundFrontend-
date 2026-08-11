@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiPhotograph,
@@ -111,11 +112,13 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return ReactDOM.createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-6 sm:pt-4"
+          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-6 sm:pt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -388,6 +391,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
