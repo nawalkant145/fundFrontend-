@@ -448,7 +448,7 @@ export default function MessagesPage() {
 
   return (
     <DashboardShell title={null} noPad hideMobileHeader>
-      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen">
+      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
         {/* ─── Chat list (left column) ─────────────── */}
         <div
           className={`md:border-r-2 md:border-gold/15 md:w-80 lg:w-96 md:flex-shrink-0 h-full
@@ -863,6 +863,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     }
   };
 
+  const messagesListRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -1084,9 +1085,11 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     if (chat._id) chatService.markRead(chat._id).catch(() => {});
   }, [chat._id, messages.length]);
 
-  // Auto scroll
+  // Auto scroll ONLY the messages container without scrolling window/body
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesListRef.current) {
+      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight;
+    }
   }, [messages, typing]);
 
   const send = (e) => {
@@ -1286,9 +1289,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   ];
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gold/10">
+      <div className="flex items-center justify-between p-3 border-b border-gold/10 flex-shrink-0 bg-dark-navy/95 backdrop-blur z-20">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
@@ -1351,7 +1354,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
 
       {/* Avatar + name centered intro card (ONLY when 0 messages exist) */}
       {messages.length === 0 && (
-        <div className="text-center py-6 border-b border-gold/5">
+        <div className="text-center py-6 border-b border-gold/5 flex-shrink-0">
           <img
             src={getAvatar(other)}
             alt={other.name}
@@ -1372,7 +1375,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+      <div ref={messagesListRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5 min-h-0">
         {(() => {
           const grouped = [];
           let currentDayStr = null;
@@ -2016,7 +2019,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         onClose={() => setCallPaywall(false)}
         reason="pro-required"
       />
-    </>
+    </div>
   );
 }
 
