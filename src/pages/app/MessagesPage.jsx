@@ -1326,11 +1326,11 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gold/10 flex-shrink-0 bg-dark-navy/95 backdrop-blur z-20">
+      <div className="flex items-center justify-between p-3 border-b border-gray-200/80 flex-shrink-0 bg-white/95 backdrop-blur z-20 text-[#0A1F14]">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 -ml-2 hover:bg-dark-bg/60 rounded-lg md:hidden flex-shrink-0"
+            className="p-2 -ml-2 text-[#0A1F14] hover:bg-gray-100 rounded-lg md:hidden flex-shrink-0"
           >
             <HiArrowLeft className="w-5 h-5" />
           </button>
@@ -1345,17 +1345,17 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                 className="w-9 h-9 rounded-full object-cover"
               />
               {other.isOnline && (
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-dark-navy" />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
               )}
             </div>
             <div className="text-left min-w-0">
-              <p className="font-bold text-sm flex items-center gap-1 truncate">
+              <p className="font-bold text-sm text-[#0A1F14] flex items-center gap-1 truncate">
                 {other.name}
                 {(other.isVerified ?? true) && (
-                  <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
+                  <MdVerified className="w-3.5 h-3.5 text-[#00a884] flex-shrink-0" />
                 )}
               </p>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-[11px] text-gray-500 font-medium">
                 {other.isOnline ? "Active now" : "Offline"}
               </p>
             </div>
@@ -1378,7 +1378,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           </button>
           <button
             onClick={() => setShowProfile(true)}
-            className="p-2 hover:bg-dark-bg/60 rounded-lg"
+            className="p-2 text-[#0A1F14]/70 hover:bg-gray-100 rounded-lg"
             title="Conversation info"
           >
             <HiInformationCircle className="w-5 h-5" />
