@@ -54,6 +54,7 @@ export default function NotificationsPage() {
   const toast = useToast();
   const { refreshUnread } = useNotifications();
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
   // Fetch real notifications on mount
@@ -65,7 +66,8 @@ export default function NotificationsPage() {
         const list = data?.notifications || data || [];
         setItems(list);
       })
-      .catch(() => setItems([]));
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = items.filter((n) => {
@@ -97,7 +99,7 @@ export default function NotificationsPage() {
   const unread = items.filter((n) => !n.isRead).length;
 
   return (
-    <DashboardShell title="Notifications" subtitle={`${unread} unread`}>
+    <DashboardShell title="Notifications" subtitle={loading ? "Loading…" : `${unread} unread`}>
       {/* Filters */}
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <div className="flex gap-2 flex-wrap">
@@ -115,7 +117,7 @@ export default function NotificationsPage() {
             </button>
           ))}
         </div>
-        {unread > 0 && (
+        {unread > 0 && !loading && (
           <button
             onClick={markAllRead}
             className="text-sm text-gold hover:text-bright-gold font-semibold"
@@ -126,7 +128,20 @@ export default function NotificationsPage() {
       </div>
 
       {/* List */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl divide-y divide-gold/10 overflow-hidden animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 p-4">
+              <div className="w-10 h-10 rounded-xl bg-[#1B5E3F]/15 shrink-0" />
+              <div className="flex-1 space-y-2 py-0.5">
+                <div className="h-4 bg-[#1B5E3F]/15 rounded w-1/3" />
+                <div className="h-3 bg-[#1B5E3F]/10 rounded w-3/4" />
+                <div className="h-2.5 bg-[#1B5E3F]/10 rounded w-1/5 mt-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <HiBell className="w-12 h-12 text-gray-500 mx-auto mb-3" />
           <p className="text-gray-400">No notifications here.</p>
