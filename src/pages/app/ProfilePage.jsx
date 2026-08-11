@@ -33,8 +33,11 @@ import FollowListModal from "../../components/dashboard/FollowListModal";
 import AvatarProgressRing from "../../components/profile/AvatarProgressRing";
 import ProfileCompletionDrawer from "../../components/profile/ProfileCompletionDrawer";
 import VerificationStatusCard from "../../components/dashboard/VerificationStatusCard";
+import PitchPreviewModal from "../../components/dashboard/PitchPreviewModal";
+import PostPreviewModal from "../../components/dashboard/PostPreviewModal";
 import useProfileCompletion from "../../hooks/useProfileCompletion";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 
@@ -58,6 +61,7 @@ const INVESTOR_MENU = [
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const role = user?.role || "founder";
   const menu = role === "investor" ? INVESTOR_MENU : FOUNDER_MENU;
@@ -71,6 +75,8 @@ export default function ProfilePage() {
   const [tab, setTab] = useState("pitches");
   const [followModal, setFollowModal] = useState(null); // "followers" | "following"
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [previewPitch, setPreviewPitch] = useState(null);
+  const [previewPost, setPreviewPost] = useState(null);
 
   // Founders show their own pitches + posts
   useEffect(() => {
@@ -100,6 +106,48 @@ export default function ProfilePage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Real-time socket sync for pitch metrics
+  useEffect(() => {
+    if (!socket) return;
+    const onEngagement = (data) => {
+      if (data.videoId) {
+        setPitches((prev) =>
+          prev.map((p) => {
+            if (p._id !== data.videoId) return p;
+            const updated = { ...p };
+            if (typeof data.commentCount === "number") updated.commentCount = data.commentCount;
+            if (typeof data.likeCount === "number") updated.likeCount = data.likeCount;
+            if (typeof data.saveCount === "number") updated.saveCount = data.saveCount;
+            return updated;
+          })
+        );
+      }
+    };
+    socket.on("pitch:engagement", onEngagement);
+    return () => socket.off("pitch:engagement", onEngagement);
+  }, [socket]);
+
+  // Real-time socket sync for post metrics
+  useEffect(() => {
+    if (!socket) return;
+    const onPostEngagement = (data) => {
+      if (data.postId) {
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p._id !== data.postId) return p;
+            const updated = { ...p };
+            if (typeof data.commentCount === "number") updated.commentCount = data.commentCount;
+            if (typeof data.likeCount === "number") updated.likeCount = data.likeCount;
+            if (typeof data.saveCount === "number") updated.saveCount = data.saveCount;
+            return updated;
+          })
+        );
+      }
+    };
+    socket.on("post:engagement", onPostEngagement);
+    return () => socket.off("post:engagement", onPostEngagement);
+  }, [socket]);
 
   if (!user) return null;
 
@@ -251,10 +299,10 @@ export default function ProfilePage() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {pitches.map((p) => (
-                  <Link
+                  <button
                     key={p._id}
-                    to={`/app/pitch?pitch=${p._id}`}
-                    className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 group"
+                    onClick={() => setPreviewPitch(p)}
+                    className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 group text-left"
                   >
                     <img
                       src={p.coverUrl || p.thumbnailUrl}
@@ -275,7 +323,7 @@ export default function ProfilePage() {
                         {p.views || 0}
                       </span>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             )
@@ -288,10 +336,10 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {posts.map((p) => (
-                <Link
+                <button
                   key={p._id}
-                  to={`/app/post/${p._id}`}
-                  className="relative aspect-square rounded-xl overflow-hidden bg-slate-50 group border border-slate-200"
+                  onClick={() => setPreviewPost(p)}
+                  className="relative aspect-square rounded-xl overflow-hidden bg-slate-50 group border border-slate-200 text-left w-full cursor-pointer"
                 >
                   {p.images?.[0] ? (
                     <img
@@ -300,8 +348,8 @@ export default function ProfilePage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full p-4 flex items-start bg-slate-50 text-[#0F172A]">
-                      <span className="line-clamp-6 text-xs font-normal text-[#64748B] leading-relaxed">
+                    <div className="w-full h-full p-2 sm:p-3 flex items-center justify-center text-center bg-gradient-to-br from-slate-50 to-slate-100/70 border border-slate-200">
+                      <span className="line-clamp-4 text-[11px] sm:text-xs font-semibold text-[#0F172A]/80 leading-tight">
                         {p.caption}
                       </span>
                     </div>
@@ -310,7 +358,11 @@ export default function ProfilePage() {
                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-xs font-bold">
                     <span className="inline-flex items-center gap-1">
                       <HiHeart className="w-4 h-4 text-red-400" />
-                      {Array.isArray(p.likes) ? p.likes.length : (p.likes || 0)}
+                      {typeof p.likeCount === "number"
+                        ? p.likeCount
+                        : Array.isArray(p.likes)
+                          ? p.likes.length
+                          : p.likes || 0}
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <HiChatAlt2 className="w-4 h-4" /> {p.commentCount || 0}
@@ -321,7 +373,7 @@ export default function ProfilePage() {
                       {p.images.length}
                     </span>
                   )}
-                </Link>
+                </button>
               ))}
             </div>
           )}
@@ -379,6 +431,32 @@ export default function ProfilePage() {
         userId={user._id}
         mode={followModal}
       />
+
+      {/* Pitch preview modal */}
+      {previewPitch && (
+        <PitchPreviewModal
+          pitch={previewPitch}
+          onClose={() => setPreviewPitch(null)}
+          onPitchUpdated={(updatedPitch) => {
+            setPitches((prev) =>
+              prev.map((p) => (p._id === updatedPitch._id ? updatedPitch : p))
+            );
+          }}
+        />
+      )}
+
+      {/* Post preview modal */}
+      {previewPost && (
+        <PostPreviewModal
+          post={previewPost}
+          onClose={() => setPreviewPost(null)}
+          onPostUpdated={(updatedPost) => {
+            setPosts((prev) =>
+              prev.map((p) => (p._id === updatedPost._id ? updatedPost : p))
+            );
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }
