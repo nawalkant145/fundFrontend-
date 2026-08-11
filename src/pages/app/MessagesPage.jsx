@@ -446,9 +446,19 @@ export default function MessagesPage() {
     }
   };
 
+  // Lock window scroll so touch scrolling on mobile never moves the window
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const lockScroll = () => {
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    window.addEventListener("scroll", lockScroll, { passive: true });
+    return () => window.removeEventListener("scroll", lockScroll);
+  }, [chatId]);
+
   return (
     <DashboardShell title={null} noPad hideMobileHeader>
-      <div className="flex flex-col md:flex-row flex-1 min-h-0 h-full overflow-hidden">
+      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
         {/* ─── Chat list (left column) ─────────────── */}
         <div
           className={`md:border-r-2 md:border-gold/15 md:w-80 lg:w-96 md:flex-shrink-0 h-full
@@ -864,6 +874,8 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   };
 
   const messagesListRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const initialLoadedChatId = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -873,6 +885,13 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
+
+  const handleScroll = (e) => {
+    const el = e.target;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceToBottom <= 120;
+  };
 
   const startRecording = async () => {
     try {
@@ -1085,12 +1104,22 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     if (chat._id) chatService.markRead(chat._id).catch(() => {});
   }, [chat._id, messages.length]);
 
-  // Auto scroll ONLY the messages container without scrolling window/body
+  // Smart auto-scroll: Scroll to bottom on initial chat load or if user is near bottom
   useEffect(() => {
-    if (messagesListRef.current) {
+    if (!messagesListRef.current) return;
+
+    const isFirstLoad = initialLoadedChatId.current !== chat._id;
+    if (isFirstLoad) {
+      initialLoadedChatId.current = chat._id;
+      isNearBottomRef.current = true;
+      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight;
+      return;
+    }
+
+    if (isNearBottomRef.current) {
       messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight;
     }
-  }, [messages, typing]);
+  }, [messages, typing, chat._id]);
 
   const send = (e) => {
     e?.preventDefault();
@@ -1115,6 +1144,12 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     };
     setMessages((prev) => [...prev, optimistic]);
     onMessageSent?.(trimmed);
+    isNearBottomRef.current = true;
+    setTimeout(() => {
+      if (messagesListRef.current) {
+        messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight;
+      }
+    }, 50);
 
     const isConnected = socket && socket.connected;
     if (isConnected) {
@@ -1289,7 +1324,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   ];
 
   return (
-    <div className="relative flex flex-col flex-1 min-h-0 h-full overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gold/10 flex-shrink-0 bg-dark-navy/95 backdrop-blur z-20">
         <div className="flex items-center gap-3 min-w-0">
@@ -1375,7 +1410,11 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       )}
 
       {/* Messages */}
-      <div ref={messagesListRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5 min-h-0">
+      <div
+        ref={messagesListRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 space-y-1.5 min-h-0"
+      >
         {(() => {
           const grouped = [];
           let currentDayStr = null;
@@ -1621,7 +1660,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       {/* Composer */}
       <form
         onSubmit={send}
-        className="sticky bottom-0 z-20 flex-shrink-0 border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40 backdrop-blur"
+        className="relative border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40"
       >
         <input
           ref={fileInputRef}
