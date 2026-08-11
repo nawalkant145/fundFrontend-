@@ -1769,8 +1769,11 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       {/* Floating Context Menu */}
       {contextMenu && (
         <div
-          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-          className="fixed z-[100] w-52 bg-[#233138] border border-gold/20 rounded-xl shadow-2xl py-1 text-sm text-gray-200"
+          style={{
+            top: `${Math.max(10, Math.min(contextMenu.y, window.innerHeight - 340))}px`,
+            left: `${Math.max(10, Math.min(contextMenu.x, window.innerWidth - 230))}px`,
+          }}
+          className="fixed z-[100] w-56 bg-white border border-[#1B5E3F]/15 rounded-2xl shadow-xl shadow-black/10 py-1.5 text-sm text-[#0A1F14] overflow-hidden animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
           {/* 1. Reply */}
@@ -1780,9 +1783,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               setContextMenu(null);
               inputRef.current?.focus();
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-[#1B5E3F]/8 flex items-center gap-2.5 transition-colors font-semibold text-[#0A1F14]"
           >
-            <HiAnnotation className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <HiAnnotation className="w-4 h-4 text-[#1B5E3F] flex-shrink-0" />
             <span>Reply</span>
           </button>
 
@@ -1792,9 +1795,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               setForwardingMsg(contextMenu.message);
               setContextMenu(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-[#1B5E3F]/8 flex items-center gap-2.5 transition-colors font-semibold text-[#0A1F14]"
           >
-            <HiShare className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <HiShare className="w-4 h-4 text-[#1B5E3F] flex-shrink-0" />
             <span>Forward</span>
           </button>
 
@@ -1806,9 +1809,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               toast.success("Message copied");
               setContextMenu(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-[#1B5E3F]/8 flex items-center gap-2.5 transition-colors font-semibold text-[#0A1F14]"
           >
-            <HiDuplicate className="w-4 h-4 text-purple-400 flex-shrink-0" />
+            <HiDuplicate className="w-4 h-4 text-[#1B5E3F] flex-shrink-0" />
             <span>Copy</span>
           </button>
 
@@ -1822,9 +1825,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               toast.success(nextStarred ? "Message starred" : "Message unstarred");
               setContextMenu(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-[#1B5E3F]/8 flex items-center gap-2.5 transition-colors font-semibold text-[#0A1F14]"
           >
-            <HiStar className={`w-4 h-4 flex-shrink-0 ${starredMsgs[contextMenu.message._id] ? "text-yellow-400 fill-yellow-400" : "text-gray-400"}`} />
+            <HiStar className={`w-4 h-4 flex-shrink-0 ${starredMsgs[contextMenu.message._id] ? "text-amber-500 fill-amber-500" : "text-gray-400"}`} />
             <span>{starredMsgs[contextMenu.message._id] ? "Unstar" : "Star"}</span>
           </button>
 
@@ -1838,14 +1841,14 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                 });
                 setContextMenu(null);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+              className="w-full text-left px-4 py-2 hover:bg-[#1B5E3F]/8 flex items-center gap-2.5 transition-colors font-semibold text-[#0A1F14]"
             >
-              <HiPencilAlt className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <HiPencilAlt className="w-4 h-4 text-amber-600 flex-shrink-0" />
               <span>Edit</span>
             </button>
           )}
 
-          <div className="my-1 border-t border-gray-700/50" />
+          <div className="my-1 border-t border-gray-100" />
 
           {/* 6. Delete for Me */}
           <button
@@ -1853,9 +1856,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               handleDeleteMsg(contextMenu.message._id, false);
               setContextMenu(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 text-red-400 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2.5 text-red-600 transition-colors font-semibold"
           >
-            <HiTrash className="w-4 h-4 flex-shrink-0" />
+            <HiTrash className="w-4 h-4 flex-shrink-0 text-red-500" />
             <span>Delete for Me</span>
           </button>
 
@@ -1866,14 +1869,14 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                 handleDeleteMsg(contextMenu.message._id, true);
                 setContextMenu(null);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 text-red-400 transition-colors"
+              className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2.5 text-red-600 transition-colors font-semibold"
             >
-              <HiTrash className="w-4 h-4 flex-shrink-0" />
+              <HiTrash className="w-4 h-4 flex-shrink-0 text-red-500" />
               <span>Delete for Everyone</span>
             </button>
           )}
 
-          <div className="my-1 border-t border-gray-700/50" />
+          <div className="my-1 border-t border-gray-100" />
 
           {/* 8. Message Info */}
           <button
@@ -1881,9 +1884,9 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               setMsgInfoModal(contextMenu.message);
               setContextMenu(null);
             }}
-            className="w-full text-left px-4 py-2 hover:bg-gold/15 flex items-center gap-2.5 transition-colors"
+            className="w-full text-left px-4 py-2 hover:bg-[#1B5E3F]/8 flex items-center gap-2.5 transition-colors font-semibold text-[#0A1F14]"
           >
-            <HiInformationCircle className="w-4 h-4 text-sky-400 flex-shrink-0" />
+            <HiInformationCircle className="w-4 h-4 text-[#1B5E3F] flex-shrink-0" />
             <span>Message Info</span>
           </button>
         </div>
