@@ -448,7 +448,7 @@ export default function MessagesPage() {
 
   return (
     <DashboardShell title={null} noPad hideMobileHeader>
-      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 h-full overflow-hidden">
         {/* ─── Chat list (left column) ─────────────── */}
         <div
           className={`md:border-r-2 md:border-gold/15 md:w-80 lg:w-96 md:flex-shrink-0 h-full
