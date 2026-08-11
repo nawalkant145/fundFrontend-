@@ -1347,7 +1347,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => handleStartCall("meeting")}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-[#00a884] via-[#008f6f] to-[#005c4b] hover:from-[#00c096] hover:to-[#00705c] text-white text-xs font-extrabold rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-400/40 hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 p-1.5 sm:px-3.5 sm:py-1.5 bg-gradient-to-r from-[#00a884] via-[#008f6f] to-[#005c4b] hover:from-[#00c096] hover:to-[#00705c] text-white text-xs font-extrabold rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-400/40 hover:scale-105 active:scale-95 cursor-pointer shrink-0"
             title="Start Meeting Room (Video & Screen Share)"
           >
             <span className="relative flex h-2 w-2">
@@ -1426,7 +1426,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             if (item.type === "separator") {
               return (
                 <div key={item.id} className="flex justify-center my-3">
-                  <span className="bg-dark-bg/80 text-gray-300 text-[11px] font-bold px-3.5 py-1 rounded-full border border-gold/15 shadow-sm">
+                  <span className="bg-white text-gray-600 text-[11px] font-semibold px-3 py-1 rounded-full border border-gray-200 shadow-xs">
                     {formatDateSeparator(item.date)}
                   </span>
                 </div>
@@ -1471,7 +1471,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     backgroundColor: isMe ? "#005c4b" : "#ffffff",
                     color: isMe ? "#ffffff" : "#111827",
                   }}
-                  className={`relative max-w-[85%] sm:max-w-[70%] max-w-full overflow-hidden rounded-xl px-3.5 py-2 shadow-sm break-words ${
+                  className={`relative max-w-[85%] sm:max-w-[70%] overflow-hidden rounded-xl px-3.5 py-2 shadow-sm break-words ${
                     isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100"
                   }`}
                 >
