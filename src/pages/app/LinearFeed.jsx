@@ -216,33 +216,35 @@ export default function LinearFeed() {
             </Link>
             <button
               onClick={() => openPostModal()}
-              className="flex-1 px-4 py-2.5 bg-[#FAFAF7] hover:bg-[#FAFAF7]/80 border border-[#1B5E3F]/8 hover:border-[#1B5E3F]/20 rounded-full text-left text-sm text-[#0A1F14]/55 hover:text-[#0A1F14]/75 transition-all duration-200 font-medium cursor-pointer"
+              className="flex-1 min-w-0 px-4 py-2.5 bg-[#FAFAF7] hover:bg-[#FAFAF7]/80 border border-[#1B5E3F]/8 hover:border-[#1B5E3F]/20 rounded-full text-left text-sm text-[#0A1F14]/55 hover:text-[#0A1F14]/75 transition-all duration-200 font-medium cursor-pointer truncate"
             >
-              {isFounder
-                ? "Share an update, lesson or photo…"
-                : "Share a thought or photo…"}
+              <span className="block truncate">
+                {isFounder
+                  ? "Share an update, lesson or photo…"
+                  : "Share a thought or photo…"}
+              </span>
             </button>
           </div>
 
           {/* Bottom row: Quick action links */}
-          <div className="flex items-center justify-around pt-3">
+          <div className="flex items-center justify-between gap-1 sm:gap-2 pt-3">
             {/* Photo/Post link (Images section) */}
             <button
               onClick={() => openPostModal("images")}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/5 transition-all duration-200 group"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/5 transition-all duration-200 group"
             >
-              <HiPhotograph className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform duration-200" />
-              <span>Photo/Post</span>
+              <HiPhotograph className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 group-hover:scale-110 transition-transform duration-200 shrink-0" />
+              <span className="truncate">Photo/Post</span>
             </button>
 
             {/* Upload Pitch link (Founders only) */}
             {isFounder && (
               <button
                 onClick={openPitchModal}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#F5B942] hover:bg-[#F5B942]/5 transition-all duration-200 group"
+                className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#F5B942] hover:bg-[#F5B942]/5 transition-all duration-200 group"
               >
-                <HiUpload className="w-5 h-5 text-[#F5B942] group-hover:scale-110 transition-transform duration-200" />
-                <span>Upload Pitch</span>
+                <HiUpload className="w-4 h-4 sm:w-5 sm:h-5 text-[#F5B942] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+                <span className="truncate">Upload Pitch</span>
               </button>
             )}
 
@@ -250,10 +252,10 @@ export default function LinearFeed() {
             <button
               type="button"
               onClick={() => openPostModal("text")}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200 group"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200 group"
             >
-              <HiAnnotation className="w-5 h-5 text-violet-500 group-hover:scale-110 transition-transform duration-200" />
-              <span>Thoughts</span>
+              <HiAnnotation className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 group-hover:scale-110 transition-transform duration-200 shrink-0" />
+              <span className="truncate">Thoughts</span>
             </button>
           </div>
         </div>

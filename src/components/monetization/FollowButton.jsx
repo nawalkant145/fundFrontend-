@@ -67,7 +67,7 @@ export default function FollowButton({
     compact:
       "px-2.5 py-0.5 text-[11px] font-bold rounded-full inline-flex items-center gap-1 transition-all",
     outline:
-      "px-7 py-2 text-sm font-extrabold rounded-full inline-flex items-center justify-center gap-1.5 transition-all border",
+      "px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-extrabold rounded-full inline-flex items-center justify-center gap-1.5 transition-all border flex-shrink-0",
   }[variant];
 
   const stateClasses = following

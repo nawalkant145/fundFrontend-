@@ -58,12 +58,12 @@ export default function DashboardShell({
             </Link>
             <Link
               to="/app/notifications"
-              className="relative p-2 -mr-2 text-[#0F4A2E]"
+              className="relative p-1 text-[#0F4A2E] flex items-center justify-center"
               aria-label="Notifications"
             >
               <HiBell className="w-6 h-6" />
               {unread > 0 && (
-                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
                   {unread}
                 </span>
               )}
@@ -73,7 +73,7 @@ export default function DashboardShell({
       )}
 
       {/* Dedicated scrollable container for feed content */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain md:overflow-visible md:h-auto md:pl-[72px] relative z-10">
+      <div className="flex-1 min-h-0 w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-y-contain md:overflow-visible md:h-auto md:pl-[72px] relative z-10">
         {noPad ? (
           <main className="h-full flex flex-col md:h-auto pb-16 md:pb-0">
             {children}
