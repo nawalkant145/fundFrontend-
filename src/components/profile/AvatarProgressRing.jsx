@@ -3,14 +3,19 @@ import { MdVerified } from "react-icons/md";
 
 export default function AvatarProgressRing({
   user,
-  percentage = 55,
+  percentage = null,
   size = 116,
   strokeWidth = 5,
   onClick,
 }) {
+  const hasPercentage = typeof percentage === "number" && !isNaN(percentage);
+  const displayPercentage = hasPercentage ? Math.round(percentage) : null;
+
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const strokeDashoffset = hasPercentage
+    ? circumference - (displayPercentage / 100) * circumference
+    : circumference;
 
   const isVerified = user?.verifiedBadge || user?.isVerified || user?.verificationLevel >= 2;
 
@@ -39,19 +44,21 @@ export default function AvatarProgressRing({
             fill="transparent"
           />
           {/* Animated Dark Green Progress Stroke (#0F4A2E) */}
-          <motion.circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#0F4A2E"
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            strokeLinecap="round"
-            fill="transparent"
-          />
+          {hasPercentage && (
+            <motion.circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke="#0F4A2E"
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              strokeLinecap="round"
+              fill="transparent"
+            />
+          )}
         </svg>
 
         {/* User Avatar Circle */}
@@ -88,9 +95,15 @@ export default function AvatarProgressRing({
         )}
 
         {/* Percentage Badge Pill overlapping bottom of the ring */}
-        <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E] text-white-force text-[11px] font-bold px-3 py-0.5 rounded-full shadow-md border border-white/20">
-          <span className="text-white-force">{percentage}%</span>
-        </div>
+        {hasPercentage ? (
+          <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E] text-white-force text-[11px] font-bold px-3 py-0.5 rounded-full shadow-md border border-white/20">
+            <span className="text-white-force">{displayPercentage}%</span>
+          </div>
+        ) : (
+          <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E]/40 text-white-force text-[11px] font-bold px-3 py-0.5 rounded-full shadow-md border border-white/10 animate-pulse">
+            <span className="opacity-0">70%</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -71,14 +71,16 @@ export default function VerificationStatusCard({ user }) {
         <div className="w-full sm:w-64">
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-xs font-semibold text-[#0F172A]">Profile Completeness</span>
-            <span className="text-xs font-extrabold text-[#0F4A2E]">{completion}%</span>
+            <span className="text-xs font-extrabold text-[#0F4A2E]">
+              {loading || completion === null ? "..." : `${completion}%`}
+            </span>
           </div>
 
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-[#0F4A2E] to-[#F59E0B]"
               initial={{ width: 0 }}
-              animate={{ width: `${completion}%` }}
+              animate={{ width: `${loading || completion === null ? 0 : completion}%` }}
               transition={{ duration: 0.8 }}
             />
           </div>

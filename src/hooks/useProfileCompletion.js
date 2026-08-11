@@ -22,7 +22,10 @@ export function useProfileCompletion() {
     fetchCompletion();
   }, [fetchCompletion]);
 
-  const completion = data?.completion ?? data?.completionPercentage ?? 55;
+  const completion = loading
+    ? null
+    : (data?.completion ?? data?.completionPercentage ?? 0);
+
   const profileStrength = data?.profileStrength || "Good Progress";
   const completedSections = data?.completedSections || [];
   const missingSections = data?.missingSections || [];

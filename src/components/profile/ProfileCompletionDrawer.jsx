@@ -85,7 +85,9 @@ export default function ProfileCompletionDrawer({
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-200 flex items-center gap-1">
                     <HiSparkles className="w-4 h-4" /> {profileStrength}
                   </span>
-                  <span className="text-3xl font-bold text-white-force">{completion}%</span>
+                  <span className="text-3xl font-bold text-white-force">
+                    {loading || completion === null ? "..." : `${completion}%`}
+                  </span>
                 </div>
 
                 {/* Progress Bar */}
@@ -93,7 +95,7 @@ export default function ProfileCompletionDrawer({
                   <motion.div
                     className="h-full bg-amber-400"
                     initial={{ width: 0 }}
-                    animate={{ width: `${completion}%` }}
+                    animate={{ width: `${loading || completion === null ? 0 : completion}%` }}
                     transition={{ duration: 0.8 }}
                   />
                 </div>
