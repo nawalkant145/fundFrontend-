@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   HiVideoCamera,
@@ -17,11 +17,15 @@ import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import BoostModal from "../../components/monetization/BoostModal";
+import FollowListModal from "../../components/dashboard/FollowListModal";
+import PitchPreviewModal from "../../components/dashboard/PitchPreviewModal";
+import PostPreviewModal from "../../components/dashboard/PostPreviewModal";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { boostService } from "../../services/boostService";
 import { useAuth } from "../../context/AuthContext";
 import { useUploadModal } from "../../context/UploadModalContext";
+import { useSocket } from "../../context/SocketContext";
 import { formatINR } from "../../constants/mockData";
 
 /**
@@ -33,7 +37,11 @@ export default function MyStudioPage() {
   const initialTab = searchParams.get("tab") === "posts" ? "posts" : "pitches";
   const [tab, setTab] = useState(initialTab);
   const [boostFor, setBoostFor] = useState(null);
+  const [previewPitch, setPreviewPitch] = useState(null);
+  const [previewPost, setPreviewPost] = useState(null);
+  const [followModal, setFollowModal] = useState(null); // "followers" | "following"
   const { user } = useAuth();
+  const { socket } = useSocket();
   const { openPitchModal, openPostModal } = useUploadModal();
 
   // Fetch real pitches — show empty state if none uploaded yet
@@ -102,6 +110,48 @@ export default function MyStudioPage() {
     loadBoosts();
   }, []);
 
+  // Real-time socket sync for pitch metrics
+  useEffect(() => {
+    if (!socket) return;
+    const onEngagement = (data) => {
+      if (data.videoId) {
+        setMyPitches((prev) =>
+          prev.map((p) => {
+            if (p._id !== data.videoId) return p;
+            const updated = { ...p };
+            if (typeof data.commentCount === "number") updated.commentCount = data.commentCount;
+            if (typeof data.likeCount === "number") updated.likeCount = data.likeCount;
+            if (typeof data.saveCount === "number") updated.saveCount = data.saveCount;
+            return updated;
+          })
+        );
+      }
+    };
+    socket.on("pitch:engagement", onEngagement);
+    return () => socket.off("pitch:engagement", onEngagement);
+  }, [socket]);
+
+  // Real-time socket sync for post metrics
+  useEffect(() => {
+    if (!socket) return;
+    const onPostEngagement = (data) => {
+      if (data.postId) {
+        setMyPosts((prev) =>
+          prev.map((p) => {
+            if (p._id !== data.postId) return p;
+            const updated = { ...p };
+            if (typeof data.commentCount === "number") updated.commentCount = data.commentCount;
+            if (typeof data.likeCount === "number") updated.likeCount = data.likeCount;
+            if (typeof data.saveCount === "number") updated.saveCount = data.saveCount;
+            return updated;
+          })
+        );
+      }
+    };
+    socket.on("post:engagement", onPostEngagement);
+    return () => socket.off("post:engagement", onPostEngagement);
+  }, [socket]);
+
   const activeBoost = (pitchId) =>
     boosts.find((b) => (b.videoId?._id || b.videoId) === pitchId);
 
@@ -136,8 +186,18 @@ export default function MyStudioPage() {
           <div className="flex justify-center sm:justify-start gap-5 mt-3 text-sm">
             <Stat label="Pitches" value={myPitches.length} />
             <Stat label="Posts" value={myPosts.length} />
-            <Stat label="Followers" value={user?.followersCount ?? 0} />
-            <Stat label="Following" value={user?.followingCount ?? 0} />
+            <button
+              onClick={() => setFollowModal("followers")}
+              className="hover:opacity-80 transition-opacity text-left cursor-pointer"
+            >
+              <Stat label="Followers" value={user?.followersCount ?? (user?.followers?.length || 0)} />
+            </button>
+            <button
+              onClick={() => setFollowModal("following")}
+              className="hover:opacity-80 transition-opacity text-left cursor-pointer"
+            >
+              <Stat label="Following" value={user?.followingCount ?? (user?.following?.length || 0)} />
+            </button>
           </div>
         </div>
         <div className="flex gap-2">
@@ -190,6 +250,7 @@ export default function MyStudioPage() {
                 pitch={p}
                 boost={activeBoost(p._id)}
                 onBoost={() => setBoostFor(p)}
+                onView={() => setPreviewPitch(p)}
               />
             ))}
           </div>
@@ -204,7 +265,7 @@ export default function MyStudioPage() {
       ) : myPosts.length ? (
         <div className="grid grid-cols-3 gap-1 sm:gap-2">
           {myPosts.map((p) => (
-            <PostTile key={p._id} post={p} />
+            <PostTile key={p._id} post={p} onClick={() => setPreviewPost(p)} />
           ))}
         </div>
       ) : (
@@ -227,6 +288,41 @@ export default function MyStudioPage() {
           loadPitches();
         }}
       />
+
+      {/* Pitch preview modal */}
+      {previewPitch && (
+        <PitchPreviewModal
+          pitch={previewPitch}
+          onClose={() => setPreviewPitch(null)}
+          onPitchUpdated={(updatedPitch) => {
+            setMyPitches((prev) =>
+              prev.map((p) => (p._id === updatedPitch._id ? updatedPitch : p))
+            );
+          }}
+        />
+      )}
+
+      {/* Post preview modal */}
+      {previewPost && (
+        <PostPreviewModal
+          post={previewPost}
+          onClose={() => setPreviewPost(null)}
+          onPostUpdated={(updatedPost) => {
+            setMyPosts((prev) =>
+              prev.map((p) => (p._id === updatedPost._id ? updatedPost : p))
+            );
+          }}
+        />
+      )}
+      {/* Follow list modal */}
+      {followModal && (
+        <FollowListModal
+          open={!!followModal}
+          onClose={() => setFollowModal(null)}
+          userId={user?._id}
+          mode={followModal}
+        />
+      )}
     </DashboardShell>
   );
 }
@@ -269,13 +365,13 @@ function TabButton({ active, onClick, icon: Icon, label, count }) {
   );
 }
 
-function PitchTile({ pitch, boost, onBoost }) {
+function PitchTile({ pitch, boost, onBoost, onView }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
       className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex flex-col"
     >
-      <Link to={`/app?pitch=${pitch._id}`} className="block relative group">
+      <button onClick={onView} className="block w-full text-left relative group">
         <div className="relative aspect-video overflow-hidden bg-[#0A1F14]">
           <img
             src={pitch.thumbnailUrl}
@@ -300,7 +396,7 @@ function PitchTile({ pitch, boost, onBoost }) {
             </span>
           )}
         </div>
-      </Link>
+      </button>
       <div className="p-4 flex flex-col flex-1">
         <h3 className="font-black text-[#0A1F14] line-clamp-1">
           {pitch.title}
@@ -325,11 +421,12 @@ function PitchTile({ pitch, boost, onBoost }) {
           </span>
         </div>
         <div className="flex gap-2 mt-4">
-          <Link to={`/app?pitch=${pitch._id}`} className="flex-1">
-            <button className="w-full py-2 rounded-full text-xs font-bold border border-[#1B5E3F]/15 text-[#0F4A2E] hover:bg-[#FAFAF7] transition-all">
-              View
-            </button>
-          </Link>
+          <button
+            onClick={onView}
+            className="flex-1 py-2 rounded-full text-xs font-bold border border-[#1B5E3F]/15 text-[#0F4A2E] hover:bg-[#FAFAF7] transition-all"
+          >
+            View
+          </button>
           <button
             onClick={onBoost}
             className={`flex-1 py-2 rounded-full text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all ${
@@ -347,12 +444,12 @@ function PitchTile({ pitch, boost, onBoost }) {
   );
 }
 
-function PostTile({ post }) {
+function PostTile({ post, onClick }) {
   const cover = post.images?.[0];
   return (
-    <Link
-      to={`/app/post/${post._id}`}
-      className="relative aspect-square block rounded-md sm:rounded-lg overflow-hidden bg-[#FAFAF7] group"
+    <button
+      onClick={onClick}
+      className="relative aspect-square block w-full text-left rounded-md sm:rounded-lg overflow-hidden bg-[#FAFAF7] group cursor-pointer"
     >
       {cover ? (
         <img
@@ -361,15 +458,21 @@ function PostTile({ post }) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
       ) : (
-        <div className="w-full h-full p-3 flex items-center text-xs text-[#0A1F14]/85 leading-relaxed bg-gradient-to-br from-[#FAFAF7] to-white border border-[#1B5E3F]/10">
-          <span className="line-clamp-6">{post.caption}</span>
+        <div className="w-full h-full p-2 sm:p-3 flex items-center justify-center text-center bg-gradient-to-br from-[#FAFAF7] to-[#F2F4F0] border border-[#1B5E3F]/10">
+          <span className="line-clamp-4 text-[11px] sm:text-xs font-semibold text-[#0A1F14]/80 leading-tight">
+            {post.caption}
+          </span>
         </div>
       )}
       {/* Hover overlay */}
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
         <span className="inline-flex items-center gap-1">
           <HiHeart className="w-4 h-4 text-red-400" />{" "}
-          {Array.isArray(post.likes) ? post.likes.length : post.likes || 0}
+          {typeof post.likeCount === "number"
+            ? post.likeCount
+            : Array.isArray(post.likes)
+              ? post.likes.length
+              : post.likes || 0}
         </span>
         <span className="inline-flex items-center gap-1">
           <HiChatAlt2 className="w-4 h-4" /> {post.commentCount || 0}
@@ -380,7 +483,7 @@ function PostTile({ post }) {
           {post.images.length}
         </span>
       )}
-    </Link>
+    </button>
   );
 }
 
