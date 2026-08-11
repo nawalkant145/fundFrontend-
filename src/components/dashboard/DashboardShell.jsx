@@ -36,7 +36,7 @@ export default function DashboardShell({
       data-light-app="true"
       className={`bg-[#f3f2ef] text-[#0A1F14] ${
         hideMobileHeader
-          ? "fixed inset-0 overflow-hidden flex flex-col md:relative md:inset-auto md:min-h-screen md:h-auto md:overflow-visible"
+          ? "fixed inset-0 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain md:relative md:inset-auto md:min-h-screen md:h-auto md:overflow-visible"
           : "min-h-screen relative"
       }`}
     >

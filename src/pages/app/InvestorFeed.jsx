@@ -346,35 +346,40 @@ export default function InvestorFeed() {
     // eslint-disable-next-line
   }, [idx, activeModal]);
 
-  // Touch swipe navigation (mobile) — also prevents pull-to-refresh
+  // Touch swipe navigation (mobile)
   useEffect(() => {
-    const el = document.getElementById("shorts-feed-container");
+    const el = document.getElementById("shorts-feed-container") || document.body;
     if (!el) return;
     let startY = 0;
     let lock = false;
+
     const onTouchStart = (e) => {
-      startY = e.touches[0].clientY;
+      if (
+        e.target?.closest("button") ||
+        e.target?.closest("a") ||
+        e.target?.closest("input") ||
+        e.target?.closest("textarea")
+      ) {
+        return;
+      }
+      startY = e.touches[0]?.clientY || 0;
     };
-    const onTouchMove = (e) => {
-      // Block native vertical scroll so the browser never triggers
-      // pull-to-refresh or rubber-band bounce on this surface.
-      e.preventDefault();
-    };
+
     const onTouchEnd = (e) => {
       if (lock || activeModal) return;
-      const dy = (e.changedTouches[0]?.clientY || 0) - startY;
-      if (Math.abs(dy) < 50) return;
+      const endY = e.changedTouches[0]?.clientY || 0;
+      const dy = endY - startY;
+      if (Math.abs(dy) < 35) return;
       lock = true;
-      if (dy < 0) next();
-      else prev();
-      setTimeout(() => (lock = false), 600);
+      if (dy < -35) next();
+      else if (dy > 35) prev();
+      setTimeout(() => (lock = false), 400);
     };
+
     el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
     // eslint-disable-next-line

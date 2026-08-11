@@ -14,15 +14,15 @@ export default function FeedShell({ children, mode }) {
 
   return (
     <div
-      className="overflow-hidden bg-black relative"
+      className="overflow-hidden bg-black relative touch-pan-y"
       style={{ height: "100dvh" }}
     >
       <Sidebar mode={resolvedMode} />
       <BottomBar mode={resolvedMode} />
       <UploadProgressBar />
 
-      <div className="absolute inset-0 md:left-[72px] z-10 bg-black text-white">
-        <main className="relative w-full h-full overflow-hidden">
+      <div className="absolute inset-0 md:left-[72px] z-10 bg-black text-white touch-pan-y">
+        <main className="relative w-full h-full overflow-hidden touch-pan-y">
           {children}
         </main>
       </div>
