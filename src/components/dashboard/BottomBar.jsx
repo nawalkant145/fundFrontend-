@@ -75,6 +75,7 @@ export default function BottomBar({ mode }) {
 
   return (
     <nav
+      data-bottombar
       className={`md:hidden fixed bottom-0 left-0 right-0 z-50 ${
         immersive
           ? "bg-gradient-to-t from-black/85 to-transparent border-0"

@@ -363,3 +363,20 @@ img {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
+/* ─── Mobile Comments Bottom Sheet ────────────────────────────────────────── */
+/* When the comments sheet is open on mobile:
+   1. Prevent the page/feed from scrolling behind the sheet.
+   2. Hide the mobile bottom navigation so the sheet sits flush at the bottom.
+   (These rules only apply below md breakpoint via the nav selector specificity.) */
+@media (max-width: 767px) {
+  body.comments-sheet-open {
+    overflow: hidden !important;
+    touch-action: none;
+  }
+
+  /* Target the BottomBar nav — matched by the data attribute we add to it */
+  body.comments-sheet-open nav[data-bottombar] {
+    display: none !important;
+  }
+}

@@ -1,14 +1,17 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiX, HiHeart, HiOutlineHeart } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import { commentService } from "../../services/commentService";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { MOCK_COMMENTS, getFullMockComments } from "../../constants/mockData";
+import { getFullMockComments } from "../../constants/mockData";
 
 /**
  * Instagram Reels-style comments panel with nested replies.
+ * On mobile  → Portal bottom-sheet (covers bottom nav, locks body scroll).
+ * On desktop → Right-side panel (unchanged from original design).
  */
 export default function CommentsPanel({
   open,
@@ -266,6 +269,25 @@ export default function CommentsPanel({
     return () => document.removeEventListener("keydown", onEsc);
   }, [open, onClose]);
 
+  // ── Mobile: lock body scroll + hide BottomBar when sheet is open ──────────
+  // Adds/removes the CSS class "comments-sheet-open" from document.body.
+  // index.css uses this class to:
+  //   1. Set overflow:hidden on body (prevents feed scrolling behind sheet).
+  //   2. Hide the BottomBar nav (via nav[data-bottombar] selector).
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) return;
+
+    if (open) {
+      document.body.classList.add("comments-sheet-open");
+    } else {
+      document.body.classList.remove("comments-sheet-open");
+    }
+    return () => {
+      document.body.classList.remove("comments-sheet-open");
+    };
+  }, [open]);
+
   // Build a UI comment object (used for optimistic add)
   const makeComment = (commentText, parentId = null) => ({
     _id: `temp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -462,163 +484,195 @@ export default function CommentsPanel({
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
+  // ── Detect mobile at render time (safe — we're always in browser here) ─────
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+  // ── Shared panel content ───────────────────────────────────────────────────
+  const panelContent = (
+    <motion.aside
+      key="comments-aside"
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 28, stiffness: 300 }}
+      className={[
+        // Base — mobile bottom-sheet
+        "fixed z-[70] bg-white bottom-0 left-0 right-0",
+        // Desktop override — right sidebar
+        "md:left-auto md:right-0 md:top-0 md:w-[400px]",
+        // Height: 75vh on mobile, full height on desktop
+        "h-[75vh] md:h-full",
+        "rounded-t-2xl md:rounded-none",
+        "flex flex-col shadow-2xl",
+      ].join(" ")}
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      {/* Mobile drag handle */}
+      <div className="md:hidden flex justify-center pt-2 pb-1">
+        <div className="w-10 h-1 bg-gray-300 rounded-full" />
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-center relative px-4 py-3 border-b border-gray-100">
+        <h2 className="font-bold text-base text-gray-900">
+          Comments {comments.length > 0 ? `(${comments.length})` : ""}
+        </h2>
+        <button
+          onClick={onClose}
+          className="absolute right-4 p-1.5 text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <HiX className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-7 h-7 rounded-full border-[3px] border-gray-200 border-t-gray-600 animate-spin" />
+          </div>
+        ) : comments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-gray-900 font-bold text-base mb-1">
+              No comments yet
+            </p>
+            <p className="text-gray-400 text-sm">Start the conversation.</p>
+          </div>
+        ) : (
+          comments.map((c) => (
+            <div key={c._id} className="space-y-3">
+              {/* Top-level comment */}
+              <Comment
+                data={c}
+                currentUserId={user?._id}
+                isLikedLocal={localLikes[c._id]}
+                onLike={() => handleLike(c._id)}
+                onReply={() => startReply(c)}
+                onDelete={() => handleDelete(c)}
+              />
+
+              {/* View / hide replies toggle */}
+              {c.replyCount > 0 && (
+                <button
+                  onClick={() => toggleReplies(c)}
+                  className="ml-12 flex items-center gap-2 text-[11px] font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span className="w-6 h-px bg-gray-300 inline-block" />
+                  {c._repliesOpen
+                    ? "Hide replies"
+                    : `View ${c.replyCount === 1 ? "1 reply" : `all ${c.replyCount} replies`}`}
+                </button>
+              )}
+
+              {/* Replies thread (indented) */}
+              <AnimatePresence>
+                {c._repliesOpen && c._replies?.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="ml-12 space-y-4 overflow-hidden"
+                  >
+                    {c._replies.map((r) => (
+                      <Comment
+                        key={r._id}
+                        data={r}
+                        isReply
+                        currentUserId={user?._id}
+                        isLikedLocal={localLikes[r._id]}
+                        onLike={() => handleLike(r._id)}
+                        onReply={() => startReply(r, c._id)}
+                        onDelete={() => handleDelete(r, c._id)}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Reply bar */}
+      {replyTo && (
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+          <p className="text-xs text-gray-500">
+            Replying to{" "}
+            <span className="font-bold text-gray-700">@{replyTo.username}</span>
+          </p>
+          <button
+            onClick={() => setReplyTo(null)}
+            className="text-xs font-bold text-blue-500"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Composer */}
+      <form
+        onSubmit={handleSubmit}
+        className="px-4 py-3 border-t border-gray-100 flex items-center gap-3 bg-white"
+      >
+        <CommentAvatar src={user?.avatar} name={user?.name} size={32} />
+        <input
+          ref={inputRef}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={
+            replyTo ? `Reply to @${replyTo.username}…` : "Add a comment…"
+          }
+          className="flex-1 text-sm text-gray-900 placeholder-gray-400 outline-none bg-transparent"
+        />
+        <button
+          type="submit"
+          disabled={!text.trim()}
+          className={`text-sm font-bold transition-colors ${
+            text.trim() ? "text-blue-500" : "text-blue-500/30 cursor-default"
+          }`}
+        >
+          Post
+        </button>
+      </form>
+    </motion.aside>
+  );
+
+  // ── Backdrop ───────────────────────────────────────────────────────────────
+  const backdrop = (
+    <motion.div
+      key="comments-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 bg-black/50 z-[60]"
+    />
+  );
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  // On MOBILE: portal the entire sheet + backdrop to document.body so it
+  // escapes the overflow stacking context of DashboardShell's scroll container
+  // and correctly appears above the BottomBar (which is hidden via CSS class).
+  //
+  // On DESKTOP: render inline — no stacking context issue there.
   return (
     <AnimatePresence>
       {open && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-[60]"
-          />
-
-          <motion.aside
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed z-[70] bg-white bottom-0 left-0 right-0
-                       md:left-auto md:right-0 md:top-0 md:w-[400px]
-                       h-[75vh] md:h-full rounded-t-2xl md:rounded-none
-                       flex flex-col shadow-2xl"
-            style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
-          >
-            {/* Mobile drag handle */}
-            <div className="md:hidden flex justify-center pt-2 pb-1">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-center relative px-4 py-3 border-b border-gray-100">
-              <h2 className="font-bold text-base text-gray-900">
-                Comments {comments.length > 0 ? `(${comments.length})` : ""}
-              </h2>
-              <button
-                onClick={onClose}
-                className="absolute right-4 p-1.5 text-gray-400 hover:text-gray-700 transition-colors"
-              >
-                <HiX className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-              {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-7 h-7 rounded-full border-[3px] border-gray-200 border-t-gray-600 animate-spin" />
-                </div>
-              ) : comments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <p className="text-gray-900 font-bold text-base mb-1">
-                    No comments yet
-                  </p>
-                  <p className="text-gray-400 text-sm">
-                    Start the conversation.
-                  </p>
-                </div>
-              ) : (
-                comments.map((c) => (
-                  <div key={c._id} className="space-y-3">
-                    {/* Top-level comment */}
-                    <Comment
-                      data={c}
-                      currentUserId={user?._id}
-                      isLikedLocal={localLikes[c._id]}
-                      onLike={() => handleLike(c._id)}
-                      onReply={() => startReply(c)}
-                      onDelete={() => handleDelete(c)}
-                    />
-
-                    {/* View / hide replies toggle */}
-                    {c.replyCount > 0 && (
-                      <button
-                        onClick={() => toggleReplies(c)}
-                        className="ml-12 flex items-center gap-2 text-[11px] font-bold text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        <span className="w-6 h-px bg-gray-300 inline-block" />
-                        {c._repliesOpen
-                          ? "Hide replies"
-                          : `View ${c.replyCount === 1 ? "1 reply" : `all ${c.replyCount} replies`}`}
-                      </button>
-                    )}
-
-                    {/* Replies thread (indented) */}
-                    <AnimatePresence>
-                      {c._repliesOpen && c._replies?.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="ml-12 space-y-4 overflow-hidden"
-                        >
-                          {c._replies.map((r) => (
-                            <Comment
-                              key={r._id}
-                              data={r}
-                              isReply
-                              currentUserId={user?._id}
-                              isLikedLocal={localLikes[r._id]}
-                              onLike={() => handleLike(r._id)}
-                              onReply={() => startReply(r, c._id)}
-                              onDelete={() => handleDelete(r, c._id)}
-                            />
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Reply bar */}
-            {replyTo && (
-              <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                  Replying to{" "}
-                  <span className="font-bold text-gray-700">
-                    @{replyTo.username}
-                  </span>
-                </p>
-                <button
-                  onClick={() => setReplyTo(null)}
-                  className="text-xs font-bold text-blue-500"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {/* Composer */}
-            <form
-              onSubmit={handleSubmit}
-              className="px-4 py-3 border-t border-gray-100 flex items-center gap-3 bg-white"
-            >
-              <CommentAvatar src={user?.avatar} name={user?.name} size={32} />
-              <input
-                ref={inputRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={
-                  replyTo ? `Reply to @${replyTo.username}…` : "Add a comment…"
-                }
-                className="flex-1 text-sm text-gray-900 placeholder-gray-400 outline-none bg-transparent"
-              />
-              <button
-                type="submit"
-                disabled={!text.trim()}
-                className={`text-sm font-bold transition-colors ${
-                  text.trim()
-                    ? "text-blue-500"
-                    : "text-blue-500/30 cursor-default"
-                }`}
-              >
-                Post
-              </button>
-            </form>
-          </motion.aside>
+          {isMobile ? (
+            createPortal(
+              <>
+                {backdrop}
+                {panelContent}
+              </>,
+              document.body,
+            )
+          ) : (
+            <>
+              {backdrop}
+              {panelContent}
+            </>
+          )}
         </>
       )}
     </AnimatePresence>
