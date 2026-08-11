@@ -342,7 +342,9 @@ export default function MessagesPage() {
 
   // Fetch chats on mount and whenever the active chat changes (so new chats appear)
   const refreshChats = () => {
-    setChatsLoading(true);
+    if (chats.length === 0) {
+      setChatsLoading(true);
+    }
     chatService
       .listChats()
       .then((res) => {
@@ -502,6 +504,21 @@ export default function MessagesPage() {
 
           {/* Chat list & search results */}
           <div className="flex-1 overflow-y-auto divide-y divide-gold/5">
+            {/* 0. Skeleton loader while fetching chats initially */}
+            {chatsLoading && chats.length === 0 && !qClean && (
+              <div className="p-4 space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-3 animate-pulse">
+                    <div className="w-12 h-12 rounded-full bg-gray-200/80 flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 bg-gray-200/80 rounded w-1/2" />
+                      <div className="h-2.5 bg-gray-200/60 rounded w-3/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* 1. Filtered existing conversations */}
             {filteredChats.map((c) => {
               const other = getOtherUser(c, user);
@@ -526,7 +543,7 @@ export default function MessagesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <p className="font-semibold text-sm truncate flex items-center gap-1">
+                      <p className="font-semibold text-sm truncate flex items-center gap-1 text-[#0A1F14]">
                         {other.name || "User"}
                         {other.isVerified && (
                           <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
@@ -546,8 +563,8 @@ export default function MessagesPage() {
                     <p
                       className={`text-xs truncate mt-0.5 ${
                         c.unread > 0 && !isActive
-                          ? "text-white font-semibold"
-                          : "text-gray-400"
+                          ? "text-black font-semibold"
+                          : "text-gray-500"
                       }`}
                     >
                       {c.lastMessage || "Tap to chat"}
@@ -582,7 +599,7 @@ export default function MessagesPage() {
                           className="w-10 h-10 rounded-full object-cover ring-2 ring-gold/20 flex-shrink-0"
                         />
                         <div className="min-w-0">
-                          <p className="font-bold text-sm truncate flex items-center gap-1">
+                          <p className="font-bold text-sm truncate flex items-center gap-1 text-[#0A1F14]">
                             {u.name}
                             {u.isVerified && (
                               <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
@@ -592,7 +609,7 @@ export default function MessagesPage() {
                             @{u.username || "user"}
                           </p>
                           {u.companyName && (
-                            <p className="text-[11px] text-gray-400 truncate">
+                            <p className="text-[11px] text-gray-500 truncate">
                               {u.companyName}
                             </p>
                           )}
@@ -613,10 +630,10 @@ export default function MessagesPage() {
               searchResults.length === 0 &&
               !searchLoading && (
                 <div className="text-center py-12 px-4">
-                  <p className="text-sm text-gray-400 font-semibold mb-1">
+                  <p className="text-sm text-gray-500 font-semibold mb-1">
                     No matching users or chats
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     Try searching by full username (e.g. @john) or name.
                   </p>
                 </div>
@@ -628,12 +645,13 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {!qClean && chats.length === 0 && (
-              <div className="text-center text-gray-400 py-12 px-4 text-sm">
-                <p className="font-semibold text-gray-300 mb-1">
+            {/* Empty state — ONLY shown when chatsLoading is completely finished */}
+            {!chatsLoading && !qClean && chats.length === 0 && (
+              <div className="text-center text-gray-500 py-12 px-4 text-sm">
+                <p className="font-semibold text-[#0A1F14] mb-1">
                   No conversations yet
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-400">
                   Search a username above to start messaging.
                 </p>
               </div>
