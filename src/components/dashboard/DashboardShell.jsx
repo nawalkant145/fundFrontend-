@@ -52,7 +52,7 @@ export default function DashboardShell({
 
       {/* Mobile top header — logo + notification bell (Instagram-style) */}
       {!hideMobileHeader && (
-        <header className="md:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8">
           <div className="flex items-center justify-between px-4 h-14">
             <Link to="/app" className="flex items-center">
               <img
@@ -77,7 +77,7 @@ export default function DashboardShell({
         </header>
       )}
 
-      <div className={`md:pl-[72px] relative z-10 ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full" : ""}`}>
+      <div className={`md:pl-[72px] relative z-10 ${!hideMobileHeader ? "pt-14 md:pt-0" : ""} ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full" : ""}`}>
         {noPad ? (
           <main className={`pb-14 md:pb-0 ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full overflow-hidden" : ""}`}>
             {children}
