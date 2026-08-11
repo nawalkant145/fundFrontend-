@@ -413,23 +413,30 @@ export default function SignupPage() {
               <label className="block text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
                 Phone number<span className="text-[#1B5E3F] ml-1">*</span>
               </label>
-              <PhoneInput value={data.phone} onChange={handleChange} required />
+              <PhoneInput
+                value={data.phone}
+                onChange={handleChange}
+                defaultCountry={data.country || "IN"}
+                error={
+                  phoneStatus === "taken"
+                    ? "This phone number is already registered"
+                    : data.phone && !phoneValid
+                      ? "Please enter a valid phone number for the selected country."
+                      : null
+                }
+                required
+              />
               {phoneStatus === "checking" && (
                 <p className="text-xs text-[#0A1F14]/55 mt-1.5">
                   Checking availability…
                 </p>
               )}
-              {phoneStatus === "taken" && (
-                <p className="text-xs text-red-500 font-semibold mt-1.5">
-                  This phone number is already registered
-                </p>
-              )}
-              {phoneStatus === "available" && (
+              {phoneStatus === "available" && phoneValid && (
                 <p className="text-xs text-emerald-600 font-semibold mt-1.5">
                   Phone number available ✓
                 </p>
               )}
-              {phoneStatus === "idle" && (
+              {phoneStatus === "idle" && !data.phone && (
                 <p className="text-xs text-[#0A1F14]/55 mt-1.5">
                   We'll send a verification code to this number.
                 </p>

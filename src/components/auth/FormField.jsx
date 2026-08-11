@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HiEye, HiEyeOff, HiCheck, HiX } from "react-icons/hi";
+import {
+  parsePhoneNumber,
+  getCountries,
+  getCountryCallingCode,
+} from "libphonenumber-js/max";
 
 /**
  * Premium form field — light theme: white background, soft borders,
@@ -201,190 +206,295 @@ export function MultiSelectChips({ options, value = [], onChange, max }) {
   );
 }
 
-// ─── Country-aware phone rules (mirrors backend PHONE_RULES) ────────────────
-// Keys are calling codes. Values: { min, max, example }
-export const PHONE_COUNTRY_RULES = {
-  "+91":  { min: 10, max: 10, label: "India",        example: "9876543210"    },
-  "+1":   { min: 10, max: 10, label: "US/Canada",    example: "2025551234"    },
-  "+44":  { min: 10, max: 10, label: "UK",           example: "7911123456"    },
-  "+971": { min: 9,  max: 9,  label: "UAE",          example: "501234567"     },
-  "+65":  { min: 8,  max: 8,  label: "Singapore",    example: "91234567"      },
-  "+61":  { min: 9,  max: 9,  label: "Australia",    example: "412345678"     },
-  "+86":  { min: 11, max: 11, label: "China",        example: "13912345678"   },
-  "+49":  { min: 10, max: 11, label: "Germany",      example: "15123456789"   },
-  "+33":  { min: 9,  max: 9,  label: "France",       example: "612345678"     },
-  "+81":  { min: 10, max: 11, label: "Japan",        example: "9012345678"    },
-  "+82":  { min: 9,  max: 10, label: "South Korea",  example: "1012345678"    },
-  "+60":  { min: 9,  max: 10, label: "Malaysia",     example: "123456789"     },
-  "+966": { min: 9,  max: 9,  label: "Saudi Arabia", example: "512345678"     },
-  "+92":  { min: 10, max: 10, label: "Pakistan",     example: "3001234567"    },
-  "+880": { min: 10, max: 10, label: "Bangladesh",   example: "1712345678"    },
-  "+94":  { min: 9,  max: 9,  label: "Sri Lanka",    example: "712345678"     },
-  "+55":  { min: 10, max: 11, label: "Brazil",       example: "11912345678"   },
-  "+27":  { min: 9,  max: 9,  label: "South Africa", example: "821234567"     },
+// ─── International Country Helpers & libphonenumber-js Validation ─────────
+
+const getCountryFlag = (iso) => {
+  if (!iso || iso.length !== 2) return "🌐";
+  const codePoints = iso
+    .toUpperCase()
+    .split("")
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
 };
 
-/**
- * Returns true when the full phone string (e.g. "+919876543210") passes
- * country-aware validation. Used by SignupPage to gate form submission.
- */
-export function getPhoneIsValid(phone) {
-  if (!phone || typeof phone !== "string") return false;
-  const cleaned = phone.replace(/[\s\-()\u00A0]/g, "");
-  if (!cleaned.startsWith("+")) return false;
-  const digits = cleaned.slice(1);
+const regionNames =
+  typeof Intl !== "undefined" && Intl.DisplayNames
+    ? new Intl.DisplayNames(["en"], { type: "region" })
+    : null;
 
-  // Try longest code first
-  const codes = Object.keys(PHONE_COUNTRY_RULES).sort(
-    (a, b) => b.length - a.length,
-  );
-  for (const code of codes) {
-    const prefix = code.slice(1); // digits of the code
-    if (digits.startsWith(prefix)) {
-      const subscriber = digits.slice(prefix.length);
-      const { min, max } = PHONE_COUNTRY_RULES[code];
-      return /^\d+$/.test(subscriber) &&
-        subscriber.length >= min &&
-        subscriber.length <= max;
-    }
+const getCountryName = (iso) => {
+  try {
+    return regionNames ? regionNames.of(iso) || iso : iso;
+  } catch {
+    return iso;
   }
+};
 
-  // Unknown code — permissive fallback
-  return /^\d+$/.test(digits) && digits.length >= 8 && digits.length <= 15;
-}
+export const ALL_COUNTRIES = getCountries()
+  .map((iso) => {
+    const callingCode = getCountryCallingCode(iso);
+    const name = getCountryName(iso);
+    const flag = getCountryFlag(iso);
+    return {
+      iso,
+      callingCode: `+${callingCode}`,
+      name,
+      flag,
+      label: `${flag} ${name} (+${callingCode})`,
+    };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 /**
- * Returns the rule for a given calling code, or a permissive fallback.
+ * Returns true when the phone number string is valid for the given country.
+ * Uses libphonenumber-js/max as the single source of truth.
  */
-function getRuleFor(code) {
-  return PHONE_COUNTRY_RULES[code] || { min: 7, max: 12, label: "Other", example: "" };
+export function getPhoneIsValid(phone, defaultCountry = "IN") {
+  if (!phone || typeof phone !== "string") return false;
+  const trimmed = phone.trim();
+  if (!trimmed) return false;
+
+  try {
+    const iso =
+      defaultCountry && typeof defaultCountry === "string"
+        ? defaultCountry.toUpperCase().trim()
+        : "IN";
+    const phoneNumber = trimmed.startsWith("+")
+      ? parsePhoneNumber(trimmed)
+      : parsePhoneNumber(trimmed, iso);
+
+    if (!phoneNumber || !phoneNumber.isValid()) return false;
+
+    if (phoneNumber.country === "IN") {
+      const type = phoneNumber.getType();
+      if (type && type !== "MOBILE" && type !== "FIXED_LINE_OR_MOBILE") {
+        return false;
+      }
+      if (/^[0-5]/.test(phoneNumber.nationalNumber)) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function PhoneInput({ value, onChange, name = "phone", required }) {
-  const CODES = [
-    { code: "+91",  flag: "🇮🇳", label: "India (+91)" },
-    { code: "+1",   flag: "🇺🇸", label: "US/Canada (+1)" },
-    { code: "+44",  flag: "🇬🇧", label: "UK (+44)" },
-    { code: "+971", flag: "🇦🇪", label: "UAE (+971)" },
-    { code: "+65",  flag: "🇸🇬", label: "Singapore (+65)" },
-    { code: "+61",  flag: "🇦🇺", label: "Australia (+61)" },
-    { code: "+49",  flag: "🇩🇪", label: "Germany (+49)" },
-    { code: "+33",  flag: "🇫🇷", label: "France (+33)" },
-    { code: "+81",  flag: "🇯🇵", label: "Japan (+81)" },
-    { code: "+86",  flag: "🇨🇳", label: "China (+86)" },
-    { code: "+92",  flag: "🇵🇰", label: "Pakistan (+92)" },
-    { code: "+880", flag: "🇧🇩", label: "Bangladesh (+880)" },
-    { code: "+60",  flag: "🇲🇾", label: "Malaysia (+60)" },
-    { code: "+66",  flag: "🇹🇭", label: "Thailand (+66)" },
-    { code: "+966", flag: "🇸🇦", label: "Saudi Arabia (+966)" },
-    { code: "+82",  flag: "🇰🇷", label: "South Korea (+82)" },
-    { code: "+55",  flag: "🇧🇷", label: "Brazil (+55)" },
-    { code: "+27",  flag: "🇿🇦", label: "South Africa (+27)" },
-    { code: "+94",  flag: "🇱🇰", label: "Sri Lanka (+94)" },
-  ];
-
-  const [code, setCode] = useState("+91");
-  const [number, setNumber] = useState("");
+export function PhoneInput({
+  value,
+  onChange,
+  name = "phone",
+  required,
+  defaultCountry = "IN",
+  error: externalError,
+}) {
+  const [selectedIso, setSelectedIso] = useState(defaultCountry.toUpperCase());
+  const [rawInput, setRawInput] = useState("");
   const [touched, setTouched] = useState(false);
 
-  const rule = getRuleFor(code);
+  // Synchronize country if defaultCountry prop changes
+  useEffect(() => {
+    if (defaultCountry && typeof defaultCountry === "string") {
+      const iso = defaultCountry.toUpperCase().trim();
+      if (ALL_COUNTRIES.some((c) => c.iso === iso)) {
+        setSelectedIso(iso);
+      }
+    }
+  }, [defaultCountry]);
 
-  // Derive error message when field has been touched
-  const digitError = (() => {
-    if (!touched || !number) return null;
-    if (number.length < rule.min)
-      return `Too short — ${rule.label} numbers need ${rule.min} digit${rule.min !== 1 ? "s" : ""} (entered ${number.length})`;
-    if (number.length > rule.max)
-      return `Too long — ${rule.label} numbers need ${rule.max} digit${rule.max !== 1 ? "s" : ""} (entered ${number.length})`;
-    return null;
+  // Synchronize input if value prop changes externally (e.g. international format)
+  useEffect(() => {
+    if (value && typeof value === "string") {
+      if (value.startsWith("+")) {
+        try {
+          const parsed = parsePhoneNumber(value);
+          if (parsed?.country) {
+            setSelectedIso(parsed.country);
+            setRawInput(parsed.nationalNumber || value);
+            return;
+          }
+        } catch {}
+      }
+      // If value is national or E.164 formatted for selected country
+      const selectedObj = ALL_COUNTRIES.find((c) => c.iso === selectedIso);
+      if (selectedObj && value.startsWith(selectedObj.callingCode)) {
+        setRawInput(value.slice(selectedObj.callingCode.length));
+      }
+    }
+  }, [value, selectedIso]);
+
+  const selectedCountryObj = ALL_COUNTRIES.find((c) => c.iso === selectedIso) || {
+    iso: "IN",
+    callingCode: "+91",
+    name: "India",
+    flag: "🇮🇳",
+  };
+
+  // Current phone string for validation
+  const currentFullStr = rawInput.startsWith("+")
+    ? rawInput
+    : rawInput
+      ? `${selectedCountryObj.callingCode}${rawInput}`
+      : "";
+
+  const isValid = rawInput ? getPhoneIsValid(currentFullStr, selectedIso) : false;
+
+  // Determine error visibility:
+  // 1. External error prop passed from parent form
+  // 2. Field touched (onBlur) and rawInput is invalid
+  // 3. User entered enough digits (>= 6 digits or '+' format) and number is invalid
+  const shouldShowError = (() => {
+    if (externalError) return true;
+    if (!rawInput) return false;
+    if (isValid) return false;
+
+    const cleanDigits = rawInput.replace(/\D/g, "");
+    if (touched || cleanDigits.length >= 6 || rawInput.startsWith("+")) {
+      return true;
+    }
+    return false;
   })();
 
-  const handleNumberChange = (e) => {
-    // Strip anything that isn't a digit
-    const raw = e.target.value.replace(/\D/g, "");
-    // Enforce max length for the selected country
-    const capped = raw.slice(0, rule.max);
-    setNumber(capped);
+  const errorMessage =
+    externalError ||
+    (shouldShowError
+      ? "Please enter a valid phone number for the selected country."
+      : null);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+
+    // International format (starts with '+')
+    if (val.startsWith("+")) {
+      setRawInput(val);
+      let activeIso = selectedIso;
+      try {
+        const parsed = parsePhoneNumber(val);
+        if (parsed?.country) {
+          activeIso = parsed.country;
+          setSelectedIso(parsed.country);
+        }
+      } catch {}
+
+      const valid = getPhoneIsValid(val, activeIso);
+      let e164 = "";
+      try {
+        const p = parsePhoneNumber(val);
+        if (valid && p) e164 = p.format("E.164");
+      } catch {}
+
+      onChange?.({
+        target: { name, value: e164 || val },
+      });
+      return;
+    }
+
+    // National format (strip non-digits)
+    const cleanedDigits = val.replace(/\D/g, "");
+    setRawInput(cleanedDigits);
+
+    const fullStr = `${selectedCountryObj.callingCode}${cleanedDigits}`;
+    const valid = getPhoneIsValid(fullStr, selectedIso);
+
+    let e164 = "";
+    if (cleanedDigits && valid) {
+      try {
+        const parsed = parsePhoneNumber(cleanedDigits, selectedIso);
+        if (parsed && parsed.isValid()) {
+          e164 = parsed.format("E.164");
+        }
+      } catch {}
+    }
+
     onChange?.({
-      target: { name, value: capped ? `${code}${capped}` : "" },
+      target: {
+        name,
+        value:
+          e164 ||
+          (cleanedDigits ? `${selectedCountryObj.callingCode}${cleanedDigits}` : ""),
+      },
     });
   };
 
-  const handleCodeChange = (e) => {
-    const newCode = e.target.value;
-    setCode(newCode);
-    // Clear the subscriber number — digit counts differ per country
-    setNumber("");
-    setTouched(false);
-    onChange?.({ target: { name, value: "" } });
-  };
+  const handleCountryChange = (e) => {
+    const newIso = e.target.value;
+    setSelectedIso(newIso);
+    setTouched(true);
 
-  const hint = (() => {
-    if (rule.example)
-      return `${rule.label}: ${rule.min === rule.max ? rule.min : `${rule.min}–${rule.max}`} digits · e.g. ${rule.example}`;
-    return `${rule.min === rule.max ? rule.min : `${rule.min}–${rule.max}`} digits required`;
-  })();
+    const newCountryObj =
+      ALL_COUNTRIES.find((c) => c.iso === newIso) || selectedCountryObj;
+    const fullStr = rawInput.startsWith("+")
+      ? rawInput
+      : rawInput
+        ? `${newCountryObj.callingCode}${rawInput}`
+        : "";
+    const valid = getPhoneIsValid(fullStr, newIso);
+
+    let e164 = "";
+    if (rawInput && valid) {
+      try {
+        const parsed = rawInput.startsWith("+")
+          ? parsePhoneNumber(rawInput)
+          : parsePhoneNumber(rawInput, newIso);
+        if (parsed && parsed.isValid()) e164 = parsed.format("E.164");
+      } catch {}
+    }
+
+    onChange?.({
+      target: {
+        name,
+        value:
+          e164 ||
+          (rawInput ? `${newCountryObj.callingCode}${rawInput}` : ""),
+      },
+    });
+  };
 
   return (
     <div>
       <div className="flex gap-2">
         <select
-          value={code}
-          onChange={handleCodeChange}
+          value={selectedIso}
+          onChange={handleCountryChange}
           aria-label="Country calling code"
-          className="px-3 py-3.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-[#0A1F14] focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none w-44 text-sm font-semibold"
+          className="px-3 py-3.5 bg-white border border-[#1B5E3F]/15 rounded-xl text-[#0A1F14] focus:border-[#1B5E3F]/60 focus:ring-4 focus:ring-[#1B5E3F]/15 focus:outline-none w-48 text-sm font-semibold truncate"
         >
-          {CODES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.flag} {c.label}
+          {ALL_COUNTRIES.map((c) => (
+            <option key={c.iso} value={c.iso}>
+              {c.flag} {c.name} ({c.callingCode})
             </option>
           ))}
         </select>
         <div className="relative flex-1">
           <input
             type="tel"
-            inputMode="numeric"
+            inputMode="tel"
             name={name}
-            value={number}
-            onChange={handleNumberChange}
+            value={rawInput}
+            onChange={handleInputChange}
             onBlur={() => setTouched(true)}
-            placeholder={rule.example || "Enter number"}
-            maxLength={rule.max}
+            placeholder={`e.g. ${selectedCountryObj.callingCode} 9876543210`}
             required={required}
-            aria-invalid={!!digitError}
+            aria-invalid={!!errorMessage}
             aria-describedby={`${name}-hint`}
             className={`w-full px-4 py-3.5 bg-white border rounded-xl text-[#0A1F14] placeholder-[#0A1F14]/35 focus:ring-4 focus:outline-none transition-all text-base ${
-              digitError
+              errorMessage
                 ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                : number.length === rule.max
+                : isValid
                   ? "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-100"
                   : "border-[#1B5E3F]/15 focus:border-[#1B5E3F]/60 focus:ring-[#1B5E3F]/15"
             }`}
           />
-          {/* Digit counter */}
-          {number.length > 0 && (
-            <span
-              className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold pointer-events-none ${
-                number.length === rule.max
-                  ? "text-emerald-500"
-                  : number.length > rule.max
-                    ? "text-red-500"
-                    : "text-[#0A1F14]/40"
-              }`}
-            >
-              {number.length}/{rule.max}
-            </span>
-          )}
         </div>
       </div>
-      {/* Error or hint */}
-      {digitError ? (
-        <p id={`${name}-hint`} className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-          <span>✕</span> {digitError}
+      {errorMessage ? (
+        <p id={`${name}-hint`} className="text-xs text-red-500 font-semibold mt-1.5 flex items-center gap-1">
+          <span>✕</span> {errorMessage}
         </p>
       ) : (
         <p id={`${name}-hint`} className="text-xs text-[#0A1F14]/45 mt-1.5">
-          {hint}
+          {selectedCountryObj.name} ({selectedCountryObj.callingCode}) · International format E.164 supported
         </p>
       )}
     </div>
