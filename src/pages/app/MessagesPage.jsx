@@ -1395,7 +1395,6 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       {/* Messages */}
       <div
         ref={messagesListRef}
-        onScroll={handleScroll}
         className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden max-w-full px-3 py-3 space-y-1.5 min-h-0"
       >
         {(() => {
