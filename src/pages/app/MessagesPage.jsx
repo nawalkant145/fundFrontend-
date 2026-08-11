@@ -163,7 +163,7 @@ function CallLogMessageItem({ message, isMe }) {
   }
 
   return (
-    <div className="flex items-center gap-3 py-1 px-1 min-w-[210px]">
+    <div className="flex items-center gap-3 py-1 px-1 min-w-0 max-w-full">
       <div
         className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
           isMissed ? "bg-red-50 text-red-500" : "bg-white text-gray-900"
@@ -246,7 +246,7 @@ function VoiceNoteMessageItem({ audioUrl, senderAvatar, senderName, isMe }) {
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-2.5 py-1 px-0.5 min-w-[240px] max-w-[320px]">
+    <div className="flex items-center gap-2.5 py-1 px-0.5 min-w-0 max-w-full">
       <audio
         ref={audioRef}
         src={audioUrl}
@@ -458,7 +458,7 @@ export default function MessagesPage() {
 
   return (
     <DashboardShell title={null} noPad hideMobileHeader>
-      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
+      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden max-w-full">
         {/* ─── Chat list (left column) ─────────────── */}
         <div
           className={`md:border-r-2 md:border-gold/15 md:w-80 lg:w-96 md:flex-shrink-0 h-full
@@ -1324,7 +1324,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   ];
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden max-w-full">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-200/80 flex-shrink-0 bg-white/95 backdrop-blur z-20 text-[#0A1F14]">
         <div className="flex items-center gap-3 min-w-0">
@@ -1413,7 +1413,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       <div
         ref={messagesListRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 space-y-1.5 min-h-0"
+        className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden max-w-full px-3 py-3 space-y-1.5 min-h-0"
       >
         {(() => {
           const grouped = [];
@@ -1489,7 +1489,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     backgroundColor: isMe ? "#005c4b" : "#ffffff",
                     color: isMe ? "#ffffff" : "#111827",
                   }}
-                  className={`relative max-w-[70%] rounded-xl px-3.5 py-2 shadow-sm break-words ${
+                  className={`relative max-w-[85%] sm:max-w-[70%] max-w-full overflow-hidden rounded-xl px-3.5 py-2 shadow-sm break-words ${
                     isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100"
                   }`}
                 >
@@ -1716,7 +1716,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               onEmojiClick={handleEmojiSelect}
               searchDisabled={false}
               skinTonesDisabled
-              width={340}
+              width={Math.min(340, (typeof window !== "undefined" ? window.innerWidth : 360) - 24)}
               height={380}
               theme="dark"
             />
