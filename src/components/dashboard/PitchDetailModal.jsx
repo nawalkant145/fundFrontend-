@@ -77,44 +77,47 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} size="xl">
-      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_380px]">
+    <Modal open={open} onClose={onClose} size="xl" title={pitch.title || "Pitch Details"} noPadding>
+      <div className="flex flex-col lg:grid lg:grid-cols-[1.1fr_380px] max-h-[85dvh] lg:max-h-[720px] bg-[#0A1F14] text-white overflow-y-auto lg:overflow-hidden">
         {/* Video / thumbnail */}
-        <div className="relative bg-black aspect-[4/5] lg:aspect-auto lg:min-h-[600px]">
+        <div className="relative bg-black aspect-video max-h-[32vh] sm:max-h-[40vh] lg:aspect-auto lg:max-h-none lg:min-h-[600px] w-full flex-shrink-0 flex items-center justify-center overflow-hidden">
           <img
-            src={pitch.thumbnailUrl}
+            src={pitch.coverUrl || pitch.thumbnailUrl}
             alt={pitch.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-navy via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A1F14] via-transparent to-black/40 pointer-events-none" />
 
           <button
             onClick={() => setMuted((v) => !v)}
-            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-dark-navy/60 backdrop-blur border border-gold/30 flex items-center justify-center"
+            className="absolute top-3 right-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-dark-navy/70 backdrop-blur border border-gold/30 flex items-center justify-center z-10 transition-transform active:scale-95"
+            aria-label={muted ? "Unmute" : "Mute"}
           >
             {muted ? (
-              <HiVolumeOff className="w-5 h-5 text-gold" />
+              <HiVolumeOff className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
             ) : (
-              <HiVolumeUp className="w-5 h-5 text-gold" />
+              <HiVolumeUp className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
             )}
           </button>
 
-          <div className="absolute top-3 left-3 px-3 py-1 bg-gold/90 text-dark-navy text-[10px] font-black rounded-full uppercase">
-            {pitch.industry}
-          </div>
+          {pitch.industry && (
+            <div className="absolute top-3 left-3 px-2.5 py-0.5 sm:py-1 bg-gold/90 text-dark-navy text-[10px] font-black rounded-full uppercase z-10">
+              {pitch.industry}
+            </div>
+          )}
 
-          <div className="absolute bottom-4 left-4 right-4">
-            <h2 className="text-2xl font-black mb-2">{pitch.title}</h2>
-            <p className="text-sm text-gray-200 line-clamp-3">
+          <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-10">
+            <h2 className="text-lg sm:text-2xl font-black mb-1 sm:mb-2 line-clamp-1">{pitch.title}</h2>
+            <p className="text-xs sm:text-sm text-gray-200 line-clamp-2 sm:line-clamp-3">
               {pitch.description}
             </p>
           </div>
         </div>
 
         {/* Side panel */}
-        <div className="flex flex-col max-h-[60vh] lg:max-h-[700px] lg:h-[700px] overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 bg-[#0F2D1E] text-white border-t lg:border-t-0 lg:border-l border-gold/15 lg:max-h-[720px] lg:h-[720px] overflow-hidden">
           {/* Founder header */}
-          <div className="p-4 border-b border-gold/10 flex items-center gap-3">
+          <div className="p-3 sm:p-4 border-b border-gold/10 flex items-center gap-3 bg-[#0F2D1E] flex-shrink-0">
             <img
               src={
                 f?.avatar ||
@@ -123,7 +126,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
                 )}&background=152820&color=d4af37`
               }
               alt={f?.name || "Founder"}
-              className="w-12 h-12 rounded-full border-2 border-gold/40 object-cover bg-dark-navy"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-gold/40 object-cover bg-dark-navy flex-shrink-0"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -131,17 +134,17 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
                 )}&background=152820&color=d4af37`;
               }}
             />
-            <div className="min-w-0">
-              <p className="font-bold flex items-center gap-1 text-sm">
+            <div className="min-w-0 flex-1">
+              <p className="font-bold flex items-center gap-1 text-xs sm:text-sm truncate">
                 {f?.name || pitch.authorName || "Founder"}
-                {f?.isVerified && <MdVerified className="w-4 h-4 text-gold" />}
+                {f?.isVerified && <MdVerified className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold flex-shrink-0" />}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-[11px] sm:text-xs text-gray-300 truncate">
                 {f?.companyName || pitch.companyName || ""}
               </p>
             </div>
             <button
-              className="ml-auto px-4 py-1.5 bg-gold text-dark-navy text-xs font-black rounded-full"
+              className="ml-auto px-3 sm:px-4 py-1 sm:py-1.5 bg-gold text-dark-navy text-xs font-black rounded-full transition-transform active:scale-95 flex-shrink-0"
               onClick={() => toast.success("Following founder")}
             >
               Follow
@@ -149,10 +152,10 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
           </div>
 
           {/* Action bar */}
-          <div className="p-4 border-b border-gold/10 grid grid-cols-4 gap-2">
+          <div className="p-2 sm:p-3 border-b border-gold/10 grid grid-cols-4 gap-1 sm:gap-2 flex-shrink-0">
             <ActionPill
               icon={HiHeart}
-              label={pitch.likes.length + (liked ? 1 : 0)}
+              label={pitch.likes ? (Array.isArray(pitch.likes) ? pitch.likes.length + (liked ? 1 : 0) : pitch.likes + (liked ? 1 : 0)) : (liked ? 1 : 0)}
               active={liked}
               activeClass="text-red-400 bg-red-500/10"
               onClick={() => {
@@ -162,7 +165,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
             />
             <ActionPill
               icon={HiBookmark}
-              label={pitch.saves.length + (saved ? 1 : 0)}
+              label={pitch.saves ? (Array.isArray(pitch.saves) ? pitch.saves.length + (saved ? 1 : 0) : pitch.saves + (saved ? 1 : 0)) : (saved ? 1 : 0)}
               active={saved}
               activeClass="text-gold bg-gold/10"
               onClick={() => {
@@ -188,15 +191,15 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
           </div>
 
           {/* Quick info */}
-          <div className="p-4 border-b border-gold/10 grid grid-cols-3 gap-3 text-center">
+          <div className="p-3 sm:p-4 border-b border-gold/10 grid grid-cols-3 gap-2 text-center flex-shrink-0">
             <Info label="Asking" value={formatINR(pitch.askAmount)} />
             <Info label="Equity" value={`${pitch.equityOffered}%`} />
             <Info label="Stage" value={pitch.fundingStage} />
           </div>
 
-          <div className="p-4 border-b border-gold/10 grid grid-cols-3 gap-2">
+          <div className="p-2.5 sm:p-3 border-b border-gold/10 grid grid-cols-3 gap-2 flex-shrink-0">
             <SmallStat icon={HiEye} value={pitch.views} />
-            <SmallStat icon={HiHeart} value={pitch.likes.length} />
+            <SmallStat icon={HiHeart} value={Array.isArray(pitch.likes) ? pitch.likes.length : (pitch.likes || 0)} />
             <SmallStat
               icon={HiChatAlt2}
               value={pitch.commentCount || pitch.comments || 0}
@@ -204,46 +207,48 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
           </div>
 
           {/* CTA buttons */}
-          <div className="p-4 border-b border-gold/10 grid grid-cols-2 gap-2">
+          <div className="p-3 sm:p-4 border-b border-gold/10 grid grid-cols-2 gap-2 flex-shrink-0">
             <button
               onClick={() => toast.success("Investment interest sent")}
-              className="px-3 py-2.5 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-xs font-black rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-gold/20"
+              className="px-2.5 sm:px-3 py-2.5 bg-gradient-to-r from-gold to-bright-gold text-dark-navy text-xs font-black rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 shadow-lg shadow-gold/20 truncate"
             >
-              <HiCurrencyDollar className="w-4 h-4" /> Express Interest
+              <HiCurrencyDollar className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Express Interest</span>
             </button>
             <button
               onClick={() => toast.success("Deck access requested")}
-              className="px-3 py-2.5 bg-dark-bg/60 border-2 border-gold/30 hover:border-gold text-xs font-black rounded-xl flex items-center justify-center gap-1.5 transition-all"
+              className="px-2.5 sm:px-3 py-2.5 bg-dark-bg/60 border-2 border-gold/30 hover:border-gold text-xs font-black rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-all truncate text-white"
             >
-              <HiDocumentText className="w-4 h-4" /> Request Deck
+              <HiDocumentText className="w-4 h-4 flex-shrink-0 text-gold" />
+              <span className="truncate">Request Deck</span>
             </button>
           </div>
 
           {/* Comments */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            <p className="text-xs uppercase tracking-wider font-bold text-gray-400">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 min-h-[140px]">
+            <p className="text-[11px] uppercase tracking-wider font-bold text-gray-400">
               Comments · {comments.length}
             </p>
             {comments.map((c) => (
-              <div key={c._id} className="flex gap-3">
+              <div key={c._id} className="flex gap-2.5">
                 <img
                   src={c.user.avatar}
                   alt={c.user.name}
-                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="bg-dark-bg/60 rounded-2xl rounded-tl-sm px-3 py-2">
-                    <p className="text-xs font-bold">{c.user.name}</p>
-                    <p className="text-sm text-gray-200">{c.text}</p>
+                  <div className="bg-[#0A1F14]/70 rounded-xl rounded-tl-sm p-2.5">
+                    <p className="text-xs font-bold text-gold">{c.user.name}</p>
+                    <p className="text-xs sm:text-sm text-gray-200">{c.text}</p>
                   </div>
-                  <div className="flex items-center gap-3 px-2 mt-1">
-                    <span className="text-[10px] text-gray-500">
+                  <div className="flex items-center gap-3 px-1 mt-1">
+                    <span className="text-[10px] text-gray-400">
                       {c.createdAt}
                     </span>
-                    <button className="text-[10px] text-gray-400 hover:text-red-400 font-semibold">
+                    <button className="text-[10px] text-gray-300 hover:text-red-400 font-semibold">
                       ♥ {c.likes}
                     </button>
-                    <button className="text-[10px] text-gray-400 hover:text-white font-semibold">
+                    <button className="text-[10px] text-gray-300 hover:text-white font-semibold">
                       Reply
                     </button>
                   </div>
@@ -255,18 +260,18 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
           {/* Composer */}
           <form
             onSubmit={submitComment}
-            className="p-3 border-t border-gold/10 flex items-center gap-2"
+            className="p-2.5 sm:p-3 border-t border-gold/10 flex items-center gap-2 bg-[#0A1F14] flex-shrink-0"
           >
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Add a comment…"
-              className="flex-1 px-3 py-2 bg-dark-bg/60 border border-gold/15 rounded-xl text-sm focus:border-gold focus:outline-none"
+              className="flex-1 px-3 py-2 bg-[#0F2D1E] border border-gold/20 rounded-xl text-xs sm:text-sm text-white placeholder-gray-400 focus:border-gold focus:outline-none"
             />
             <motion.button
               type="submit"
               whileTap={{ scale: 0.95 }}
-              className="p-2.5 bg-gradient-to-br from-gold to-bright-gold text-dark-navy rounded-xl"
+              className="p-2.5 bg-gradient-to-br from-gold to-bright-gold text-dark-navy rounded-xl flex-shrink-0"
             >
               <HiPaperAirplane className="w-4 h-4 rotate-90" />
             </motion.button>

@@ -18,6 +18,8 @@ export default function Modal({
   maxWidth,
   size,
   hideClose = false,
+  noPadding = false,
+  bodyClassName = "",
 }) {
   const widthClass = maxWidth || SIZE_MAP[size] || "max-w-lg";
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-[150] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[150] bg-black/75 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4"
         >
           <motion.div
             initial={{ y: 30, scale: 0.96, opacity: 0 }}
@@ -47,24 +49,29 @@ export default function Modal({
             exit={{ y: 30, scale: 0.96, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
             data-light-app="true"
-            className={`w-full ${widthClass} bg-white border border-[#1B5E3F]/15 rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[90vh]`}
+            className={`w-full ${widthClass} bg-white border border-[#1B5E3F]/15 rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#0F4A2E]/30 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]`}
           >
             {(title || !hideClose) && (
-              <div className="flex items-center justify-between p-5 border-b border-[#1B5E3F]/10 flex-shrink-0">
-                {title && (
-                  <h2 className="text-lg font-bold text-[#0A1F14]">{title}</h2>
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
+                {title ? (
+                  <h2 className="text-base sm:text-lg font-bold text-[#0A1F14] truncate pr-2">{title}</h2>
+                ) : (
+                  <div />
                 )}
                 {!hideClose && (
                   <button
                     onClick={onClose}
-                    className="ml-auto p-2 -mr-2 hover:bg-[#FAFAF7] rounded-lg text-[#0A1F14]/55 hover:text-[#0F4A2E]"
+                    className="p-1.5 -mr-1 hover:bg-[#FAFAF7] rounded-lg text-[#0A1F14]/55 hover:text-[#0F4A2E] transition-colors"
+                    aria-label="Close modal"
                   >
                     <HiX className="w-5 h-5" />
                   </button>
                 )}
               </div>
             )}
-            <div className="p-5 overflow-y-auto">{children}</div>
+            <div className={`overflow-y-auto flex-1 ${noPadding ? "" : "p-4 sm:p-5"} ${bodyClassName}`}>
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       )}
