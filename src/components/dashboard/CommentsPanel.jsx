@@ -128,7 +128,7 @@ export default function CommentsPanel({
               const hasOptimistic = replies.some(
                 (r) =>
                   typeof r._id === "string" &&
-                  r._id.startsWith("c_") &&
+                  (r._id.startsWith("c_") || r._id.startsWith("temp_")) &&
                   r.text === data.comment.text,
               );
               if (hasOptimistic) {
@@ -136,7 +136,7 @@ export default function CommentsPanel({
                   ...c,
                   _replies: replies.map((r) =>
                     typeof r._id === "string" &&
-                    r._id.startsWith("c_") &&
+                    (r._id.startsWith("c_") || r._id.startsWith("temp_")) &&
                     r.text === data.comment.text
                       ? { ...data.comment, _isOwn: true }
                       : r,
@@ -169,13 +169,13 @@ export default function CommentsPanel({
             const hasOptimistic = prev.some(
               (c) =>
                 typeof c._id === "string" &&
-                c._id.startsWith("c_") &&
+                (c._id.startsWith("c_") || c._id.startsWith("temp_")) &&
                 c.text === data.comment.text,
             );
             if (hasOptimistic) {
               return prev.map((c) =>
                 typeof c._id === "string" &&
-                c._id.startsWith("c_") &&
+                (c._id.startsWith("c_") || c._id.startsWith("temp_")) &&
                 c.text === data.comment.text
                   ? { ...data.comment, _isOwn: true }
                   : c,
