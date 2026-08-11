@@ -34,7 +34,7 @@ export default function DashboardShell({
   return (
     <div
       data-light-app="true"
-      className="min-h-screen bg-[#f3f2ef] text-[#0A1F14] relative max-w-full overflow-x-hidden"
+      className="min-h-screen bg-[#f3f2ef] text-[#0A1F14] relative"
     >
       {/* Soft brand ambient glows */}
       <div className="fixed inset-0 pointer-events-none z-0">

@@ -24,6 +24,7 @@
 html {
   width: 100%;
   max-width: 100%;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -38,6 +39,14 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
     "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
+  /* Smooth scrolling optimizations */
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+
+  /* Disable pull-to-refresh + rubber-band overscroll on mobile.
+     Reels/TikTok/Shorts all do this. */
+  overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
 }
 
