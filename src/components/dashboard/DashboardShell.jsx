@@ -34,7 +34,11 @@ export default function DashboardShell({
   return (
     <div
       data-light-app="true"
-      className="min-h-screen bg-[#f3f2ef] text-[#0A1F14] relative"
+      className={`bg-[#f3f2ef] text-[#0A1F14] ${
+        hideMobileHeader
+          ? "fixed inset-0 overflow-hidden flex flex-col md:relative md:inset-auto md:min-h-screen md:h-auto md:overflow-visible"
+          : "min-h-screen relative"
+      }`}
     >
       {/* Soft brand ambient glows */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -73,9 +77,11 @@ export default function DashboardShell({
         </header>
       )}
 
-      <div className="md:pl-[72px] relative z-10">
+      <div className={`md:pl-[72px] relative z-10 ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full" : ""}`}>
         {noPad ? (
-          <main className={`pb-14 md:pb-0 ${hideMobileHeader ? "h-[100dvh] md:h-auto overflow-hidden flex flex-col" : ""}`}>{children}</main>
+          <main className={`pb-14 md:pb-0 ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full overflow-hidden" : ""}`}>
+            {children}
+          </main>
         ) : (
           <main className="px-4 sm:px-6 py-5 sm:py-7 max-w-7xl mx-auto pb-24 md:pb-7">
             {(title || subtitle) && (
