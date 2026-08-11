@@ -1289,7 +1289,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   ];
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
+    <div className="relative flex flex-col flex-1 min-h-0 h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gold/10 flex-shrink-0 bg-dark-navy/95 backdrop-blur z-20">
         <div className="flex items-center gap-3 min-w-0">
@@ -1621,7 +1621,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       {/* Composer */}
       <form
         onSubmit={send}
-        className="relative border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40"
+        className="sticky bottom-0 z-20 flex-shrink-0 border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40 backdrop-blur"
       >
         <input
           ref={fileInputRef}
