@@ -370,13 +370,15 @@ img {
    2. Hide the mobile bottom navigation so the sheet sits flush at the bottom.
    (These rules only apply below md breakpoint via the nav selector specificity.) */
 @media (max-width: 767px) {
-  body.comments-sheet-open {
+  body.comments-sheet-open,
+  body.share-sheet-open {
     overflow: hidden !important;
     touch-action: none;
   }
 
   /* Target the BottomBar nav — matched by the data attribute we add to it */
-  body.comments-sheet-open nav[data-bottombar] {
+  body.comments-sheet-open nav[data-bottombar],
+  body.share-sheet-open nav[data-bottombar] {
     display: none !important;
   }
 }

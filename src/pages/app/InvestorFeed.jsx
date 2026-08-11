@@ -31,6 +31,7 @@ import FeedHint from "../../components/dashboard/FeedHint";
 import FounderProfileModal from "../../components/dashboard/FounderProfileModal";
 import CommentsPanel from "../../components/dashboard/CommentsPanel";
 import Modal from "../../components/ui/Modal";
+import ShareSheet from "../../components/dashboard/ShareSheet";
 import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
@@ -998,112 +999,16 @@ function FollowButton({ active, onClick }) {
 // ─── Modals ────────────────────────────────
 
 function ShareModal({ open, onClose, pitch }) {
-  const toast = useToast();
   if (!pitch) return null;
   const url = `${window.location.origin}/pitch/${pitch._id}`;
 
-  const copy = () => {
-    navigator.clipboard?.writeText(url);
-    toast.success("Link copied to clipboard");
-    onClose();
-  };
-
-  const nativeShare = () => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: pitch.title,
-          text: pitch.description?.slice(0, 100),
-          url,
-        })
-        .then(() => onClose())
-        .catch(() => {});
-    } else {
-      copy();
-    }
-  };
-
-  const socialButtons = [
-    {
-      label: "WhatsApp",
-      icon: FaWhatsapp,
-      href: `https://wa.me/?text=${encodeURIComponent(`${pitch.title} ${url}`)}`,
-      style:
-        "bg-[#25D366]/10 text-[#1E9E4B] border-[#25D366]/30 hover:bg-[#25D366] hover:text-white",
-    },
-    {
-      label: "X (Twitter)",
-      icon: FaTwitter,
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(pitch.title)}&url=${encodeURIComponent(url)}`,
-      style:
-        "bg-[#1DA1F2]/10 text-[#0C7ABF] border-[#1DA1F2]/30 hover:bg-[#1DA1F2] hover:text-white",
-    },
-    {
-      label: "LinkedIn",
-      icon: FaLinkedinIn,
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-      style:
-        "bg-[#0A66C2]/10 text-[#0A66C2] border-[#0A66C2]/30 hover:bg-[#0A66C2] hover:text-white",
-    },
-    {
-      label: "Telegram",
-      icon: FaTelegramPlane,
-      href: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(pitch.title)}`,
-      style:
-        "bg-[#0088cc]/10 text-[#0088cc] border-[#0088cc]/30 hover:bg-[#0088cc] hover:text-white",
-    },
-    {
-      label: "Email",
-      icon: FaEnvelope,
-      href: `mailto:?subject=${encodeURIComponent(pitch.title)}&body=${encodeURIComponent(`Check out this pitch: ${url}`)}`,
-      style:
-        "bg-[#EA4335]/10 text-[#C5221F] border-[#EA4335]/30 hover:bg-[#EA4335] hover:text-white",
-    },
-  ];
-
   return (
-    <Modal open={open} onClose={onClose} title="Share Pitch">
-      <p className="text-sm font-bold text-[#0A1F14]/80 mb-4 line-clamp-1">
-        {pitch.title}
-      </p>
-
-      {/* Copy link box */}
-      <div className="bg-[#FAFAF7] border border-[#1B5E3F]/20 rounded-2xl p-3 mb-5 flex items-center gap-3 shadow-inner">
-        <span className="text-xs font-mono font-bold text-[#1B5E3F] truncate flex-1 select-all">
-          {url}
-        </span>
-        <button
-          onClick={copy}
-          className="px-3.5 py-2 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md shrink-0"
-        >
-          <FaLink className="w-3.5 h-3.5 text-[#F5B942]" /> Copy
-        </button>
-      </div>
-
-      {/* Social grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-        {socialButtons.map(({ label, icon: Icon, href, style }) => (
-          <a
-            key={label}
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            onClick={onClose}
-            className={`px-3.5 py-3 border rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-sm ${style}`}
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            <span>{label}</span>
-          </a>
-        ))}
-        <button
-          onClick={nativeShare}
-          className="px-3.5 py-3 bg-[#FAFAF7] text-[#0A1F14] border border-[#1B5E3F]/15 hover:bg-[#1B5E3F]/10 hover:border-[#1B5E3F]/30 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-sm"
-        >
-          <HiShare className="w-4 h-4 shrink-0 text-[#1B5E3F]" />
-          <span>More…</span>
-        </button>
-      </div>
-    </Modal>
+    <ShareSheet
+      open={open}
+      onClose={onClose}
+      title={pitch.title || "Share Pitch"}
+      url={url}
+    />
   );
 }
 
