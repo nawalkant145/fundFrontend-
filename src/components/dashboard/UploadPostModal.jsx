@@ -115,7 +115,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-6 sm:pt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -127,7 +127,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
 
           {/* Modal panel */}
           <motion.div
-            className="relative z-10 w-full sm:max-w-4xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col"
+            className="relative z-10 w-full sm:max-w-4xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden flex flex-col"
             initial={{ y: 80, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 80, opacity: 0, scale: 0.97 }}
@@ -135,26 +135,26 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle (mobile) */}
-            <div className="flex justify-center pt-3 sm:hidden flex-shrink-0">
+            <div className="flex justify-center pt-2.5 sm:hidden flex-shrink-0">
               <div className="w-10 h-1.5 rounded-full bg-[#0A1F14]/15" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
-              <div>
-                <h2 className="text-xl font-black text-[#0A1F14]">Create a post</h2>
-                <p className="text-xs text-[#0A1F14]/55 mt-0.5">Share what you're building</p>
+            <div className="flex items-center justify-between px-4 sm:px-6 pt-2 sm:pt-4 pb-3.5 sm:pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
+              <div className="min-w-0 flex-1 pr-2">
+                <h2 className="text-lg sm:text-xl font-black text-[#0A1F14] truncate">Create a post</h2>
+                <p className="text-xs text-[#0A1F14]/55 mt-0.5 truncate">Share what you're building</p>
               </div>
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-full bg-[#FAFAF7] hover:bg-[#F0F0EC] flex items-center justify-center transition-colors text-[#0A1F14]/60 hover:text-[#0A1F14]"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#FAFAF7] hover:bg-[#F0F0EC] flex items-center justify-center transition-colors text-[#0A1F14]/60 hover:text-[#0A1F14] flex-shrink-0"
               >
-                <HiX className="w-5 h-5" />
+                <HiX className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5 overflow-y-auto flex-1">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
               <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_320px] gap-6">
                 {/* Left — composer */}
                 <div className="space-y-4 text-left">
