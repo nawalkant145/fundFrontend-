@@ -91,89 +91,101 @@ export default function ProfilePage() {
       .catch(() => setPosts([]));
   }, [isFounder]);
 
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 640
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   if (!user) return null;
 
   return (
     <DashboardShell title="My profile">
       {/* 1. Cover Header Card matching User Reference Image */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl overflow-hidden mb-6 shadow-xs">
+      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl overflow-hidden mb-6 shadow-xs max-w-full">
         {/* Soft Warm Gradient Banner Top */}
         <div className="h-24 sm:h-32 bg-gradient-to-r from-emerald-50/80 via-amber-50/40 to-slate-50" />
 
-        <div className="px-6 pb-6 -mt-12 sm:-mt-16 space-y-5">
+        <div className="px-3.5 sm:px-6 pb-4 sm:pb-6 -mt-10 sm:-mt-16 space-y-4 sm:space-y-5 max-w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             {/* Avatar + User Details Block */}
-            <div className="flex items-center gap-5 flex-1 min-w-0">
-              <AvatarProgressRing
-                user={user}
-                percentage={completion}
-                size={116}
-                onClick={() => setDrawerOpen(true)}
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 w-full sm:w-auto min-w-0">
+              <div className="flex items-center gap-3 w-full sm:w-auto min-w-0">
+                <AvatarProgressRing
+                  user={user}
+                  percentage={completion}
+                  size={isMobile ? 80 : 116}
+                  onClick={() => setDrawerOpen(true)}
+                />
 
-              <div className="flex-1 min-w-0 pt-3">
-                <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight flex items-center gap-2">
-                  {user.name}
-                  {(user.isVerified || user.verifiedBadge) && (
-                    <MdVerified className="w-6 h-6 text-[#0F4A2E]" />
-                  )}
-                </h2>
-                <p className="text-sm font-medium text-slate-500 mt-0.5">
-                  @{user.username || "user"} · <span className="capitalize">{role}</span>
-                </p>
-
-                {/* Horizontal Inline Stats Bar with Vertical Dividers */}
-                <div className="flex items-center gap-4 sm:gap-6 mt-3">
-                  {isFounder && (
-                    <>
-                      <div className="text-center">
-                        <div className="font-bold text-[#0F172A] text-base leading-tight">
-                          {pitches.length || user.pitchesCount || 0}
-                        </div>
-                        <div className="text-xs text-slate-500 font-medium">Pitches</div>
-                      </div>
-                      <div className="h-6 w-px bg-slate-200" />
-                    </>
-                  )}
-
-                  <div className="text-center">
-                    <div className="font-bold text-[#0F172A] text-base leading-tight">
-                      {posts.length || user.postsCount || 0}
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium">Posts</div>
-                  </div>
-
-                  <div className="h-6 w-px bg-slate-200" />
-
-                  <button
-                    onClick={() => setFollowModal("followers")}
-                    className="text-center hover:opacity-75 transition-opacity"
-                  >
-                    <div className="font-bold text-[#0F172A] text-base leading-tight">
-                      {user.followersCount || 0}
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium">Followers</div>
-                  </button>
-
-                  <div className="h-6 w-px bg-slate-200" />
-
-                  <button
-                    onClick={() => setFollowModal("following")}
-                    className="text-center hover:opacity-75 transition-opacity"
-                  >
-                    <div className="font-bold text-[#0F172A] text-base leading-tight">
-                      {user.followingCount || 0}
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium">Following</div>
-                  </button>
+                <div className="flex-1 min-w-0 pt-1 sm:pt-3">
+                  <h2 className="text-xl sm:text-3xl font-black text-[#0F172A] tracking-tight flex items-center gap-1.5 min-w-0">
+                    <span className="truncate">{user.name}</span>
+                    {(user.isVerified || user.verifiedBadge) && (
+                      <MdVerified className="w-5 h-5 sm:w-6 sm:h-6 text-[#0F4A2E] shrink-0" />
+                    )}
+                  </h2>
+                  <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5 truncate">
+                    @{user.username || "user"} · <span className="capitalize">{role}</span>
+                  </p>
                 </div>
+              </div>
+
+              {/* Responsive Stats Bar */}
+              <div className="flex items-center justify-around sm:justify-start w-full sm:w-auto gap-2 sm:gap-6 py-2.5 sm:py-0 my-1 sm:my-0 border-y border-slate-100 sm:border-0 sm:mt-3">
+                {isFounder && (
+                  <>
+                    <div className="text-center min-w-0 px-1">
+                      <div className="font-bold text-[#0F172A] text-sm sm:text-base leading-tight">
+                        {pitches.length || user.pitchesCount || 0}
+                      </div>
+                      <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Pitches</div>
+                    </div>
+                    <div className="h-5 sm:h-6 w-px bg-slate-200 shrink-0" />
+                  </>
+                )}
+
+                <div className="text-center min-w-0 px-1">
+                  <div className="font-bold text-[#0F172A] text-sm sm:text-base leading-tight">
+                    {posts.length || user.postsCount || 0}
+                  </div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Posts</div>
+                </div>
+
+                <div className="h-5 sm:h-6 w-px bg-slate-200 shrink-0" />
+
+                <button
+                  onClick={() => setFollowModal("followers")}
+                  className="text-center hover:opacity-75 transition-opacity min-w-0 px-1"
+                >
+                  <div className="font-bold text-[#0F172A] text-sm sm:text-base leading-tight">
+                    {user.followersCount || 0}
+                  </div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Followers</div>
+                </button>
+
+                <div className="h-5 sm:h-6 w-px bg-slate-200 shrink-0" />
+
+                <button
+                  onClick={() => setFollowModal("following")}
+                  className="text-center hover:opacity-75 transition-opacity min-w-0 px-1"
+                >
+                  <div className="font-bold text-[#0F172A] text-sm sm:text-base leading-tight">
+                    {user.followingCount || 0}
+                  </div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Following</div>
+                </button>
               </div>
             </div>
 
             {/* Edit Profile Button (Dark Green Pill) */}
-            <div className="self-end sm:self-center">
-              <Link to="/app/settings">
-                <button className="h-11 px-6 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-sm font-semibold rounded-full flex items-center gap-2 shadow-sm transition-all">
+            <div className="w-full sm:w-auto self-stretch sm:self-center">
+              <Link to="/app/settings" className="block w-full sm:w-auto">
+                <button className="w-full sm:w-auto h-10 sm:h-11 px-5 sm:px-6 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs sm:text-sm font-semibold rounded-full flex items-center justify-center gap-2 shadow-xs transition-all">
                   <HiPencilAlt className="w-4 h-4 text-white-force" />
                   <span className="text-white-force">Edit profile</span>
                 </button>
@@ -183,13 +195,13 @@ export default function ProfilePage() {
 
           {/* Bio text if provided */}
           {user.bio && (
-            <p className="text-sm font-normal text-slate-600 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm font-normal text-slate-600 max-w-2xl leading-relaxed">
               {user.bio}
             </p>
           )}
 
           {/* Chips Row */}
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
             {user.companyName && (
               <Chip icon={HiOfficeBuilding}>{user.companyName}</Chip>
             )}
@@ -212,7 +224,7 @@ export default function ProfilePage() {
       {isFounder && (
         <div className="mb-6">
           {/* Underline Tab Navigation Header */}
-          <div className="border-b border-slate-200/80 mb-6 flex gap-8">
+          <div className="border-b border-slate-200/80 mb-6 flex gap-4 sm:gap-8 overflow-x-auto">
             <UnderlineTabBtn
               active={tab === "pitches"}
               onClick={() => setTab("pitches")}

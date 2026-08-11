@@ -46,22 +46,22 @@ export default function VerificationStatusCard({ user }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-6 shadow-xs space-y-6">
+    <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-5 sm:space-y-6 max-w-full overflow-hidden">
       {/* Header matching reference image */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* Left: Shield Icon + Verification Tier Title + LEVEL badge */}
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#0F4A2E] text-white-force flex items-center justify-center flex-shrink-0 shadow-xs">
-            <HiShieldCheck className="w-7 h-7 text-white-force" />
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0F4A2E] text-white-force flex items-center justify-center flex-shrink-0 shadow-xs">
+            <HiShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-white-force" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-[#0F172A] tracking-tight">Verification Tier</h3>
-              <span className="px-2.5 py-0.5 text-[11px] font-extrabold bg-[#E8F5E9] text-[#2E7D32] rounded-full uppercase tracking-wide border border-[#A5D6A7]">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">Verification Tier</h3>
+              <span className="px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold bg-[#E8F5E9] text-[#2E7D32] rounded-full uppercase tracking-wide border border-[#A5D6A7] shrink-0">
                 LEVEL {level}
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">
+            <p className="text-xs font-medium text-slate-500 mt-0.5 truncate">
               Progressive KYC & Account Privileges
             </p>
           </div>
@@ -99,39 +99,41 @@ export default function VerificationStatusCard({ user }) {
       ) : (
         <div className="space-y-3">
           {/* L1 Row */}
-          <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-bold text-xs flex items-center justify-center border border-[#A5D6A7]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-8 h-8 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-bold text-xs flex items-center justify-center border border-[#A5D6A7] shrink-0">
                 L1
               </span>
-              <div>
-                <p className="text-sm font-bold text-[#0F172A]">Email & Mobile OTP</p>
-                <p className="text-xs font-medium text-slate-500">Instant Onboarding & Platform Access</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-[#0F172A] truncate">Email & Mobile OTP</p>
+                <p className="text-xs font-medium text-slate-500 leading-tight">Instant Onboarding & Platform Access</p>
               </div>
             </div>
-            {renderBadge("completed")}
+            <div className="self-end sm:self-auto shrink-0">
+              {renderBadge("completed")}
+            </div>
           </div>
 
           {/* L2 Row */}
-          <div className="p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-bold text-xs flex items-center justify-center border border-[#A5D6A7]">
+          <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-bold text-xs flex items-center justify-center border border-[#A5D6A7] shrink-0">
                   L2
                 </span>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-bold text-[#0F172A]">Identity Verification</p>
-                    <MdVerified className="w-4 h-4 text-blue-500" />
+                    <p className="text-sm font-bold text-[#0F172A] truncate">Identity Verification</p>
+                    <MdVerified className="w-4 h-4 text-blue-500 shrink-0" />
                   </div>
-                  <p className="text-xs font-medium text-slate-500">Government ID & Blue Verified Badge</p>
+                  <p className="text-xs font-medium text-slate-500 leading-tight">Government ID & Blue Verified Badge</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
                 {renderBadge(user?.kycStatus || (isVerified ? "approved" : "none"))}
                 {(!isVerified && (user?.kycStatus === "none" || user?.kycStatus === "rejected")) && (
                   <Link to="/kyc">
-                    <button className="h-10 px-5 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs font-semibold rounded-full transition-all flex items-center gap-1.5 shadow-xs">
+                    <button className="h-9 sm:h-10 px-3.5 sm:px-5 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs font-semibold rounded-full transition-all flex items-center gap-1.5 shadow-xs shrink-0">
                       <span className="text-white-force">
                         {user?.kycStatus === "rejected" ? "Resubmit Documents" : "Get Verified"}
                       </span>{" "}
@@ -148,21 +150,21 @@ export default function VerificationStatusCard({ user }) {
                 <div className="grid grid-cols-4 gap-1 text-center">
                   <div className="space-y-1">
                     <div className="h-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-emerald-700 block">✓ Submitted</span>
+                    <span className="text-[10px] font-bold text-emerald-700 block truncate">✓ Submitted</span>
                   </div>
                   <div className="space-y-1">
                     <div className="h-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-emerald-700 block">✓ Uploaded</span>
+                    <span className="text-[10px] font-bold text-emerald-700 block truncate">✓ Uploaded</span>
                   </div>
                   <div className="space-y-1">
                     <div className={`h-1.5 rounded-full ${user?.kycStatus === "rejected" ? "bg-red-500" : "bg-amber-500 animate-pulse"}`} />
-                    <span className={`text-[10px] font-bold block ${user?.kycStatus === "rejected" ? "text-red-600" : "text-amber-700"}`}>
+                    <span className={`text-[10px] font-bold block truncate ${user?.kycStatus === "rejected" ? "text-red-600" : "text-amber-700"}`}>
                       {user?.kycStatus === "rejected" ? "✖ Reviewed" : "⏳ Under Review"}
                     </span>
                   </div>
                   <div className="space-y-1">
                     <div className={`h-1.5 rounded-full ${user?.kycStatus === "rejected" ? "bg-red-500" : "bg-slate-200"}`} />
-                    <span className={`text-[10px] font-bold block ${user?.kycStatus === "rejected" ? "text-red-600" : "text-slate-400"}`}>
+                    <span className={`text-[10px] font-bold block truncate ${user?.kycStatus === "rejected" ? "text-red-600" : "text-slate-400"}`}>
                       {user?.kycStatus === "rejected" ? "✖ Rejected" : "○ Pending"}
                     </span>
                   </div>
@@ -171,7 +173,7 @@ export default function VerificationStatusCard({ user }) {
                 {user?.kycStatus === "rejected" && user?.documents?.rejectionReason && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 space-y-1">
                     <p className="font-bold flex items-center gap-1.5">
-                      <HiXCircle className="w-4 h-4 text-red-600" /> Rejection Reason:
+                      <HiXCircle className="w-4 h-4 text-red-600 shrink-0" /> Rejection Reason:
                     </p>
                     <p className="text-red-700 italic font-medium">
                       "{user?.documents?.rejectionReason}"
@@ -184,21 +186,21 @@ export default function VerificationStatusCard({ user }) {
 
           {/* L3 Row (Founder) */}
           {user?.role === "founder" && (
-            <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-amber-50 text-amber-700 font-bold text-xs flex items-center justify-center border border-amber-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-full bg-amber-50 text-amber-700 font-bold text-xs flex items-center justify-center border border-amber-200 shrink-0">
                   L3
                 </span>
-                <div>
-                  <p className="text-sm font-bold text-[#0F172A]">Founder Verification</p>
-                  <p className="text-xs font-medium text-slate-500">Certificate of Incorporation & GST / CIN</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#0F172A] truncate">Founder Verification</p>
+                  <p className="text-xs font-medium text-slate-500 leading-tight">Certificate of Incorporation & GST / CIN</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
                 {renderBadge(user?.companyVerificationStatus)}
                 {user?.companyVerificationStatus !== "approved" && user?.companyVerificationStatus !== "pending" && (
                   <Link to="/kyc">
-                    <button className="h-10 px-5 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs font-semibold rounded-full transition-all flex items-center gap-1.5 shadow-xs">
+                    <button className="h-9 sm:h-10 px-3.5 sm:px-5 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs font-semibold rounded-full transition-all flex items-center gap-1.5 shadow-xs shrink-0">
                       <span className="text-white-force">Verify Company</span> <HiArrowRight className="w-3.5 h-3.5 text-white-force" />
                     </button>
                   </Link>
@@ -209,21 +211,21 @@ export default function VerificationStatusCard({ user }) {
 
           {/* L4 Row (Investor) */}
           {user?.role === "investor" && (
-            <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-purple-50 text-purple-700 font-bold text-xs flex items-center justify-center border border-purple-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-full bg-purple-50 text-purple-700 font-bold text-xs flex items-center justify-center border border-purple-200 shrink-0">
                   L4
                 </span>
-                <div>
-                  <p className="text-sm font-bold text-[#0F172A]">Investor Verification</p>
-                  <p className="text-xs font-medium text-slate-500">Address Proof & Bank Account Verification</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#0F172A] truncate">Investor Verification</p>
+                  <p className="text-xs font-medium text-slate-500 leading-tight">Address Proof & Bank Account Verification</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
                 {renderBadge(user?.investmentVerificationStatus)}
                 {user?.investmentVerificationStatus !== "approved" && user?.investmentVerificationStatus !== "pending" && (
                   <Link to="/kyc">
-                    <button className="h-10 px-5 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs font-semibold rounded-full transition-all flex items-center gap-1.5 shadow-xs">
+                    <button className="h-9 sm:h-10 px-3.5 sm:px-5 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs font-semibold rounded-full transition-all flex items-center gap-1.5 shadow-xs shrink-0">
                       <span className="text-white-force">Complete KYC</span> <HiArrowRight className="w-3.5 h-3.5 text-white-force" />
                     </button>
                   </Link>
