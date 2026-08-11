@@ -34,11 +34,7 @@ export default function DashboardShell({
   return (
     <div
       data-light-app="true"
-      className={`bg-[#f3f2ef] text-[#0A1F14] ${
-        hideMobileHeader
-          ? "fixed inset-0 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain md:relative md:inset-auto md:min-h-screen md:h-auto md:overflow-visible"
-          : "min-h-screen relative"
-      }`}
+      className="bg-[#f3f2ef] text-[#0A1F14] h-[100dvh] md:h-auto md:min-h-screen flex flex-col md:block overflow-hidden md:overflow-visible relative"
     >
       {/* Soft brand ambient glows */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -47,12 +43,11 @@ export default function DashboardShell({
       </div>
 
       <Sidebar mode={resolvedMode} />
-      <BottomBar mode={resolvedMode} />
       <UploadProgressBar />
 
-      {/* Mobile top header — logo + notification bell (Instagram-style) */}
+      {/* Mobile top header — fixed top flex child (Instagram style) */}
       {!hideMobileHeader && (
-        <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8">
+        <header className="md:hidden flex-shrink-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8">
           <div className="flex items-center justify-between px-4 h-14">
             <Link to="/app" className="flex items-center">
               <img
@@ -77,13 +72,14 @@ export default function DashboardShell({
         </header>
       )}
 
-      <div className={`md:pl-[72px] relative z-10 ${!hideMobileHeader ? "pt-14 md:pt-0" : ""} ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full" : ""}`}>
+      {/* Dedicated scrollable container for feed content */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain md:overflow-visible md:h-auto md:pl-[72px] relative z-10">
         {noPad ? (
-          <main className={`pb-14 md:pb-0 ${hideMobileHeader ? "flex-1 min-h-0 flex flex-col h-full overflow-hidden" : ""}`}>
+          <main className="h-full flex flex-col md:h-auto pb-16 md:pb-0">
             {children}
           </main>
         ) : (
-          <main className="px-4 sm:px-6 py-5 sm:py-7 max-w-7xl mx-auto pb-24 md:pb-7">
+          <main className="px-4 sm:px-6 py-5 sm:py-7 max-w-7xl mx-auto pb-20 md:pb-7">
             {(title || subtitle) && (
               <div className="mb-5 md:mb-7">
                 {title && (
@@ -102,6 +98,9 @@ export default function DashboardShell({
           </main>
         )}
       </div>
+
+      <BottomBar mode={resolvedMode} />
+
       <UploadPitchModal open={pitchOpen} onClose={closePitchModal} />
       <UploadPostModal open={postOpen} onClose={closePostModal} />
     </div>
