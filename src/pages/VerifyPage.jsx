@@ -323,15 +323,14 @@ export default function VerifyPage() {
 }
 
 function DevOtpBanner({ otp }) {
-  // Shows whenever backend returns devOtp (controlled by ENABLE_DUMMY_OTP on server)
-
   return (
-    <div className="flex flex-col items-center justify-center p-3.5 bg-amber-50 border border-amber-300 rounded-xl my-2 shadow-sm">
-      <span className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">
-        Development Mode
+    <div className="flex flex-col items-center justify-center p-3.5 bg-emerald-50/90 border border-emerald-300 rounded-xl my-2 shadow-sm animate-fade-in">
+      <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        Verification Code (Demo Mode)
       </span>
-      <span className="text-sm font-medium text-amber-950">
-        Your OTP is <strong className="text-lg font-black tracking-widest text-emerald-800 ml-1">{otp}</strong>
+      <span className="text-sm font-medium text-emerald-950">
+        Your OTP is <strong className="text-xl font-black tracking-widest text-emerald-800 ml-1.5 bg-white px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-inner">{otp}</strong>
       </span>
     </div>
   );
