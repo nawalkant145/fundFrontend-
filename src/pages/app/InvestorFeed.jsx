@@ -77,11 +77,16 @@ export default function InvestorFeed() {
   useEffect(() => {
     if (!socket) return;
     const onEngagement = (data) => {
-      if (data.videoId && typeof data.commentCount === "number") {
+      if (data.videoId) {
         setPitches((prev) =>
-          prev.map((p) =>
-            p._id === data.videoId ? { ...p, commentCount: data.commentCount } : p
-          )
+          prev.map((p) => {
+            if (p._id !== data.videoId) return p;
+            const updated = { ...p };
+            if (typeof data.commentCount === "number") updated.commentCount = data.commentCount;
+            if (typeof data.likeCount === "number") updated.likeCount = data.likeCount;
+            if (typeof data.saveCount === "number") updated.saveCount = data.saveCount;
+            return updated;
+          })
         );
       }
     };
@@ -210,6 +215,11 @@ export default function InvestorFeed() {
   }, [searchParams]);
 
   const pitch = pitches[idx];
+
+  // founderId may be a plain string (unpopulated ObjectId) — always coerce to an object
+  const founder = pitch && typeof pitch.founderId === "object" && pitch.founderId !== null
+    ? pitch.founderId
+    : {};
 
   // Update activePitchRef whenever active pitch changes (only after feed has loaded)
   useEffect(() => {
@@ -623,7 +633,8 @@ export default function InvestorFeed() {
   };
 
   const toggleFollow = () => {
-    const id = pitch.founderId._id;
+    const id = founder?._id || (typeof pitch?.founderId === "string" ? pitch.founderId : null);
+    if (!id) return;
     const wasFollowing = following[id] ?? isFollowing(id);
     if (wasFollowing) unfollowUser(id);
     else followUser(id);
@@ -745,26 +756,26 @@ export default function InvestorFeed() {
                   >
                     <img
                       src={
-                        pitch.founderId.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(pitch.founderId.name || "U")}&background=1B5E3F&color=fff`
+                        founder?.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(founder?.name || "U")}&background=1B5E3F&color=fff`
                       }
-                      alt={pitch.founderId.name}
+                      alt={founder?.name || "Founder"}
                       className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
                     />
                     <div className="text-left min-w-0">
                       <p className="font-bold text-[12px] md:text-sm flex items-center gap-1 truncate leading-tight">
-                        {pitch.founderId.name}
-                        {pitch.founderId.isVerified && (
+                        {founder?.name || "Founder"}
+                        {founder?.isVerified && (
                           <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
                         )}
                       </p>
                       <p className="text-[11px] md:text-xs text-gray-300 truncate leading-tight">
-                        {pitch.founderId.companyName}
+                        {founder?.companyName}
                       </p>
                     </div>
                   </button>
                   <FollowButton
-                    active={following[pitch.founderId._id]}
+                    active={following[founder?._id]}
                     onClick={toggleFollow}
                   />
                 </div>
@@ -876,8 +887,8 @@ export default function InvestorFeed() {
       <FounderProfileModal
         open={activeModal === "profile"}
         onClose={() => setActiveModal(null)}
-        founder={pitch.founderId}
-        isFollowing={!!following[pitch.founderId._id]}
+        founder={founder}
+        isFollowing={!!following[founder?._id]}
         onToggleFollow={toggleFollow}
         onPickPitch={jumpToPitch}
       />
@@ -1126,25 +1137,28 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
 }
 
 function DetailsModal({ open, onClose, pitch }) {
+  const safeFounder = pitch && typeof pitch.founderId === "object" && pitch.founderId !== null
+    ? pitch.founderId
+    : {};
   return (
     <Modal open={open} onClose={onClose} title={pitch.title}>
       <div className="flex items-center gap-3 mb-3">
         <img
           src={
-            pitch.founderId.avatar ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(pitch.founderId.name || "U")}&background=1B5E3F&color=fff`
+            safeFounder?.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(safeFounder?.name || "U")}&background=1B5E3F&color=fff`
           }
-          alt={pitch.founderId.name}
+          alt={safeFounder?.name || "Founder"}
           className="w-12 h-12 rounded-full border-2 border-gold/40"
         />
         <div>
           <p className="font-bold flex items-center gap-1">
-            {pitch.founderId.name}
-            {pitch.founderId.isVerified && (
+            {safeFounder?.name || "Founder"}
+            {safeFounder?.isVerified && (
               <MdVerified className="w-4 h-4 text-gold" />
             )}
           </p>
-          <p className="text-sm text-gray-400">{pitch.founderId.companyName}</p>
+          <p className="text-sm text-gray-400">{safeFounder?.companyName}</p>
         </div>
       </div>
       <p className="text-sm text-gray-300 mb-4">{pitch.description}</p>

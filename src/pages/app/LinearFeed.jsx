@@ -477,9 +477,11 @@ function PitchFeedCard({
   useEffect(() => {
     if (!socket || !pitch._id) return;
     const onEngagement = (data) => {
-      if (data.videoId === pitch._id && typeof data.commentCount === "number") {
-        setCommentCount(data.commentCount);
-      }
+      if (data.videoId !== pitch._id) return;
+      // Sync counts from any interaction anywhere (like/comment from Feed/Studio/Profile)
+      if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
+      if (typeof data.commentCount === "number") setCommentCount(data.commentCount);
+      // NOTE: liked boolean is user-specific — do NOT apply globally
     };
     socket.on("pitch:engagement", onEngagement);
     return () => socket.off("pitch:engagement", onEngagement);
@@ -760,9 +762,11 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
   useEffect(() => {
     if (!socket || !post._id) return;
     const onEngagement = (data) => {
-      if (data.postId === post._id && typeof data.commentCount === "number") {
-        setCommentCount(data.commentCount);
-      }
+      if (data.postId !== post._id) return;
+      // Sync counts from any interaction anywhere (like/comment/save from Feed/Studio/Profile)
+      if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
+      if (typeof data.commentCount === "number") setCommentCount(data.commentCount);
+      // NOTE: liked/saved booleans are user-specific — do NOT apply them globally
     };
     socket.on("post:engagement", onEngagement);
     return () => socket.off("post:engagement", onEngagement);
