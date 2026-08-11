@@ -96,17 +96,10 @@ export default function VerifyPage() {
       }
 
       // If phone provided, move to phone verification
+      // (useEffect will auto-send the OTP when user+phone are ready)
       if (phone) {
         setStep(1);
         setPhoneCooldown(RESEND_SECONDS);
-        setHasSentOtp(true);
-        try {
-          const res = await authService.sendPhoneOtp(phone);
-          setDevPhoneOtp(res?.data?.data?.devOtp || "");
-          setSuccessMessage(res?.data?.message || "Phone OTP sent!");
-        } catch (err) {
-          setError(err.response?.data?.message || "Failed to send phone OTP.");
-        }
       } else {
         setStep(2);
       }
@@ -149,7 +142,7 @@ export default function VerifyPage() {
         setSuccessMessage(res?.data?.message || "OTP sent to email!");
       } else {
         const res = await authService.sendPhoneOtp(phone);
-        setDevPhoneOtp(res?.data?.data?.devOtp || "");
+        if (res?.data?.data?.devOtp) setDevPhoneOtp(res.data.data.devOtp);
         setPhoneCooldown(RESEND_SECONDS);
         setPhoneOtp("");
         setSuccessMessage(res?.data?.message || "Phone OTP sent!");
@@ -330,7 +323,7 @@ export default function VerifyPage() {
 }
 
 function DevOtpBanner({ otp }) {
-  if (import.meta.env.PROD) return null;
+  // Shows whenever backend returns devOtp (controlled by ENABLE_DUMMY_OTP on server)
 
   return (
     <div className="flex flex-col items-center justify-center p-3.5 bg-amber-50 border border-amber-300 rounded-xl my-2 shadow-sm">
