@@ -21,19 +21,18 @@
   --card-bg: #ffffff;
 }
 
-html {
+html,
+body,
+#root {
+  overflow-x: hidden !important;
+  max-width: 100vw;
   width: 100%;
-  max-width: 100%;
-  overscroll-behavior-y: none;
 }
 
 body {
   background-color: #f3f2ef;
   color: #0a1f14;
   min-height: 100vh;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-family:
@@ -42,7 +41,6 @@ body {
 
   /* Smooth scrolling optimizations */
   scroll-behavior: smooth;
-  overflow-x: hidden;
 
   /* Disable pull-to-refresh + rubber-band overscroll on mobile.
      Reels/TikTok/Shorts all do this. */
@@ -50,11 +48,22 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+html {
+  overscroll-behavior-y: none;
+}
+
 #root {
-  width: 100%;
-  max-width: 100%;
   min-height: 100vh;
-  overflow-x: hidden;
+  will-change: auto;
+}
+
+html {
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100vh;
+  will-change: auto;
 }
 
 /* Utility classes for custom colors */

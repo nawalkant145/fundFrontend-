@@ -448,9 +448,8 @@ export default function MessagesPage() {
     }
   };
 
-  // Lock window scroll so touch scrolling on mobile never moves the window when a chat is open
+  // Lock window scroll so touch scrolling on mobile never moves the window
   useEffect(() => {
-    if (!chatId) return;
     window.scrollTo(0, 0);
     const lockScroll = () => {
       if (window.scrollY !== 0) window.scrollTo(0, 0);
