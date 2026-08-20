@@ -1,7 +1,13 @@
 import api from "./api";
 
 export const authService = {
+  /* === PRE-ACCOUNT SIGNUP INITIATION (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
+  initiateSignup: (data) => api.post("/auth/signup/initiate", data),
+  ============================================================================================================= */
+
   register: (data) => api.post("/auth/register", data),
+
+
   login: (data) => api.post("/auth/login", data),
   logout: () => api.post("/auth/logout"),
   refreshToken: () => api.post("/auth/refresh-token"),
@@ -28,3 +34,4 @@ export const authService = {
   resetPassword: (data) => api.post("/auth/reset-password", data),
   changePassword: (data) => api.post("/auth/change-password", data),
 };
+

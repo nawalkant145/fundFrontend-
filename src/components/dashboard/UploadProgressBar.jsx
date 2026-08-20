@@ -1,16 +1,23 @@
+import { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiX, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import { useUpload } from "../../context/UploadContext";
 
 /**
- * YouTube-style persistent mini upload progress bar.
- * Shows at the bottom of the sidebar (desktop) or above BottomBar (mobile).
- * Visible across ALL pages as long as an upload is in progress.
+ * Persistent mini upload progress bar.
+ * Rendered at document root via React Portal at z-[100001] so it stays
+ * clearly visible above all modals, overlays, and sidebars across all pages.
  */
 export default function UploadProgressBar() {
   const { uploadState, cancelUpload, dismissUpload } = useUpload();
+  const [mounted, setMounted] = useState(false);
 
-  if (!uploadState) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!uploadState || !mounted) return null;
 
   const { status, progress, title, error } = uploadState;
 
@@ -30,7 +37,7 @@ export default function UploadProgressBar() {
         ? "bg-red-500"
         : "bg-[#F5B942]";
 
-  return (
+  return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ y: 20, opacity: 0 }}
@@ -38,11 +45,11 @@ export default function UploadProgressBar() {
         exit={{ y: 20, opacity: 0 }}
         className="upload-progress-bar"
       >
-        {/* Desktop version — bottom of sidebar */}
-        <div className="hidden md:block fixed bottom-4 left-2 z-[60] w-[260px]">
-          <div className="bg-white rounded-xl shadow-xl border border-[#1B5E3F]/10 overflow-hidden">
+        {/* Desktop version — bottom-left corner, z-[100001] above modal overlays */}
+        <div className="hidden md:block fixed bottom-6 left-6 z-[100001] w-[290px] pointer-events-auto">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#1B5E3F]/15 overflow-hidden">
             {/* Progress bar track */}
-            <div className="h-1 w-full bg-gray-200 relative">
+            <div className="h-1.5 w-full bg-gray-100 relative">
               <motion.div
                 className={`h-full ${statusColor} rounded-r-full`}
                 initial={{ width: 0 }}
@@ -53,7 +60,7 @@ export default function UploadProgressBar() {
               />
             </div>
 
-            <div className="px-3 py-2.5 flex items-center gap-2">
+            <div className="px-3.5 py-3 flex items-center gap-2.5">
               {/* Status icon */}
               {status === "done" ? (
                 <HiCheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -67,7 +74,7 @@ export default function UploadProgressBar() {
                 <p className="text-xs font-bold text-[#0A1F14] truncate">
                   {title}
                 </p>
-                <p className="text-[10px] text-[#0A1F14]/60">{statusLabel}</p>
+                <p className="text-[10px] text-[#0A1F14]/60 font-semibold">{statusLabel}</p>
                 {error && (
                   <p className="text-[10px] text-red-500 truncate">{error}</p>
                 )}
@@ -85,11 +92,11 @@ export default function UploadProgressBar() {
           </div>
         </div>
 
-        {/* Mobile version — above bottom bar */}
-        <div className="md:hidden fixed bottom-16 left-3 right-3 z-[60]">
-          <div className="bg-white rounded-xl shadow-xl border border-[#1B5E3F]/10 overflow-hidden">
+        {/* Mobile version — z-[100001] above modal overlays & bottom bar */}
+        <div className="md:hidden fixed bottom-16 left-3 right-3 z-[100001] pointer-events-auto">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#1B5E3F]/15 overflow-hidden">
             {/* Progress bar track */}
-            <div className="h-1 w-full bg-gray-200 relative">
+            <div className="h-1.5 w-full bg-gray-100 relative">
               <motion.div
                 className={`h-full ${statusColor} rounded-r-full`}
                 initial={{ width: 0 }}
@@ -100,7 +107,7 @@ export default function UploadProgressBar() {
               />
             </div>
 
-            <div className="px-3 py-2 flex items-center gap-2">
+            <div className="px-3.5 py-2.5 flex items-center gap-2.5">
               {status === "done" ? (
                 <HiCheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
               ) : status === "error" ? (
@@ -113,7 +120,10 @@ export default function UploadProgressBar() {
                 <p className="text-xs font-bold text-[#0A1F14] truncate">
                   {title}
                 </p>
-                <p className="text-[10px] text-[#0A1F14]/60">{statusLabel}</p>
+                <p className="text-[10px] text-[#0A1F14]/60 font-semibold">{statusLabel}</p>
+                {error && (
+                  <p className="text-[10px] text-red-500 truncate">{error}</p>
+                )}
               </div>
 
               <button
@@ -126,6 +136,7 @@ export default function UploadProgressBar() {
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

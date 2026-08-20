@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -342,34 +342,59 @@ function getCurrentDevice() {
   return os ? `${browser} on ${os}` : browser;
 }
 
-const NOTIF_PREFS = [
+const FOUNDER_NOTIF_PREFS = [
   { key: "likes", label: "When an investor likes my pitch" },
   { key: "saves", label: "When an investor saves my pitch" },
   { key: "messages", label: "New messages" },
   { key: "investmentInterest", label: "Investment interest received" },
-  { key: "weeklyDigest", label: "Weekly digest email" },
   { key: "pitchExpiry", label: "Pitch expiry reminders" },
+  { key: "weeklyDigest", label: "Weekly digest email" },
+  { key: "accountSecurity", label: "Important account and security alerts" },
+];
+
+const INVESTOR_NOTIF_PREFS = [
+  { key: "messages", label: "New messages" },
+  { key: "investmentUpdates", label: "Investment interest & response updates" },
+  { key: "savedPitchUpdates", label: "Updates on pitches I've saved" },
+  { key: "followedFounders", label: "Updates on founders/startups I follow" },
+  { key: "pitchRecommendations", label: "New pitch recommendations" },
+  { key: "investmentStatus", label: "Investment status updates" },
+  { key: "weeklyDigest", label: "Weekly digest email" },
+  { key: "accountSecurity", label: "Important account and security alerts" },
 ];
 
 function NotificationsTab() {
   const { user, refreshUser } = useAuth();
   const toast = useToast();
-  const [prefs, setPrefs] = useState(() => {
+  const [saving, setSaving] = useState(false);
+
+  const isInvestor = user?.role === "investor";
+  const allowedPrefs = isInvestor ? INVESTOR_NOTIF_PREFS : FOUNDER_NOTIF_PREFS;
+
+  const [prefs, setPrefs] = useState({});
+
+  useEffect(() => {
     const stored = user?.notificationPrefs || {};
     const init = {};
-    NOTIF_PREFS.forEach((p) => {
+    allowedPrefs.forEach((p) => {
       init[p.key] = stored[p.key] !== undefined ? stored[p.key] : true;
     });
-    return init;
-  });
-  const [saving, setSaving] = useState(false);
+    setPrefs(init);
+  }, [user?.role, user?._id, user?.notificationPrefs]);
 
   const toggle = (key) => setPrefs((p) => ({ ...p, [key]: !p[key] }));
 
   const save = async () => {
     setSaving(true);
+    const sanitizedPrefs = {};
+    allowedPrefs.forEach((p) => {
+      if (prefs[p.key] !== undefined) {
+        sanitizedPrefs[p.key] = prefs[p.key];
+      }
+    });
+
     try {
-      await userService.updateProfile({ notificationPrefs: prefs });
+      await userService.updateProfile({ notificationPrefs: sanitizedPrefs });
       await refreshUser();
       toast.success("Notification preferences saved ✓");
     } catch (err) {
@@ -382,13 +407,13 @@ function NotificationsTab() {
   return (
     <div className="space-y-3">
       <h3 className="text-lg font-bold mb-2">Notification preferences</h3>
-      {NOTIF_PREFS.map(({ key, label }) => (
+      {allowedPrefs.map(({ key, label }) => (
         <label
           key={key}
           className="flex items-center justify-between gap-4 p-3 hover:bg-dark-bg/40 rounded-xl cursor-pointer"
         >
           <span className="text-sm text-gray-300 flex-1 pr-2">{label}</span>
-          <ToggleSwitch on={prefs[key]} onToggle={() => toggle(key)} />
+          <ToggleSwitch on={prefs[key] ?? true} onToggle={() => toggle(key)} />
         </label>
       ))}
       <div className="pt-4">
@@ -413,17 +438,43 @@ function PrivacyTab() {
   const [confirmDel, setConfirmDel] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const prefs = user?.privacyPrefs || {};
-  const [investorsOnly, setInvestorsOnly] = useState(
-    prefs.investorsOnly ?? false,
-  );
-  const [openToConnect, setOpenToConnect] = useState(
-    user?.openToConnect ?? true,
-  );
-  const [dataMatching, setDataMatching] = useState(prefs.dataMatching ?? false);
+  const isInvestor = user?.role === "investor";
 
-  const persist = async (payload, label) => {
+  const [investorsOnly, setInvestorsOnly] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [openToConnect, setOpenToConnect] = useState(true);
+  const [dataMatching, setDataMatching] = useState(false);
+
+  useEffect(() => {
+    const prefs = user?.privacyPrefs || {};
+    setInvestorsOnly(prefs.investorsOnly ?? false);
+    setVerifiedOnly(prefs.verifiedOnly ?? prefs.membersOnly ?? false);
+    setOpenToConnect(user?.openToConnect ?? true);
+    setDataMatching(prefs.dataMatching ?? false);
+  }, [user?._id, user?.role, user?.privacyPrefs, user?.openToConnect]);
+
+  const persistPrivacy = async (updates, label) => {
     try {
+      const currentPrefs = user?.privacyPrefs || {};
+      const newPrivacyPrefs = { ...currentPrefs };
+
+      if (isInvestor) {
+        if (updates.verifiedOnly !== undefined) newPrivacyPrefs.verifiedOnly = updates.verifiedOnly;
+        if (updates.dataMatching !== undefined) newPrivacyPrefs.dataMatching = updates.dataMatching;
+        delete newPrivacyPrefs.investorsOnly;
+      } else {
+        if (updates.investorsOnly !== undefined) newPrivacyPrefs.investorsOnly = updates.investorsOnly;
+        if (updates.dataMatching !== undefined) newPrivacyPrefs.dataMatching = updates.dataMatching;
+        delete newPrivacyPrefs.verifiedOnly;
+        delete newPrivacyPrefs.membersOnly;
+      }
+
+      const payload = {};
+      if (updates.openToConnect !== undefined) {
+        payload.openToConnect = updates.openToConnect;
+      }
+      payload.privacyPrefs = newPrivacyPrefs;
+
       await userService.updateProfile(payload);
       await refreshUser();
       toast.success(label || "Setting saved");
@@ -449,22 +500,36 @@ function PrivacyTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold">Privacy</h3>
-      <Checkbox
-        checked={investorsOnly}
-        onChange={() => {
-          const next = !investorsOnly;
-          setInvestorsOnly(next);
-          persist({ privacyPrefs: { ...prefs, investorsOnly: next } });
-        }}
-      >
-        Show my profile to verified investors only
-      </Checkbox>
+      {isInvestor ? (
+        <Checkbox
+          checked={verifiedOnly}
+          onChange={() => {
+            const next = !verifiedOnly;
+            setVerifiedOnly(next);
+            persistPrivacy({ verifiedOnly: next }, next ? "Profile restricted to verified members" : "Profile visible to all members");
+          }}
+        >
+          Show my profile to verified members only
+        </Checkbox>
+      ) : (
+        <Checkbox
+          checked={investorsOnly}
+          onChange={() => {
+            const next = !investorsOnly;
+            setInvestorsOnly(next);
+            persistPrivacy({ investorsOnly: next }, next ? "Profile restricted to verified investors" : "Profile visible to all members");
+          }}
+        >
+          Show my profile to verified investors only
+        </Checkbox>
+      )}
+
       <Checkbox
         checked={openToConnect}
         onChange={() => {
           const next = !openToConnect;
           setOpenToConnect(next);
-          persist(
+          persistPrivacy(
             { openToConnect: next },
             next ? "You're open to new connections" : "New connections paused",
           );
@@ -472,15 +537,18 @@ function PrivacyTab() {
       >
         Open to new connections
       </Checkbox>
+
       <Checkbox
         checked={dataMatching}
         onChange={() => {
           const next = !dataMatching;
           setDataMatching(next);
-          persist({ privacyPrefs: { ...prefs, dataMatching: next } });
+          persistPrivacy({ dataMatching: next }, next ? "Data matching enabled" : "Data matching disabled");
         }}
       >
-        Allow my data to be used for matching algorithms
+        {isInvestor
+          ? "Allow my data to be used for matching & recommendation algorithms"
+          : "Allow my data to be used for matching algorithms"}
       </Checkbox>
 
       <div className="pt-6 border-t border-red-500/20 mt-6">

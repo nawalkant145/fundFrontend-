@@ -11,7 +11,6 @@ import {
   HiPlay,
   HiCurrencyDollar,
   HiLink,
-  HiSparkles,
   HiChevronLeft,
   HiChevronRight,
   HiVolumeUp,
@@ -522,14 +521,6 @@ function PitchFeedCard({
         </Link>
         <FollowButton userId={pitch.founderId._id} variant="outline" />
       </div>
-
-      {/* Boosted ribbon */}
-      {boosted && (
-        <div className="px-4 -mt-1 pb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#F5B942]">
-          <HiSparkles className="w-3.5 h-3.5" />
-          Boosted pitch · matches your interests
-        </div>
-      )}
 
       {/* Title + description */}
       <div className="px-4 pb-3">

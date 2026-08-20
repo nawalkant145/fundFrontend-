@@ -28,9 +28,11 @@ export default function Modal({
     const onKey = (e) => e.key === "Escape" && onClose?.();
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      document.body.style.touchAction = "";
     };
   }, [open, onClose]);
 
@@ -44,7 +46,7 @@ export default function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+          className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overscroll-none"
         >
           <motion.div
             initial={{ y: 30, scale: 0.96, opacity: 0 }}
@@ -72,7 +74,7 @@ export default function Modal({
                 )}
               </div>
             )}
-            <div className={`overflow-y-auto flex-1 ${noPadding ? "" : "p-4 sm:p-5"} ${bodyClassName}`}>
+            <div className={`overflow-y-auto overscroll-contain flex-1 ${noPadding ? "" : "p-4 sm:p-5"} ${bodyClassName}`}>
               {children}
             </div>
           </motion.div>

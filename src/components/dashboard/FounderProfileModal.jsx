@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   HiPlay,
@@ -7,10 +8,14 @@ import {
   HiGlobe,
   HiVideoCamera,
   HiUsers,
+  HiChatAlt2,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import Modal from "../ui/Modal";
+import { useToast } from "../ui/Toast";
+import { useAuth } from "../../context/AuthContext";
 import { videoService } from "../../services/videoService";
+import { chatService } from "../../services/chatService";
 
 import { FOUNDER_PROFILES, MOCK_PITCHES } from "../../constants/mockData";
 
@@ -26,8 +31,26 @@ export default function FounderProfileModal({
   onToggleFollow,
   onPickPitch,
 }) {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { user } = useAuth();
+  const userId = user?._id;
   const [pitches, setPitches] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const handleMessageFounder = () => {
+    if (!founder?._id) return;
+    chatService
+      .startChat(founder._id)
+      .then((res) => {
+        const chat = res?.data?.data?.chat || res?.data?.data;
+        onClose?.();
+        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
+      })
+      .catch((err) => {
+        toast.error(err?.response?.data?.message || "Could not start chat");
+      });
+  };
 
   useEffect(() => {
     if (!open || !founder?._id) return;
@@ -139,6 +162,15 @@ export default function FounderProfileModal({
           >
             {isFollowing ? "Following" : "Follow"}
           </motion.button>
+          {founder._id && founder._id.toString() !== userId?.toString() && (
+            <motion.button
+              onClick={handleMessageFounder}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-[#F5B942] border-2 border-[#F5B942] text-black hover:bg-[#e0a838] flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <HiChatAlt2 className="w-4 h-4 text-black" /> Message
+            </motion.button>
+          )}
         </div>
 
         {/* Pitches grid — Instagram profile feel */}

@@ -19,63 +19,13 @@ const STEPS = ["Email", "Phone", "Done"];
 const RESEND_SECONDS = 30;
 
 export default function VerifyPage() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { user, register, refreshUser } = useAuth();
-  const email = location.state?.email || user?.email || "you@example.com";
-  const phone = location.state?.phone || user?.phone || "";
-  const registerData = location.state?.registerData || null;
-
-  const [step, setStep] = useState(0);
-  const [emailOtp, setEmailOtp] = useState("");
-  const [phoneOtp, setPhoneOtp] = useState("");
-  const [emailCooldown, setEmailCooldown] = useState(RESEND_SECONDS);
-  const [phoneCooldown, setPhoneCooldown] = useState(RESEND_SECONDS);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  // Dev-only: OTP shown on screen (no real email/SMS during testing)
-  const [devEmailOtp, setDevEmailOtp] = useState(location.state?.devOtp || "");
-  const [devPhoneOtp, setDevPhoneOtp] = useState("");
-  const [hasSentOtp, setHasSentOtp] = useState(false);
 
   useEffect(() => {
-    if (step !== 0 || emailCooldown <= 0) return;
-    const t = setInterval(() => setEmailCooldown((s) => s - 1), 1000);
-    return () => clearInterval(t);
-  }, [step, emailCooldown]);
-
-  useEffect(() => {
-    if (step !== 1 || phoneCooldown <= 0) return;
-    const t = setInterval(() => setPhoneCooldown((s) => s - 1), 1000);
-    return () => clearInterval(t);
-  }, [step, phoneCooldown]);
-
-  useEffect(() => {
-    if (user) {
-      if (user.isEmailVerified && !user.isPhoneVerified) {
-        setStep(1);
-        if (phone && !hasSentOtp) {
-          setHasSentOtp(true);
-          setLoading(true);
-          authService
-            .sendPhoneOtp(phone)
-            .then((res) => {
-              setDevPhoneOtp(res?.data?.data?.devOtp || "");
-              setSuccessMessage(res?.data?.message || "Phone OTP sent!");
-            })
-            .catch((err) => {
-              setError(err.response?.data?.message || "Failed to send phone OTP.");
-            })
-            .finally(() => {
-              setLoading(false);
-            });
-        }
-      } else if (user.isEmailVerified && user.isPhoneVerified) {
-        setStep(2);
-      }
-    }
-  }, [user, phone, hasSentOtp]);
+    // Separate EXPGLO email/mobile OTP screens during signup have been removed.
+    // Redirect directly to Identity Verification (Aadhaar / DigiLocker / PAN).
+    navigate("/kyc", { replace: true });
+  }, [navigate]);
 
   const handleEmailVerify = async (e) => {
     e.preventDefault();

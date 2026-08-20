@@ -60,9 +60,9 @@ export default function FounderDashboard() {
     { views: 0, likes: 0, saves: 0 },
   );
 
-  // Active pitch = first one with status "active", else the most recent
-  const activePitch =
-    pitches.find((p) => p.status === "active") || pitches[0] || null;
+  // Active pitches count and primary active pitch
+  const activePitches = pitches.filter((p) => p.status === "active");
+  const activePitch = activePitches[0] || pitches[0] || null;
 
   const verificationLevel = user?.verificationLevel || 0;
 
@@ -96,7 +96,7 @@ export default function FounderDashboard() {
           label="Pitches"
           value={pitches.length}
           accent="gold"
-          hint={activePitch ? "1 live" : "none live"}
+          hint={activePitches.length > 0 ? `${activePitches.length} live` : "none live"}
         />
       </div>
 

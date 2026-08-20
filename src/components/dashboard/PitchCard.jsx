@@ -17,6 +17,8 @@ import { useToast } from "../ui/Toast";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
+import { chatService } from "../../services/chatService";
+import FollowButton from "../monetization/FollowButton";
 
 /**
  * Grid pitch card. Clicking the card redirects to the feed with this pitch
@@ -121,9 +123,24 @@ export default function PitchCard({ pitch }) {
     }
   };
 
+  const handleMessageClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!founderId) return;
+    chatService
+      .startChat(founderId)
+      .then((res) => {
+        const chat = res?.data?.data?.chat || res?.data?.data;
+        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
+      })
+      .catch((err) => {
+        toast.error(err?.response?.data?.message || "Could not start chat");
+      });
+  };
+
   const openInFeed = () => {
-    // Navigate to /app/feed?pitch=<id> — the feed reads ?pitch and jumps to it
-    navigate(`/app/feed?pitch=${pitch._id}`);
+    // Navigate to /app/pitch?pitch=<id> — the feed reads ?pitch and jumps to it
+    navigate(`/app/pitch?pitch=${pitch._id}`);
   };
 
   const menu = [
@@ -250,31 +267,47 @@ export default function PitchCard({ pitch }) {
           </div>
         </div>
 
-        {/* Founder avatar and info on image overlay */}
-        <div
-          onClick={handleProfileClick}
-          className="absolute bottom-3 left-3 right-3 flex items-center gap-2 z-20 text-white-force cursor-pointer group/author"
-        >
-          <img
-            src={avatarUrl}
-            alt={founderName}
-            className="w-8 h-8 rounded-full border-2 border-gold/40 object-cover bg-dark-navy group-hover/author:border-gold transition-colors"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = defaultAvatar;
-            }}
-          />
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-white-force truncate flex items-center gap-1 group-hover/author:underline">
-              {founderName}
-              {f.isVerified && (
-                <MdVerified className="w-3.5 h-3.5 text-gold shrink-0" />
-              )}
-            </p>
-            {founderCompany && (
-              <p className="text-[10px] text-white-force/80 truncate">
-                {founderCompany}
+        {/* Founder avatar, info, and action buttons on image overlay */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 z-20 text-white-force">
+          <div
+            onClick={handleProfileClick}
+            className="flex items-center gap-2 min-w-0 cursor-pointer group/author"
+          >
+            <img
+              src={avatarUrl}
+              alt={founderName}
+              className="w-8 h-8 rounded-full border-2 border-gold/40 object-cover bg-dark-navy group-hover/author:border-gold transition-colors"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = defaultAvatar;
+              }}
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white-force truncate flex items-center gap-1 group-hover/author:underline">
+                {founderName}
+                {f.isVerified && (
+                  <MdVerified className="w-3.5 h-3.5 text-gold shrink-0" />
+                )}
               </p>
+              {founderCompany && (
+                <p className="text-[10px] text-white-force/80 truncate">
+                  {founderCompany}
+                </p>
+              )}
+            </div>
+          </div>
+          <div
+            className="flex items-center gap-1.5 shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <FollowButton userId={founderId} variant="compact" />
+            {founderId && founderId.toString() !== userId?.toString() && (
+              <button
+                onClick={handleMessageClick}
+                className="px-2.5 py-0.5 text-[11px] font-extrabold rounded-full inline-flex items-center gap-1 transition-all bg-[#F5B942] text-black border border-[#F5B942] hover:bg-[#e0a838] active:scale-95 shrink-0 shadow-sm"
+              >
+                <HiChatAlt2 className="w-3 h-3 text-black" /> Message
+              </button>
             )}
           </div>
         </div>

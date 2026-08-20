@@ -17,19 +17,20 @@ import {
   HiCollection,
   HiPlay,
   HiBookmark,
+  HiAcademicCap,
 } from "react-icons/hi";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 
 /**
- * Instagram-style mobile bottom tab bar.
- * 5 slots: 4 tab buttons + profile avatar. Messages sits in the MIDDLE.
- * Notifications live in the sidebar (desktop) and the in-page header bell
- * on mobile — not in the bottom bar.
+ * Mobile bottom navigation bar.
+ * 6 slots: 5 tab buttons + profile avatar button.
+ * Uses flexible equal-width layout with icon + label.
  */
 const FOUNDER_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
+  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
   { to: "/app/studio", label: "Studio", icon: HiCollection },
 ];
@@ -45,19 +46,30 @@ const ADMIN_TABS = [
   { to: "/admin", label: "Stats", icon: HiHome, end: true },
   { to: "/admin/users", label: "Users", icon: HiUsers },
   { to: "/admin/pitches", label: "Pitches", icon: HiVideoCamera },
+  { to: "/admin/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/admin/kyc", label: "KYC", icon: HiShieldCheck },
+];
+
+const GUEST_TABS = [
+  { to: "/", label: "Feed", icon: HiHome, end: true },
+  { to: "/app/pitch", label: "Pitch", icon: HiPlay },
+  { to: "/courses", label: "Courses", icon: HiAcademicCap },
+  { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
+  { to: "/app/saved", label: "Saved", icon: HiBookmark },
 ];
 
 export default function BottomBar({ mode }) {
   const location = useLocation();
   const { user } = useAuth();
-  const role = mode || user?.role || "founder";
+  const role = mode || user?.role || (user ? "founder" : "guest");
   const tabs =
     role === "investor"
       ? INVESTOR_TABS
       : role === "admin"
         ? ADMIN_TABS
-        : FOUNDER_TABS;
+        : role === "guest"
+          ? GUEST_TABS
+          : FOUNDER_TABS;
 
   const unread = useNotifications().unreadCount;
 
@@ -67,11 +79,22 @@ export default function BottomBar({ mode }) {
   const immersive =
     location.pathname === "/app/pitch" || location.pathname === "/app/feed";
 
-  const isActive = (tab) =>
-    tab.end
+  const isActive = (tab) => {
+    if (tab.to && tab.to.includes("courses")) {
+      return (
+        location.pathname === "/courses" ||
+        location.pathname.startsWith("/courses/") ||
+        location.pathname === "/app/courses" ||
+        location.pathname.startsWith("/app/courses/") ||
+        location.pathname === "/admin/courses" ||
+        location.pathname.startsWith("/admin/courses/")
+      );
+    }
+    return tab.end
       ? location.pathname === tab.to
       : location.pathname === tab.to ||
         location.pathname.startsWith(tab.to + "/");
+  };
 
   return (
     <nav
@@ -83,7 +106,7 @@ export default function BottomBar({ mode }) {
       }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
     >
-      <div className="flex items-center justify-around h-14">
+      <div className="flex items-center justify-between h-14 px-1 w-full">
         {tabs.map((tab) => (
           <TabButton
             key={tab.to}
@@ -93,54 +116,96 @@ export default function BottomBar({ mode }) {
             badge={tab.center ? unread : 0}
           />
         ))}
-        <Link
-          to="/app/profile"
-          className="flex items-center justify-center w-14 h-full"
-        >
-          <img
-            src={
-              user?.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=56`
-            }
-            alt="Profile"
-            className={`w-7 h-7 rounded-full object-cover ring-2 transition-all ${
-              location.pathname === "/app/profile"
-                ? immersive
-                  ? "ring-white scale-110"
-                  : "ring-[#1B5E3F] scale-110"
-                : "ring-transparent"
-            }`}
-          />
-        </Link>
+        <ProfileButton
+          user={user}
+          active={location.pathname === "/app/profile"}
+          immersive={immersive}
+        />
       </div>
     </nav>
   );
 }
 
-function TabButton({ to, icon: Icon, active, badge, immersive, center }) {
+function TabButton({ to, label, icon: Icon, active, badge, immersive, center }) {
   return (
     <Link
       to={to}
-      className="relative flex items-center justify-center w-14 h-full"
+      className="flex-1 flex flex-col items-center justify-center h-full min-w-0 px-0.5"
     >
-      <motion.div whileTap={{ scale: 0.85 }} className="relative">
-        <Icon
-          className={`transition-all ${center ? "w-8 h-8" : "w-7 h-7"} ${
+      <motion.div whileTap={{ scale: 0.85 }} className="relative flex flex-col items-center justify-center">
+        <div className="relative flex items-center justify-center">
+          <Icon
+            className={`transition-all ${center ? "w-5.5 h-5.5" : "w-5 h-5"} ${
+              immersive
+                ? active
+                  ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+                  : "text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+                : active
+                  ? "text-[#1B5E3F]"
+                  : "text-[#0A1F14]/55"
+            }`}
+          />
+          {badge > 0 && (
+            <span className="absolute -top-1 -right-2 min-w-[15px] h-3.5 px-1 bg-[#F5B942] text-[#0F4A2E] text-[8px] font-black rounded-full flex items-center justify-center">
+              {badge}
+            </span>
+          )}
+        </div>
+        <span
+          className={`text-[10px] font-medium leading-none mt-1 truncate max-w-full transition-colors ${
             immersive
               ? active
-                ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+                ? "text-white font-bold drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
                 : "text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
               : active
-                ? "text-[#1B5E3F]"
+                ? "text-[#1B5E3F] font-bold"
                 : "text-[#0A1F14]/55"
           }`}
-        />
-        {badge > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center">
-            {badge}
-          </span>
-        )}
+        >
+          {label}
+        </span>
       </motion.div>
     </Link>
   );
 }
+
+function ProfileButton({ user, active, immersive }) {
+  const profileTo = user ? "/app/profile" : "/login";
+  return (
+    <Link
+      to={profileTo}
+      className="flex-1 flex flex-col items-center justify-center h-full min-w-0 px-0.5"
+    >
+      <motion.div whileTap={{ scale: 0.85 }} className="relative flex flex-col items-center justify-center">
+        <img
+          src={
+            user?.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=56`
+          }
+          alt="Profile"
+          className={`w-5 h-5 rounded-full object-cover ring-2 transition-all ${
+            active
+              ? immersive
+                ? "ring-white scale-105"
+                : "ring-[#1B5E3F] scale-105"
+              : "ring-transparent"
+          }`}
+        />
+        <span
+          className={`text-[10px] font-medium leading-none mt-1 truncate max-w-full transition-colors ${
+            immersive
+              ? active
+                ? "text-white font-bold drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+                : "text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+              : active
+                ? "text-[#1B5E3F] font-bold"
+                : "text-[#0A1F14]/55"
+          }`}
+        >
+          Profile
+        </span>
+      </motion.div>
+    </Link>
+  );
+}
+

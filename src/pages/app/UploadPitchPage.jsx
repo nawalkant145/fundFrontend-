@@ -90,7 +90,8 @@ export default function UploadPitchPage() {
   };
 
   // Check if another upload is already running
-  const isUploading = uploadState?.status === "uploading";
+  const isUploadingOrProcessing =
+    uploadState?.status === "uploading" || uploadState?.status === "processing";
 
   if (submitted) {
     return (
@@ -335,17 +336,27 @@ export default function UploadPitchPage() {
           </p>
           <motion.button
             type="submit"
-            disabled={!valid || isUploading}
-            className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold bg-gradient-to-r from-gold to-bright-gold text-dark-navy shadow-lg shadow-gold/30 flex items-center justify-center gap-2 ${
-              !valid || isUploading ? "opacity-50 cursor-not-allowed" : ""
+            disabled={!valid || isUploadingOrProcessing}
+            className={`px-8 py-3.5 bg-gradient-to-r from-gold to-bright-gold text-dark-navy font-bold rounded-xl shadow-lg flex items-center gap-2 ${
+              !valid || isUploadingOrProcessing ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            whileHover={valid && !isUploading ? { scale: 1.02, y: -2 } : {}}
-            whileTap={valid && !isUploading ? { scale: 0.98 } : {}}
+            whileHover={valid && !isUploadingOrProcessing ? { scale: 1.02, y: -2 } : {}}
+            whileTap={valid && !isUploadingOrProcessing ? { scale: 0.98 } : {}}
           >
-            {isUploading ? (
+            {uploadState?.status === "uploading" ? (
               <>
                 <span className="w-5 h-5 rounded-full border-2 border-dark-navy/30 border-t-dark-navy animate-spin" />
-                Uploading…
+                Uploading… {uploadState.progress}%
+              </>
+            ) : uploadState?.status === "processing" ? (
+              <>
+                <span className="w-5 h-5 rounded-full border-2 border-dark-navy/30 border-t-dark-navy animate-spin" />
+                Processing…
+              </>
+            ) : uploadState?.status === "done" ? (
+              <>
+                <HiCheckCircle className="w-5 h-5" />
+                Uploaded ✓
               </>
             ) : (
               <>
