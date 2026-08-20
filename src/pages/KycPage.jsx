@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiShieldCheck,
@@ -11,6 +11,8 @@ import {
   HiCreditCard,
   HiClock,
   HiXCircle,
+  HiLightningBolt,
+  HiUpload,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 
@@ -39,6 +41,7 @@ const readFileAsBase64 = (file) => {
 
 export default function KycPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
@@ -46,6 +49,22 @@ export default function KycPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submittedRefId, setSubmittedRefId] = useState("");
+
+  // DigiLocker
+  const [showManualUpload, setShowManualUpload] = useState(false);
+  const [digilockerLoading, setDigilockerLoading] = useState(false);
+  const [digilockerFailed, setDigilockerFailed] = useState(false);
+
+  // Pre-account signup flow detection (Commented out — uncomment when mandatory pre-account KYC is enabled)
+  /*
+  const params = new URLSearchParams(location.search);
+  const signupSessionId =
+    params.get("session") || sessionStorage.getItem("signupSessionId") || null;
+  const isSignupFlow = !!signupSessionId;
+  */
+  const signupSessionId = null;
+  const isSignupFlow = false;
+
 
   // Level 2 Docs
   const [personalDocs, setPersonalDocs] = useState({
@@ -78,7 +97,8 @@ export default function KycPage() {
     declaredNetWorth: "",
   });
 
-  useEffect(() => {
+  const fetchStatus = () => {
+    if (isSignupFlow) return; // no account yet — skip status fetch
     kycService
       .getStatus()
       .then((res) => {
@@ -86,7 +106,87 @@ export default function KycPage() {
         setStatus(sData);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle the browser landing back here after the DigiLocker OAuth callback
+  // (backend redirects to /kyc?digilocker=approved&signup=1|manual_review|failed)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const result = urlParams.get("digilocker");
+    const fromSignup = urlParams.get("signup") === "1";
+    if (!result) return;
+
+    if (result === "approved") {
+      if (fromSignup) {
+        // ── PRE-ACCOUNT FLOW: Account was JUST CREATED by the backend callback ──
+        // Auth cookies are already set by the backend.
+        // Clear the temporary signupSessionId — it has been consumed.
+        sessionStorage.removeItem("signupSessionId");
+        toast.success("Identity verified! Your account has been created. Welcome! 🎉");
+        // Refresh the user context to load the newly-created account
+        if (refreshUser) {
+          refreshUser().then((freshUser) => {
+            const role = freshUser?.role || user?.role;
+            navigate(role === "investor" ? "/app" : "/app", { replace: true });
+          }).catch(() => navigate("/app", { replace: true }));
+        } else {
+          navigate("/app", { replace: true });
+        }
+        return;
+      }
+      // Post-account flow (existing user)
+      toast.success("Identity verified via DigiLocker! 🎉");
+    } else if (result === "manual_review") {
+      toast.success("Documents received — a compliance reviewer will confirm shortly.");
+    } else if (result === "failed") {
+      if (fromSignup) {
+        // Pre-account failure — no account created
+        toast.error("Identity verification failed. Your account has not been created.");
+        setDigilockerFailed(true);
+        navigate(`/kyc?session=${sessionStorage.getItem("signupSessionId") || ""}`, { replace: true });
+        return;
+      }
+      toast.error("DigiLocker verification failed. You can try again or upload manually.");
+    }
+
+    fetchStatus();
+    if (refreshUser) refreshUser();
+    // Clean the query param so a refresh doesn't re-trigger the toast
+    navigate("/kyc", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+
+
+  const handleVerifyWithDigiLocker = async () => {
+    setDigilockerLoading(true);
+    try {
+      let res;
+      if (isSignupFlow && signupSessionId) {
+        // Pre-account signup flow — use unauthenticated signupSessionId endpoint
+        res = await kycService.initiateDigiLockerForSignup(signupSessionId);
+      } else {
+        // Post-account flow — user is authenticated
+        res = await kycService.initiateDigiLocker();
+      }
+      const data = res?.data?.data || res?.data;
+      if (data?.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        toast.error("Could not start DigiLocker verification. Please try again.");
+        setDigilockerLoading(false);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not start DigiLocker verification.");
+      setDigilockerLoading(false);
+    }
+  };
+
 
   const handlePersonalSubmit = async (e) => {
     e.preventDefault();
@@ -191,8 +291,12 @@ export default function KycPage() {
 
   // Verification Flags
   const identitySt = status?.statusCard?.identityVerified?.status || user?.kycStatus;
+  const verificationMethod = status?.statusCard?.identityVerified?.verificationMethod || "manual";
   const isPersonalApproved = identitySt === "approved" || identitySt === "completed" || (user?.verificationLevel && user?.verificationLevel >= 2) || user?.verifiedBadge;
-  const isPersonalPending = identitySt === "pending" || identitySt === "under_review" || identitySt === "submitted" || identitySt === "resubmitted";
+  const isPersonalManualReview = identitySt === "manual_review" || status?.statusCard?.identityVerified?.manualReviewRequired;
+  const isPersonalPending =
+    !isPersonalManualReview &&
+    (identitySt === "pending" || identitySt === "under_review" || identitySt === "submitted" || identitySt === "resubmitted" || identitySt === "digilocker_pending");
   const isPersonalRejected = identitySt === "rejected";
 
   const companySt = status?.statusCard?.founderVerification?.status || user?.companyVerificationStatus;
@@ -206,7 +310,14 @@ export default function KycPage() {
   return (
     <AuthShell maxWidth="max-w-4xl">
       <AnimatePresence mode="wait">
+        {/* === PRE-ACCOUNT SIGNUP VERIFICATION MODE (Commented out — uncomment when pre-account KYC is enabled) ===
+        {isSignupFlow && (
+          <motion.div key="signup-verification" ...> ... </motion.div>
+        )}
+        ==================================================================================================== */}
+
         {!submitted ? (
+
           <motion.div
             key="form"
             initial={{ opacity: 0 }}
@@ -266,7 +377,9 @@ export default function KycPage() {
                       </span>
                       <h3 className="text-2xl font-black text-[#0A1F14] mt-2">Identity Verification Complete 🎉</h3>
                       <p className="text-sm text-slate-600 max-w-md mx-auto">
-                        Your government ID documents have been verified and your profile is awarded the Blue Verified Badge.
+                        {verificationMethod === "digilocker"
+                          ? "Verified instantly via DigiLocker. Your profile is awarded the Blue Verified Badge."
+                          : "Your government ID documents have been verified and your profile is awarded the Blue Verified Badge."}
                       </p>
                     </div>
 
@@ -283,6 +396,22 @@ export default function KycPage() {
                       </button>
                     </div>
                   </div>
+                ) : isPersonalManualReview ? (
+                  <div className="bg-[#FAFAF7] border-2 border-amber-500/20 rounded-3xl p-6 text-center space-y-4 shadow-sm">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200">
+                      <HiClock className="w-8 h-8 text-amber-600 animate-pulse" />
+                    </div>
+                    <div>
+                      <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                        In Compliance Review
+                      </span>
+                      <h3 className="text-xl font-black text-[#0A1F14] mt-2">DigiLocker Details Flagged for Review</h3>
+                      <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
+                        Your DigiLocker documents didn't fully match your account details, so a compliance reviewer
+                        is confirming it manually. This is usually quick — no action needed from you.
+                      </p>
+                    </div>
+                  </div>
                 ) : isPersonalPending && !isPersonalRejected ? (
                   <div className="bg-[#FAFAF7] border-2 border-amber-500/20 rounded-3xl p-6 text-center space-y-4 shadow-sm">
                     <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200">
@@ -290,92 +419,150 @@ export default function KycPage() {
                     </div>
                     <div>
                       <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wide">
-                        Under Review
+                        {identitySt === "digilocker_pending" ? "Connecting to DigiLocker" : "Under Review"}
                       </span>
-                      <h3 className="text-xl font-black text-[#0A1F14] mt-2">Documents Under Compliance Inspection</h3>
+                      <h3 className="text-xl font-black text-[#0A1F14] mt-2">
+                        {identitySt === "digilocker_pending"
+                          ? "Completing DigiLocker Authorization"
+                          : "Documents Under Compliance Inspection"}
+                      </h3>
                       <p className="text-xs text-slate-600 max-w-md mx-auto mt-1">
-                        Our compliance team is verifying your submitted ID documents. Review is typically completed within 24 hours.
+                        {identitySt === "digilocker_pending"
+                          ? "If you were redirected back here without finishing on DigiLocker, you can try again below."
+                          : "Our compliance team is verifying your submitted ID documents. Review is typically completed within 24 hours."}
                       </p>
+                      {identitySt === "digilocker_pending" && (
+                        <button
+                          type="button"
+                          onClick={handleVerifyWithDigiLocker}
+                          disabled={digilockerLoading}
+                          className="mt-4 px-5 py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-full shadow-md transition-all inline-flex items-center gap-2"
+                        >
+                          {digilockerLoading ? "Redirecting…" : "Try DigiLocker Again"} <HiArrowRight />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handlePersonalSubmit} className="space-y-4">
-                    <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
-                      <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-bold text-[#0F4A2E]">Level 2 Personal Identity</p>
-                        <p className="text-xs text-[#0A1F14]/70">
-                          Unlocks the Blue Verified Badge on your profile & search results.
-                        </p>
-                      </div>
-                    </div>
-
+                  <div className="space-y-4">
                     {isPersonalRejected && (
                       <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 space-y-1">
                         <p className="font-bold flex items-center gap-1.5 text-sm">
-                          <HiXCircle className="w-5 h-5 text-red-600" /> Action Required: Resubmit Documents
+                          <HiXCircle className="w-5 h-5 text-red-600" /> Action Required
                         </p>
                         <p className="text-red-700 font-medium">
-                          Reason: {status?.statusCard?.identityVerified?.rejectionReason || user?.documents?.rejectionReason || "Please upload clearer copies of your ID documents."}
+                          Reason: {status?.statusCard?.identityVerified?.rejectionReason || user?.documents?.rejectionReason || "Please verify again or upload clearer copies of your ID documents."}
                         </p>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Type</label>
-                        <select
-                          value={personalDocs.documentType}
-                          onChange={(e) => setPersonalDocs({ ...personalDocs, documentType: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold focus:outline-none"
+                    {!showManualUpload ? (
+                      /* --- Primary path: DigiLocker --- */
+                      <div className="bg-[#FAFAF7] border-2 border-[#1B5E3F]/15 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1B5E3F]/10 border-2 border-[#1B5E3F]/20">
+                          <HiLightningBolt className="w-9 h-9 text-[#1B5E3F]" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-2xl font-black text-[#0A1F14]">Verify with DigiLocker</h3>
+                          <p className="text-sm text-slate-600 max-w-md mx-auto">
+                            Fetches your Aadhaar/PAN directly from DigiLocker and verifies automatically —
+                            usually done in under a minute, no photo uploads needed.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleVerifyWithDigiLocker}
+                          disabled={digilockerLoading}
+                          className="px-7 py-3.5 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2 mx-auto disabled:opacity-60"
                         >
-                          <option value="pan">PAN Card</option>
-                          <option value="govt_id">Aadhaar / Govt ID</option>
-                          <option value="passport">Passport</option>
-                        </select>
+                          {digilockerLoading ? "Redirecting to DigiLocker…" : "Verify with DigiLocker"} <HiArrowRight />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowManualUpload(true)}
+                          className="text-xs font-semibold text-[#0A1F14]/55 hover:text-[#0F4A2E] underline underline-offset-2"
+                        >
+                          DigiLocker not available? Upload documents manually
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Number (Optional)</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. ABCDE1234F"
-                          value={personalDocs.documentNumber}
-                          onChange={(e) => setPersonalDocs({ ...personalDocs, documentNumber: e.target.value })}
-                          className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                    ) : (
+                      /* --- Fallback path: manual upload --- */
+                      <form onSubmit={handlePersonalSubmit} className="space-y-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowManualUpload(false)}
+                          className="text-xs font-bold text-[#1B5E3F] hover:text-[#0F4A2E] flex items-center gap-1"
+                        >
+                          ← Back to DigiLocker verification
+                        </button>
+
+                        <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-2xl p-4 flex gap-3">
+                          <HiInformationCircle className="w-6 h-6 text-[#1B5E3F] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-bold text-[#0F4A2E]">Manual Document Upload</p>
+                            <p className="text-xs text-[#0A1F14]/70">
+                              Reviewed by our compliance team, typically within 24 hours.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Type</label>
+                            <select
+                              value={personalDocs.documentType}
+                              onChange={(e) => setPersonalDocs({ ...personalDocs, documentType: e.target.value })}
+                              className="w-full px-4 py-2.5 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold focus:outline-none"
+                            >
+                              <option value="pan">PAN Card</option>
+                              <option value="govt_id">Aadhaar / Govt ID</option>
+                              <option value="passport">Passport</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-[#0A1F14] mb-1">Document Number (Optional)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. ABCDE1234F"
+                              value={personalDocs.documentNumber}
+                              onChange={(e) => setPersonalDocs({ ...personalDocs, documentNumber: e.target.value })}
+                              className="w-full px-4 py-2 bg-white border border-[#1B5E3F]/20 rounded-xl text-sm font-semibold"
+                            />
+                          </div>
+                        </div>
+
+                        <FileDropzone
+                          label="Front Image of ID"
+                          description="Clear photo of PAN or Govt ID · JPG, PNG or PDF"
+                          value={personalDocs.documentFront}
+                          onChange={(f) => setPersonalDocs({ ...personalDocs, documentFront: f })}
+                          required
                         />
-                      </div>
-                    </div>
 
-                    <FileDropzone
-                      label="Front Image of ID"
-                      description="Clear photo of PAN or Govt ID · JPG, PNG or PDF"
-                      value={personalDocs.documentFront}
-                      onChange={(f) => setPersonalDocs({ ...personalDocs, documentFront: f })}
-                      required
-                    />
+                        <FileDropzone
+                          label="Selfie Holding ID"
+                          description="Clear photo of your face holding your ID"
+                          accept="image/*"
+                          value={personalDocs.selfie}
+                          onChange={(f) => setPersonalDocs({ ...personalDocs, selfie: f })}
+                          required
+                        />
 
-                    <FileDropzone
-                      label="Selfie Holding ID"
-                      description="Clear photo of your face holding your ID"
-                      accept="image/*"
-                      value={personalDocs.selfie}
-                      onChange={(f) => setPersonalDocs({ ...personalDocs, selfie: f })}
-                      required
-                    />
-
-                    <div className="flex justify-between items-center pt-4">
-                      <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
-                        Skip for now
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={submitting}
-                        className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
-                      >
-                        {isPersonalRejected ? "Resubmit Level 2" : "Submit Level 2"} <HiArrowRight />
-                      </button>
-                    </div>
-                  </form>
+                        <div className="flex justify-between items-center pt-4">
+                          <button type="button" onClick={() => navigate("/")} className="text-sm font-semibold text-gray-500">
+                            Skip for now
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={submitting}
+                            className="px-7 py-3 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] text-white font-bold rounded-full text-sm shadow-md flex items-center gap-2"
+                          >
+                            {isPersonalRejected ? "Resubmit Level 2" : "Submit Level 2"} <HiArrowRight />
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
                 )}
               </div>
             )}

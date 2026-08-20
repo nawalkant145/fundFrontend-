@@ -22,7 +22,7 @@ export function useCompletionRouter({ onOpenEditProfile }) {
       case "verify_mobile":
       case "email_verification":
       case "mobile_verification":
-        navigate("/verify");
+        navigate("/kyc");
         break;
 
       case "kyc_identity":
