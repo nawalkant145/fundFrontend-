@@ -95,7 +95,8 @@ export default function UploadPitchModal({ open, onClose }) {
     data.fundingStage &&
     Number(data.askAmount) > 0;
 
-  const isUploading = uploadState?.status === "uploading";
+  const isUploadingOrProcessing =
+    uploadState?.status === "uploading" || uploadState?.status === "processing";
 
   const submit = async (e) => {
     e.preventDefault();
@@ -347,23 +348,33 @@ export default function UploadPitchModal({ open, onClose }) {
                   {/* Submit */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#1B5E3F]/10">
                     <p className="text-xs text-[#0A1F14]/50">
-                      {isUploading
+                      {isUploadingOrProcessing
                         ? "Your pitch is uploading in the background — you can close this!"
                         : "Your pitch will be reviewed before going live."}
                     </p>
                     <motion.button
                       type="submit"
-                      disabled={!valid || isUploading}
+                      disabled={!valid || isUploadingOrProcessing}
                       className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold bg-gradient-to-r from-[#F5B942] to-[#FFD166] text-[#0F4A2E] shadow-lg flex items-center justify-center gap-2 ${
-                        !valid || isUploading ? "opacity-50 cursor-not-allowed" : ""
+                        !valid || isUploadingOrProcessing ? "opacity-50 cursor-not-allowed" : ""
                       }`}
-                      whileHover={valid && !isUploading ? { scale: 1.02, y: -2 } : {}}
-                      whileTap={valid && !isUploading ? { scale: 0.98 } : {}}
+                      whileHover={valid && !isUploadingOrProcessing ? { scale: 1.02, y: -2 } : {}}
+                      whileTap={valid && !isUploadingOrProcessing ? { scale: 0.98 } : {}}
                     >
-                      {isUploading ? (
+                      {uploadState?.status === "uploading" ? (
                         <>
                           <span className="w-5 h-5 rounded-full border-2 border-[#0F4A2E]/30 border-t-[#0F4A2E] animate-spin" />
-                          Uploading…
+                          Uploading… {uploadState.progress}%
+                        </>
+                      ) : uploadState?.status === "processing" ? (
+                        <>
+                          <span className="w-5 h-5 rounded-full border-2 border-[#0F4A2E]/30 border-t-[#0F4A2E] animate-spin" />
+                          Processing…
+                        </>
+                      ) : uploadState?.status === "done" ? (
+                        <>
+                          <HiCheckCircle className="w-5 h-5 text-[#0F4A2E]" />
+                          Uploaded ✓
                         </>
                       ) : (
                         <>

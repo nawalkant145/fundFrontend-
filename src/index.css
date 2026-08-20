@@ -282,8 +282,9 @@ img {
   background: #000;
   /* Disable pull-to-refresh + bounce on mobile (Instagram does this) */
   overscroll-behavior: none;
-  /* Block native vertical scrolling so swipes are pure gestures we handle */
-  touch-action: pan-x;
+  /* none — JS handles ALL gestures (both vertical swipes and horizontal).
+     pan-x was previously set here which blocked ALL vertical touch navigation. */
+  touch-action: none;
 }
 
 /* Desktop (>= 768): portrait card driven by viewport height.

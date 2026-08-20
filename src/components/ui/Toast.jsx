@@ -56,7 +56,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-4 right-4 z-[9999999] flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
           {toasts.map((t) => {
             const meta = ICONS[t.type] || ICONS.info;

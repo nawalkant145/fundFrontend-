@@ -51,25 +51,29 @@ export function UploadProvider({ children }) {
 
         await videoService.uploadWithProgress(fd, {
           onProgress: (pct) => {
-            setUploadState((prev) => ({ ...prev, progress: pct }));
+            setUploadState((prev) => {
+              if (!prev) return prev;
+              if (pct >= 100) {
+                return { ...prev, status: "processing", progress: 100 };
+              }
+              return { ...prev, status: "uploading", progress: Math.min(pct, 99) };
+            });
           },
           signal: controller.signal,
         });
 
-        // Upload complete — backend is now processing (Cloudinary transcoding)
+        // Upload and server processing complete
         setUploadState((prev) => ({
           ...prev,
-          status: "processing",
+          status: "done",
           progress: 100,
         }));
+        toast?.success("Pitch uploaded successfully! 🎉");
 
-        // Show success after a brief delay (processing is server-side)
+        // Keep completion state visible for 4s before clearing
         setTimeout(() => {
-          setUploadState((prev) => ({ ...prev, status: "done" }));
-          toast?.success("Pitch uploaded successfully! 🎉");
-          // Clear after 5s
-          setTimeout(() => setUploadState(null), 5000);
-        }, 1500);
+          setUploadState((prev) => (prev?.status === "done" ? null : prev));
+        }, 4000);
 
         return true;
       } catch (err) {
