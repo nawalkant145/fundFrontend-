@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   HiHeart,
@@ -19,9 +20,15 @@ import { MdVerified } from "react-icons/md";
 import Modal from "../ui/Modal";
 import { useToast } from "../ui/Toast";
 import { formatINR } from "../../constants/mockData";
+import { useAuth } from "../../context/AuthContext";
+import { chatService } from "../../services/chatService";
+import FollowButton from "../monetization/FollowButton";
 
 export default function PitchDetailModal({ pitch, open, onClose }) {
+  const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
+  const userId = user?._id;
   const [muted, setMuted] = useState(true);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,6 +61,21 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
 
   if (!pitch) return null;
   const f = pitch.founderId;
+  const founderId = f?._id || pitch?.founderId?._id || pitch?.founderId;
+
+  const handleMessageFounder = () => {
+    if (!founderId) return;
+    chatService
+      .startChat(founderId)
+      .then((res) => {
+        const chat = res?.data?.data?.chat || res?.data?.data;
+        onClose?.();
+        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
+      })
+      .catch((err) => {
+        toast.error(err?.response?.data?.message || "Could not start chat");
+      });
+  };
 
   const submitComment = (e) => {
     e.preventDefault();
@@ -143,12 +165,17 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
                 {f?.companyName || pitch.companyName || ""}
               </p>
             </div>
-            <button
-              className="ml-auto px-3 sm:px-4 py-1 sm:py-1.5 bg-gold text-dark-navy text-xs font-black rounded-full transition-transform active:scale-95 flex-shrink-0"
-              onClick={() => toast.success("Following founder")}
-            >
-              Follow
-            </button>
+            <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+              <FollowButton userId={founderId} variant="compact" />
+              {founderId && founderId.toString() !== userId?.toString() && (
+                <button
+                  className="px-3 sm:px-4 py-1 sm:py-1.5 bg-[#F5B942] border border-[#F5B942] text-black hover:bg-[#e0a838] text-xs font-black rounded-full transition-transform active:scale-95 flex items-center gap-1 flex-shrink-0 cursor-pointer shadow-sm"
+                  onClick={handleMessageFounder}
+                >
+                  <HiChatAlt2 className="w-3.5 h-3.5 text-black" /> Message
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Action bar */}

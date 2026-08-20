@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -39,6 +39,7 @@ import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 import { investmentService } from "../../services/investmentService";
 import { reportService } from "../../services/reportService";
+import { chatService } from "../../services/chatService";
 import { MOCK_PITCHES, ALL_MOCK_PITCHES, formatINR } from "../../constants/mockData";
 import {
   isFollowing,
@@ -59,17 +60,17 @@ export default function InvestorFeed() {
     new URLSearchParams(window.location.search).get("pitch") || null,
   );
 
-  const [pitches, setPitches] = useState(ALL_MOCK_PITCHES);
-  const [feedLoaded, setFeedLoaded] = useState(false);
+  const isFirstPitchRender = useRef(true);
 
-  const [idx, setIdx] = useState(() => {
-    const id = activePitchRef.current;
-    if (id) {
-      const i = ALL_MOCK_PITCHES.findIndex((p) => p._id === id);
-      if (i >= 0) return i;
-    }
-    return 0;
-  });
+  const [pitches, setPitches] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedLoaded, setFeedLoaded] = useState(false);
+  const [idx, setIdx] = useState(0);
+
+  // Pagination state for infinite feed scrolling
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchingMore, setFetchingMore] = useState(false);
 
   const { socket } = useSocket();
 
@@ -94,45 +95,148 @@ export default function InvestorFeed() {
     return () => socket.off("pitch:engagement", onEngagement);
   }, [socket]);
 
-  // Fetch real feed on mount. After the array is replaced we re-anchor idx by
-  // pitch ID so the active pitch never changes unexpectedly.
+  // Lock body scroll while Reel viewer is active
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  // Fetch real feed on mount. Resolves active target pitch BEFORE setting feedLoading(false)
+  // so the player starts immediately at requested Pitch #N without flickering to Pitch #0.
+  useEffect(() => {
+    let isMounted = true;
+
+    const initFeed = async () => {
+      const activeId = activePitchRef.current;
+      let fetchedVideos = [];
+      let cursor = null;
+      let more = false;
+
+      try {
+        const res = await videoService.getFeed({ limit: 20 });
+        const resData = res?.data?.data || res?.data || {};
+        fetchedVideos = resData?.videos || (Array.isArray(resData) ? resData : []);
+        cursor = resData?.nextCursor || null;
+        more = !!resData?.hasMore;
+      } catch (err) {}
+
+      if (!isMounted) return;
+
+      let merged = Array.isArray(fetchedVideos) && fetchedVideos.length > 0
+        ? [...fetchedVideos]
+        : [...ALL_MOCK_PITCHES];
+
+      let targetIdx = 0;
+
+      if (activeId) {
+        let foundIdx = merged.findIndex((p) => p._id === activeId);
+        if (foundIdx >= 0) {
+          targetIdx = foundIdx;
+        } else {
+          // Check ALL_MOCK_PITCHES first
+          const mockMatch = ALL_MOCK_PITCHES.find((p) => p._id === activeId);
+          if (mockMatch) {
+            merged = [mockMatch, ...merged.filter((p) => p._id !== mockMatch._id)];
+            targetIdx = 0;
+          } else if (/^[a-f0-9]{24}$/i.test(activeId)) {
+            try {
+              const singleRes = await videoService.getById(activeId);
+              const singleVideo = singleRes?.data?.data;
+              if (singleVideo && isMounted) {
+                merged = [singleVideo, ...merged.filter((p) => p._id !== singleVideo._id)];
+                targetIdx = 0;
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (!isMounted) return;
+
+      setPitches(merged);
+      setNextCursor(cursor);
+      setHasMore(more);
+      setIdx(targetIdx);
+      setFeedLoaded(true);
+
+      const likedInit = {};
+      const savedInit = {};
+      merged.forEach((v) => {
+        if (v.isLiked) likedInit[v._id] = true;
+        if (v.isSaved) savedInit[v._id] = true;
+      });
+      setLiked((prev) => ({ ...likedInit, ...prev }));
+      setSaved((prev) => ({ ...savedInit, ...prev }));
+      setFeedLoading(false);
+    };
+
+    initFeed();
+
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch subsequent feed pages as the user approaches the end of loaded pitches
+  const loadMorePitches = useCallback(() => {
+    if (!hasMore || !nextCursor || fetchingMore) return;
+    setFetchingMore(true);
+
     videoService
-      .getFeed({ limit: 20 })
+      .getFeed({ cursor: nextCursor, limit: 20 })
       .then((res) => {
-        const data = res?.data?.data;
-        const videos = data?.videos || data;
-        if (videos?.length > 0) {
-          const merged = [...videos];
-          ALL_MOCK_PITCHES.forEach((mp) => {
-            if (!merged.some((v) => v._id === mp._id)) merged.push(mp);
+        const resData = res?.data?.data || res?.data || {};
+        const newVideos = resData?.videos || [];
+        const cursor = resData?.nextCursor || null;
+        const more = !!resData?.hasMore;
+
+        if (Array.isArray(newVideos) && newVideos.length > 0) {
+          setPitches((prev) => {
+            const existingIds = new Set(prev.map((p) => p._id));
+            const uniqueNew = newVideos.filter((v) => !existingIds.has(v._id));
+            return [...prev, ...uniqueNew];
           });
-
-          // Re-anchor idx to keep the same pitch visible after array is replaced
-          const activeId = activePitchRef.current;
-          const newIdx = activeId
-            ? Math.max(0, merged.findIndex((p) => p._id === activeId))
-            : 0;
-
-          setPitches(merged);
-          setIdx(newIdx);
-          setFeedLoaded(true);
+          setNextCursor(cursor);
+          setHasMore(more);
 
           const likedInit = {};
           const savedInit = {};
-          videos.forEach((v) => {
+          newVideos.forEach((v) => {
             if (v.isLiked) likedInit[v._id] = true;
             if (v.isSaved) savedInit[v._id] = true;
           });
-          // MERGE — don't replace — so any toggles the user made while the
-          // feed was loading are preserved, not wiped.
           setLiked((prev) => ({ ...likedInit, ...prev }));
           setSaved((prev) => ({ ...savedInit, ...prev }));
+        } else {
+          setHasMore(false);
         }
       })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      .catch(() => {})
+      .finally(() => {
+        setFetchingMore(false);
+      });
+  }, [hasMore, nextCursor, fetchingMore]);
+
+  // Auto-fetch next page when user approaches end of current pitches array
+  useEffect(() => {
+    if (feedLoaded && hasMore && idx >= pitches.length - 3) {
+      loadMorePitches();
+    }
+  }, [idx, pitches.length, hasMore, feedLoaded, loadMorePitches]);
+
+  // Enable slide animations for user-driven scrolling after the first pitch is presented
+  useEffect(() => {
+    if (!feedLoading && pitches.length > 0) {
+      const timer = setTimeout(() => {
+        isFirstPitchRender.current = false;
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [feedLoading, pitches.length]);
 
   // Remember user's mute choice across sessions — Instagram does this too.
   // First-time users still start muted (browser autoplay policy requires it),
@@ -243,20 +347,40 @@ export default function InvestorFeed() {
     return () => clearTimeout(timer);
   }, [pitch?._id]);
 
-  const next = () => {
-    if (idx < pitches.length - 1) {
-      setDirection("down");
-      setIdx(idx + 1);
-      setExpanded(false);
-    }
-  };
-  const prev = () => {
-    if (idx > 0) {
-      setDirection("up");
-      setIdx(idx - 1);
-      setExpanded(false);
-    }
-  };
+  // Stable navigation functions using functional setState so they never capture
+  // stale idx/pitches values regardless of when the closure was formed.
+  const next = useCallback(() => {
+    setIdx((i) => {
+      const pitchCount = pitches.length; // pitches ref is always current via closure over setPitches
+      if (i < pitchCount - 1) {
+        setDirection("down");
+        setExpanded(false);
+        return i + 1;
+      }
+      return i;
+    });
+  }, [pitches.length]);
+
+  const prev = useCallback(() => {
+    setIdx((i) => {
+      if (i > 0) {
+        setDirection("up");
+        setExpanded(false);
+        return i - 1;
+      }
+      return i;
+    });
+  }, []);
+
+  // Keep stable refs so gesture handlers can call the latest version without
+  // needing to be re-registered on every render.
+  const nextRef = useRef(next);
+  const prevRef = useRef(prev);
+  useEffect(() => { nextRef.current = next; }, [next]);
+  useEffect(() => { prevRef.current = prev; }, [prev]);
+
+  const activeModalRef = useRef(activeModal);
+  useEffect(() => { activeModalRef.current = activeModal; }, [activeModal]);
 
   const jumpToPitch = (pitchObj) => {
     if (!pitchObj?._id) return;
@@ -276,77 +400,62 @@ export default function InvestorFeed() {
     setExpanded(false);
     setActiveModal(null);
   };
+
+  // Keyboard navigation — ArrowDown / ArrowUp
   useEffect(() => {
     const onKey = (e) => {
       if (
         e.target?.tagName === "INPUT" ||
         e.target?.tagName === "TEXTAREA" ||
-        activeModal
+        activeModalRef.current
       )
         return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        next();
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        prev();
-      }
+      if (e.key === "ArrowDown") { e.preventDefault(); nextRef.current(); }
+      if (e.key === "ArrowUp")   { e.preventDefault(); prevRef.current(); }
       if (e.key === "m" || e.key === "M") setMuted((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line
-  }, [idx, activeModal]);
+  }, []); // empty deps — uses stable refs only
 
-  // Wheel scroll navigation (desktop) — Instagram-style sensitivity handling.
-  //
-  // Three layers of defense against trackpad inertia chaining multiple navigations:
-  //   1. Hard lock for 700ms after a navigation — totally ignore wheel events.
-  //   2. Accumulate deltaY across events; only commit when total swipe exceeds 50px.
-  //   3. Reset accumulator after 200ms of no wheel events (lifted fingers).
+  // ─── Wheel navigation (desktop + trackpad) ────────────────────────────────
+  // Three guards against trackpad inertia flooding:
+  //   1. hardLock: 700 ms cooldown after each navigation (swallows inertia tail)
+  //   2. accDelta: accumulate deltaY — only navigate once threshold is reached
+  //   3. silenceTimer: reset accumulator after 150 ms of no wheel events
+  // Listeners are registered once (empty deps) via stable refs.
   useEffect(() => {
     const el = document.getElementById("shorts-feed-container");
     if (!el) return;
 
-    let hardLock = false; // true during animation + cooldown
-    let accDelta = 0; // accumulated deltaY for current gesture
-    let lastEventAt = 0; // timestamp of last wheel event
+    let hardLock = false;
+    let accDelta  = 0;
+    let lastEventAt = 0;
     let silenceTimer = null;
 
-    const navigate = (dir) => {
+    const doNavigate = (dir) => {
       hardLock = true;
       accDelta = 0;
-      if (dir > 0) next();
-      else prev();
-      // Cooldown long enough to swallow any trackpad inertia tail
-      setTimeout(() => {
-        hardLock = false;
-        accDelta = 0;
-      }, 700);
+      if (dir > 0) nextRef.current();
+      else          prevRef.current();
+      setTimeout(() => { hardLock = false; accDelta = 0; }, 700);
     };
 
     const onWheel = (e) => {
-      if (activeModal || hardLock) return;
+      if (activeModalRef.current || hardLock) return;
       const now = Date.now();
-
-      // If user paused (lifted fingers), reset the accumulator
-      if (now - lastEventAt > 200) accDelta = 0;
+      if (now - lastEventAt > 200) accDelta = 0; // new gesture
       lastEventAt = now;
-
       accDelta += e.deltaY;
 
-      // Need 50px of accumulated swipe to commit to a navigation
       if (Math.abs(accDelta) >= 50) {
-        navigate(accDelta);
+        doNavigate(accDelta);
         return;
       }
 
       // Reset accumulator if user stops scrolling
       clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => {
-        accDelta = 0;
-      }, 120);
+      silenceTimer = setTimeout(() => { accDelta = 0; }, 150);
     };
 
     el.addEventListener("wheel", onWheel, { passive: true });
@@ -354,14 +463,17 @@ export default function InvestorFeed() {
       el.removeEventListener("wheel", onWheel);
       clearTimeout(silenceTimer);
     };
-    // eslint-disable-next-line
-  }, [idx, activeModal]);
+  }, []); // empty deps — uses stable refs only
 
-  // Touch swipe navigation (mobile)
+  // ─── Touch / swipe navigation (mobile) ────────────────────────────────────
+  // Listen on the feed container. touch-action: none in CSS ensures the browser
+  // does NOT intercept vertical swipes, so our JS handler receives them.
   useEffect(() => {
     const el = document.getElementById("shorts-feed-container") || document.body;
     if (!el) return;
+
     let startY = 0;
+    let startX = 0;
     let lock = false;
 
     const onTouchStart = (e) => {
@@ -370,31 +482,37 @@ export default function InvestorFeed() {
         e.target?.closest("a") ||
         e.target?.closest("input") ||
         e.target?.closest("textarea")
-      ) {
-        return;
-      }
+      ) return;
       startY = e.touches[0]?.clientY || 0;
+      startX = e.touches[0]?.clientX || 0;
     };
 
     const onTouchEnd = (e) => {
-      if (lock || activeModal) return;
+      if (lock || activeModalRef.current) return;
       const endY = e.changedTouches[0]?.clientY || 0;
+      const endX = e.changedTouches[0]?.clientX || 0;
       const dy = endY - startY;
-      if (Math.abs(dy) < 35) return;
+      const dx = endX - startX;
+
+      // Ignore mostly-horizontal swipes (e.g., share sheet, sidebar drag)
+      if (Math.abs(dx) > Math.abs(dy)) return;
+      if (Math.abs(dy) < 40) return; // too short
+
       lock = true;
-      if (dy < -35) next();
-      else if (dy > 35) prev();
-      setTimeout(() => (lock = false), 400);
+      if (dy < 0) nextRef.current(); // swipe up → next pitch
+      else         prevRef.current(); // swipe down → prev pitch
+      setTimeout(() => { lock = false; }, 500);
     };
 
     el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchend",   onTouchEnd,   { passive: true });
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchend",   onTouchEnd);
     };
-    // eslint-disable-next-line
-  }, [idx, activeModal]);
+  }, []); // empty deps — uses stable refs only
+
+
 
   const isPitchLiked = (p) => {
     if (!p?._id) return false;
@@ -641,6 +759,22 @@ export default function InvestorFeed() {
     setFollowing((p) => ({ ...p, [id]: !wasFollowing }));
   };
 
+  const handleMessageFounder = (e) => {
+    e?.stopPropagation();
+    e?.preventDefault();
+    const targetId = founder?._id || (typeof pitch?.founderId === "string" ? pitch.founderId : null);
+    if (!targetId) return;
+    chatService
+      .startChat(targetId)
+      .then((res) => {
+        const chat = res?.data?.data?.chat || res?.data?.data;
+        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
+      })
+      .catch((err) => {
+        toast.error(err?.response?.data?.message || "Could not start chat");
+      });
+  };
+
   const skip = () => {
     next();
   };
@@ -681,157 +815,177 @@ export default function InvestorFeed() {
           id="shorts-feed-container"
           className="shorts-feed-stage relative bg-black overflow-hidden border-gold/15 shadow-2xl shadow-black/40"
         >
-          <FeedHint />
+          {feedLoading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-3 z-30">
+              <div className="w-10 h-10 rounded-full border-4 border-gold/30 border-t-gold animate-spin" />
+              <span className="text-xs font-semibold text-gold/80 tracking-wider uppercase">Loading Pitches...</span>
+            </div>
+          ) : pitch ? (
+            <>
+              <FeedHint />
 
-          {/* Hidden preloaders for adjacent videos */}
-          {neighborSrcs.map((src) => (
-            <video
-              key={src}
-              src={src}
-              preload="auto"
-              muted
-              playsInline
-              className="hidden"
-            />
-          ))}
+              {/* Hidden preloaders for adjacent videos */}
+              {neighborSrcs.map((src) => (
+                <video
+                  key={src}
+                  src={src}
+                  preload="auto"
+                  muted
+                  playsInline
+                  className="hidden"
+                />
+              ))}
 
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={pitch._id}
-              custom={direction}
-              variants={{
-                enter: (dir) => ({
-                  y: dir === "down" ? "100%" : "-100%",
-                }),
-                center: { y: 0 },
-                exit: (dir) => ({
-                  y: dir === "down" ? "-100%" : "100%",
-                }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                duration: 0.32,
-                ease: [0.32, 0.72, 0, 1], // matches Instagram's spring-out feel
-              }}
-              className="absolute inset-0 bg-black"
-            >
-              <ShortsPlayer
-                src={pitch.videoUrl}
-                poster={pitch.coverUrl || pitch.thumbnailUrl}
-                muted={muted}
-                active={true}
-                onDoubleTap={doubleTapLike}
-              />
-
-              {/* Bottom gradient — only behind text area */}
-              <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
-
-              {/* Top bar — industry tag (left) + mute toggle (right) */}
-              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
-                <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy feed-fluid-text-xs font-black rounded-full uppercase">
-                  {pitch.industry}
-                </span>
-                <button
-                  onClick={() => setMuted((m) => !m)}
-                  className="w-9 h-9 rounded-full bg-black/45 backdrop-blur-md flex items-center justify-center hover:bg-black/65 transition-all"
-                  title={muted ? "Unmute" : "Mute"}
+              <AnimatePresence initial={false} custom={direction}>
+                <motion.div
+                  key={pitch._id}
+                  custom={direction}
+                  variants={{
+                    enter: (dir) => ({
+                      y: dir === "down" ? "100%" : "-100%",
+                    }),
+                    center: { y: 0 },
+                    exit: (dir) => ({
+                      y: dir === "down" ? "-100%" : "100%",
+                    }),
+                  }}
+                  initial={isFirstPitchRender.current ? false : "enter"}
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    duration: 0.32,
+                    ease: [0.32, 0.72, 0, 1], // matches Instagram's spring-out feel
+                  }}
+                  className="absolute inset-0 bg-black"
                 >
-                  {muted ? (
-                    <HiVolumeOff className="w-4 h-4 text-white" />
-                  ) : (
-                    <HiVolumeUp className="w-4 h-4 text-white" />
-                  )}
-                </button>
-              </div>
-
-              {/* Bottom info — lifted above the floating tab bar on mobile,
-                  padded right to clear the action rail */}
-              <div className="absolute bottom-16 md:bottom-0 left-0 right-0 pl-3 pr-20 md:pr-4 pb-3 pt-2 z-10 pointer-events-none">
-                <div className="flex items-center gap-2 mb-2.5 pointer-events-auto">
-                  <button
-                    onClick={() => setActiveModal("profile")}
-                    className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
-                  >
-                    <img
-                      src={
-                        founder?.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(founder?.name || "U")}&background=1B5E3F&color=fff`
-                      }
-                      alt={founder?.name || "Founder"}
-                      className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
-                    />
-                    <div className="text-left min-w-0">
-                      <p className="font-bold text-[12px] md:text-sm flex items-center gap-1 truncate leading-tight">
-                        {founder?.name || "Founder"}
-                        {founder?.isVerified && (
-                          <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
-                        )}
-                      </p>
-                      <p className="text-[11px] md:text-xs text-gray-300 truncate leading-tight">
-                        {founder?.companyName}
-                      </p>
-                    </div>
-                  </button>
-                  <FollowButton
-                    active={following[founder?._id]}
-                    onClick={toggleFollow}
+                  <ShortsPlayer
+                    src={pitch.videoUrl}
+                    poster={pitch.coverUrl || pitch.thumbnailUrl}
+                    muted={muted}
+                    active={true}
+                    onDoubleTap={doubleTapLike}
                   />
-                </div>
 
-                <h3 className="font-black text-[15px] md:text-[17px] leading-tight mb-0.5 pointer-events-auto line-clamp-2">
-                  {pitch.title}
-                </h3>
+                  {/* Bottom gradient — only behind text area */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
-                <div className="pointer-events-auto">
-                  <p
-                    className={`text-[13px] md:text-sm text-gray-200 leading-snug ${
-                      expanded ? "" : "line-clamp-1"
-                    }`}
-                  >
-                    {pitch.description}
-                  </p>
-                  {(pitch.description || "").length > 50 && (
-                    <button
-                      onClick={() => setExpanded((v) => !v)}
-                      className="text-[12px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
-                    >
-                      {expanded ? "less" : "more"}
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
-                  {user?.role === "investor" ? (
-                    <button
-                      onClick={() => setActiveModal("invest")}
-                      className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
-                    >
-                      <HiCurrencyDollar className="w-3.5 h-3.5" />
-                      {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
-                    </button>
-                  ) : (
-                    <span className="px-2.5 py-1 bg-white/15 border border-white/30 rounded-full feed-fluid-text-xs font-bold text-white flex items-center gap-1">
-                      <HiCurrencyDollar className="w-3.5 h-3.5" />
-                      {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+                  {/* Top bar — industry tag (left) + mute toggle (right) */}
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
+                    <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy feed-fluid-text-xs font-black rounded-full uppercase">
+                      {pitch.industry}
                     </span>
-                  )}
-                  <span className="feed-fluid-text-xs text-gray-300 capitalize">
-                    {pitch.fundingStage}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+                    <button
+                      onClick={() => setMuted((m) => !m)}
+                      className="w-9 h-9 rounded-full bg-black/45 backdrop-blur-md flex items-center justify-center hover:bg-black/65 transition-all"
+                      title={muted ? "Unmute" : "Mute"}
+                    >
+                      {muted ? (
+                        <HiVolumeOff className="w-4 h-4 text-white" />
+                      ) : (
+                        <HiVolumeUp className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Bottom info — lifted above the floating tab bar on mobile,
+                      padded right to clear the action rail */}
+                  <div className="absolute bottom-16 md:bottom-0 left-0 right-0 pl-3 pr-20 md:pr-4 pb-3 pt-2 z-10 pointer-events-none">
+                    <div className="flex items-center gap-2 mb-2.5 pointer-events-auto">
+                      <button
+                        onClick={() => setActiveModal("profile")}
+                        className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+                      >
+                        <img
+                          src={
+                            founder?.avatar ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(founder?.name || "U")}&background=1B5E3F&color=fff`
+                          }
+                          alt={founder?.name || "Founder"}
+                          className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
+                        />
+                        <div className="text-left min-w-0">
+                          <p className="font-bold text-[12px] md:text-sm flex items-center gap-1 truncate leading-tight">
+                            {founder?.name || "Founder"}
+                            {founder?.isVerified && (
+                              <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
+                            )}
+                          </p>
+                          <p className="text-[11px] md:text-xs text-gray-300 truncate leading-tight">
+                            {founder?.companyName}
+                          </p>
+                        </div>
+                      </button>
+                      <FollowButton
+                        active={following[founder?._id]}
+                        onClick={toggleFollow}
+                      />
+                      {(founder?._id || (typeof pitch?.founderId === "string" && pitch.founderId)) &&
+                        (founder?._id || pitch?.founderId)?.toString() !== userId?.toString() && (
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleMessageFounder}
+                            className="flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-black transition-all border-2 border-[#F5B942] flex items-center gap-1 bg-[#F5B942] text-black hover:bg-[#e0a838] cursor-pointer shadow-sm"
+                          >
+                            <HiChatAlt2 className="w-3 h-3 text-black" /> Message
+                          </motion.button>
+                      )}
+                    </div>
+
+                    <h3 className="font-black text-[15px] md:text-[17px] leading-tight mb-0.5 pointer-events-auto line-clamp-2">
+                      {pitch.title}
+                    </h3>
+
+                    <div className="pointer-events-auto">
+                      <p
+                        className={`text-[13px] md:text-sm text-gray-200 leading-snug ${
+                          expanded ? "" : "line-clamp-1"
+                        }`}
+                      >
+                        {pitch.description}
+                      </p>
+                      {(pitch.description || "").length > 50 && (
+                        <button
+                          onClick={() => setExpanded((v) => !v)}
+                          className="text-[12px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
+                        >
+                          {expanded ? "less" : "more"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
+                      {user?.role === "investor" ? (
+                        <button
+                          onClick={() => setActiveModal("invest")}
+                          className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
+                        >
+                          <HiCurrencyDollar className="w-3.5 h-3.5" />
+                          {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+                        </button>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-white/15 border border-white/30 rounded-full feed-fluid-text-xs font-bold text-white flex items-center gap-1">
+                          <HiCurrencyDollar className="w-3.5 h-3.5" />
+                          {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+                        </span>
+                      )}
+                      <span className="feed-fluid-text-xs text-gray-300 capitalize">
+                        {pitch.fundingStage}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </>
+          ) : null}
         </div>
 
         {/* ACTION RAIL — overlays video on mobile (right side, above caption),
             sits in flex row next to it on desktop */}
-        <div
-          className="absolute right-2 bottom-24 z-20 flex flex-col gap-4 items-center
-                     md:static md:mb-6 md:gap-5 md:right-auto md:bottom-auto"
-        >
+        {!feedLoading && pitch && (
+          <div
+            className="absolute right-2 bottom-24 z-20 flex flex-col gap-4 items-center
+                       md:static md:mb-6 md:gap-5 md:right-auto md:bottom-auto"
+          >
           <RailButton
             icon={HiHeart}
             label={
@@ -881,83 +1035,88 @@ export default function InvestorFeed() {
             triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
           />
         </div>
+        )}
       </div>
 
       {/* Modals */}
-      <FounderProfileModal
-        open={activeModal === "profile"}
-        onClose={() => setActiveModal(null)}
-        founder={founder}
-        isFollowing={!!following[founder?._id]}
-        onToggleFollow={toggleFollow}
-        onPickPitch={jumpToPitch}
-      />
+      {pitch && (
+        <>
+          <FounderProfileModal
+            open={activeModal === "profile"}
+            onClose={() => setActiveModal(null)}
+            founder={founder}
+            isFollowing={!!following[founder?._id]}
+            onToggleFollow={toggleFollow}
+            onPickPitch={jumpToPitch}
+          />
 
-      <CommentsPanel
-        open={activeModal === "comments"}
-        onClose={() => setActiveModal(null)}
-        videoId={pitch._id}
-        totalCount={pitch.commentCount || pitch.comments}
-        onCommentAdded={(newCount) => {
-          if (typeof newCount === "number") {
-            setPitches((prev) =>
-              prev.map((p) => (p._id === pitch._id ? { ...p, commentCount: newCount } : p))
-            );
-          } else {
-            setPitches((prev) =>
-              prev.map((p) =>
-                p._id === pitch._id
-                  ? { ...p, commentCount: (p.commentCount || p.comments || 0) + 1 }
-                  : p,
-              ),
-            );
-          }
-        }}
-        onCommentDeleted={(newCount) => {
-          if (typeof newCount === "number") {
-            setPitches((prev) =>
-              prev.map((p) => (p._id === pitch._id ? { ...p, commentCount: newCount } : p))
-            );
-          } else {
-            setPitches((prev) =>
-              prev.map((p) =>
-                p._id === pitch._id
-                  ? { ...p, commentCount: Math.max(0, (p.commentCount || p.comments || 0) - 1) }
-                  : p,
-              ),
-            );
-          }
-        }}
-      />
+          <CommentsPanel
+            open={activeModal === "comments"}
+            onClose={() => setActiveModal(null)}
+            videoId={pitch._id}
+            totalCount={pitch.commentCount || pitch.comments}
+            onCommentAdded={(newCount) => {
+              if (typeof newCount === "number") {
+                setPitches((prev) =>
+                  prev.map((p) => (p._id === pitch._id ? { ...p, commentCount: newCount } : p))
+                );
+              } else {
+                setPitches((prev) =>
+                  prev.map((p) =>
+                    p._id === pitch._id
+                      ? { ...p, commentCount: (p.commentCount || p.comments || 0) + 1 }
+                      : p,
+                  ),
+                );
+              }
+            }}
+            onCommentDeleted={(newCount) => {
+              if (typeof newCount === "number") {
+                setPitches((prev) =>
+                  prev.map((p) => (p._id === pitch._id ? { ...p, commentCount: newCount } : p))
+                );
+              } else {
+                setPitches((prev) =>
+                  prev.map((p) =>
+                    p._id === pitch._id
+                      ? { ...p, commentCount: Math.max(0, (p.commentCount || p.comments || 0) - 1) }
+                      : p,
+                  ),
+                );
+              }
+            }}
+          />
 
-      <ShareModal
-        open={activeModal === "share"}
-        onClose={() => setActiveModal(null)}
-        pitch={pitch}
-      />
+          <ShareModal
+            open={activeModal === "share"}
+            onClose={() => setActiveModal(null)}
+            pitch={pitch}
+          />
 
-      <ReportModal
-        open={activeModal === "report"}
-        onClose={() => setActiveModal(null)}
-        pitch={pitch}
-      />
+          <ReportModal
+            open={activeModal === "report"}
+            onClose={() => setActiveModal(null)}
+            pitch={pitch}
+          />
 
-      <InvestModal
-        open={activeModal === "invest"}
-        onClose={() => setActiveModal(null)}
-        pitch={pitch}
-        onSubmit={() => {
-          setActiveModal(null);
-          toast.success("Interest expressed — chat unlocked");
-          navigate("/app/messages");
-        }}
-      />
+          <InvestModal
+            open={activeModal === "invest"}
+            onClose={() => setActiveModal(null)}
+            pitch={pitch}
+            onSubmit={() => {
+              setActiveModal(null);
+              toast.success("Interest expressed — chat unlocked");
+              navigate("/app/messages");
+            }}
+          />
 
-      <DetailsModal
-        open={activeModal === "details"}
-        onClose={() => setActiveModal(null)}
-        pitch={pitch}
-      />
+          <DetailsModal
+            open={activeModal === "details"}
+            onClose={() => setActiveModal(null)}
+            pitch={pitch}
+          />
+        </>
+      )}
     </FeedShell>
   );
 }

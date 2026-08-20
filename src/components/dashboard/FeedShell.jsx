@@ -22,7 +22,7 @@ export default function FeedShell({ children, mode }) {
       <UploadProgressBar />
 
       <div className="absolute inset-0 md:left-[72px] z-10 bg-black text-white touch-pan-y">
-        <main className="relative w-full h-full overflow-hidden touch-pan-y">
+        <main className="relative w-full h-full overflow-visible touch-pan-y">
           {children}
         </main>
       </div>
