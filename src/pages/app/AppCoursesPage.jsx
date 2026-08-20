@@ -97,63 +97,6 @@ const FALLBACK_COURSES = [
       },
     ],
   },
-  {
-    _id: "demo-4",
-    title: "Investor Relations Pro",
-    description: "Build lasting relationships with VCs, master outreach and term sheet negotiation.",
-    category: "General",
-    level: "advanced",
-    price: 399,
-    status: "published",
-    thumbnailUrl: "https://images.unsplash.com/photo-1573167507387-6b4b98cb7c13?w=800&h=500&fit=crop",
-    previewVideoUrl: "/videos/globalnetwork.mp4",
-    modules: [
-      {
-        title: "Module 1: Warm Introductions",
-        lessons: [
-          { title: "Mapping Your Ideal Investor Profile", videoUrl: "/videos/globalnetwork.mp4", duration: 280, isPreview: true },
-        ],
-      },
-    ],
-  },
-  {
-    _id: "demo-5",
-    title: "Video Pitch Production",
-    description: "Film & edit professional pitch videos on a budget with lighting and audio setups.",
-    category: "Pitching",
-    level: "beginner",
-    price: 149,
-    status: "published",
-    thumbnailUrl: "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=800&h=500&fit=crop",
-    previewVideoUrl: "/videos/investorpov.mp4",
-    modules: [
-      {
-        title: "Module 1: Studio Setup on a Budget",
-        lessons: [
-          { title: "Smartphone Camera Optimization", videoUrl: "/videos/investorpov.mp4", duration: 200, isPreview: true },
-        ],
-      },
-    ],
-  },
-  {
-    _id: "demo-6",
-    title: "Fundraising Strategy Bundle",
-    description: "Complete system from seed to Series A including all masterclass modules.",
-    category: "Financials",
-    level: "all-levels",
-    price: 799,
-    status: "published",
-    thumbnailUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=500&fit=crop",
-    previewVideoUrl: "/mockvideo/pitch1.mp4",
-    modules: [
-      {
-        title: "Module 1: Complete Academy Curriculum",
-        lessons: [
-          { title: "Mastermind Overview & VC Network Access", videoUrl: "/mockvideo/pitch1.mp4", duration: 450, isPreview: true },
-        ],
-      },
-    ],
-  },
 ];
 
 function ModuleDropdown({ module, moduleIndex, activeLesson, onSelectLesson, defaultOpen = true }) {
@@ -208,12 +151,24 @@ function ModuleDropdown({ module, moduleIndex, activeLesson, onSelectLesson, def
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
-                      {les.videoUrl ? (
+                      {les.isLocked ? (
+                        <HiDocumentText className="w-4 h-4 flex-shrink-0 text-red-400" />
+                      ) : les.videoUrl ? (
                         <HiPlay className="w-4 h-4 flex-shrink-0 text-gold" />
                       ) : (
                         <HiDocumentText className="w-4 h-4 flex-shrink-0 text-gray-400" />
                       )}
                       <span className="truncate">{les.title}</span>
+                      {les.isPreview && (
+                        <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold uppercase ml-1">
+                          Free Preview
+                        </span>
+                      )}
+                      {les.isLocked && (
+                        <span className="text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold uppercase ml-1">
+                          Locked
+                        </span>
+                      )}
                     </div>
                     {les.duration > 0 && (
                       <span className="text-[10px] opacity-75 font-mono ml-2">
@@ -234,20 +189,13 @@ function ModuleDropdown({ module, moduleIndex, activeLesson, onSelectLesson, def
 export default function AppCoursesPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const isFounder = user?.role === "founder";
 
-  // Persistent Enrolled Courses State
-  const [enrolledCourseIds, setEnrolledCourseIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem("expglo_enrolled_courses");
-      return saved ? JSON.parse(saved) : ["demo-1"];
-    } catch {
-      return ["demo-1"];
-    }
-  });
+  const isAdmin = user?.role === "admin";
+  const canPurchase = user?.role === "founder";
 
-  const [activeTab, setActiveTab] = useState("enrolled");
-  const [myCourses, setMyCourses] = useState([]);
+  const [activeTab, setActiveTab] = useState(isAdmin ? "admin-courses" : "enrolled");
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [adminCourses, setAdminCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -297,10 +245,25 @@ export default function AppCoursesPage() {
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      if (isFounder) {
-        const res = await courseService.getMyCourses();
+      if (isAdmin) {
+        const res = await courseService.getAdminCourses();
         const data = res?.data?.data || res?.data;
-        setMyCourses(data?.courses || []);
+        setAdminCourses(data?.courses || []);
+      }
+
+      if (canPurchase) {
+        try {
+          const enrollRes = await courseService.getMyEnrolledCourses();
+          const enrollData = enrollRes?.data?.data || enrollRes?.data;
+          const list = (enrollData?.enrollments || []).map((e) => ({
+            ...e.courseId,
+            enrollmentProgress: e.progress,
+            enrollmentId: e._id,
+          }));
+          setEnrolledCourses(list);
+        } catch (e) {
+          console.warn("Could not fetch user enrollments:", e);
+        }
       }
 
       const pubRes = await courseService.getPublishedCourses();
@@ -313,55 +276,146 @@ export default function AppCoursesPage() {
           : FALLBACK_COURSES
       );
     } catch (err) {
-      console.warn("Error fetching courses:", err);
+      console.warn("Error fetching catalog courses:", err);
       setPublishedCourses(FALLBACK_COURSES);
     } finally {
       setLoading(false);
     }
   };
 
+  const [purchasingCourseId, setPurchasingCourseId] = useState(null);
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleEnroll = async (course) => {
     const courseId = course._id || course.id;
-    if (enrolledCourseIds.includes(courseId)) {
+    const isEnrolledAlready = enrolledCourses.some((c) => (c._id || c.id) === courseId);
+
+    if (isEnrolledAlready) {
       toast.info("You are already enrolled in this course!");
       openCoursePlayer(course);
       setPreviewCourseModal(null);
       return;
     }
 
-    const updated = [...enrolledCourseIds, courseId];
-    setEnrolledCourseIds(updated);
+    if (!course._id || course._id.startsWith("demo-")) {
+      toast.info("This is a preview course. Real published course required for Razorpay checkout.");
+      return;
+    }
+
+    setPurchasingCourseId(courseId);
     try {
-      localStorage.setItem("expglo_enrolled_courses", JSON.stringify(updated));
-    } catch (e) {
-      console.warn(e);
-    }
+      // 1. Create Razorpay Order on server
+      const res = await courseService.createPaymentOrder({ courseId });
+      const resData = res.data?.data || res.data;
 
-    // Try sending receipt
-    if (user?.email) {
-      courseService
-        .sendCourseReceipt({
-          email: user.email,
-          name: user.name || "Student",
-          courseTitle: course.title,
-          price: typeof course.price === "number" ? `$${course.price}` : course.price || "Free",
-          paymentMethod: "EXPGLO Account",
-        })
-        .catch(() => {});
-    }
+      // Handle free course (price = 0)
+      if (resData.isFree) {
+        toast.success(`🎉 Free course unlocked! Enrolled in "${course.title}".`);
+        await fetchCourses();
+        setPreviewCourseModal(null);
+        setActiveTab("enrolled");
+        openCoursePlayer(course);
+        setPurchasingCourseId(null);
+        return;
+      }
 
-    toast.success(`🎉 Enrolled in "${course.title}"! Course added to your Learning Dashboard.`);
-    setPreviewCourseModal(null);
-    setActiveTab("enrolled");
-    openCoursePlayer(course);
+      const { order, keyId } = resData;
+
+      // 2. Load Razorpay Checkout SDK
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast.error("Failed to load Razorpay payment SDK. Please check your internet connection.");
+        setPurchasingCourseId(null);
+        return;
+      }
+
+      // 3. Launch Razorpay Standard Checkout Popup
+      const options = {
+        key: keyId,
+        amount: order.amount,
+        currency: order.currency || "INR",
+        name: "Expglo Academy",
+        description: course.title,
+        order_id: order.id,
+        prefill: {
+          name: user?.name || user?.firstName || "",
+          email: user?.email || "",
+        },
+        theme: {
+          color: "#176B4D",
+        },
+        modal: {
+          ondismiss: () => {
+            setPurchasingCourseId(null);
+          },
+        },
+        handler: async function (response) {
+          try {
+            toast.info("Verifying payment with backend...");
+            // 4. Send Razorpay response to server for HMAC signature & REST status verification
+            await courseService.verifyPayment({
+              courseId,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            toast.success(`🎉 Payment verified! Enrolled in "${course.title}".`);
+            await fetchCourses();
+            setPreviewCourseModal(null);
+            setActiveTab("enrolled");
+            openCoursePlayer(course);
+          } catch (verifyErr) {
+            console.error("Payment verification error:", verifyErr);
+            toast.error(
+              verifyErr.response?.data?.message || "Payment verification failed server-side."
+            );
+          } finally {
+            setPurchasingCourseId(null);
+          }
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        setPurchasingCourseId(null);
+        toast.error(response.error?.description || "Payment failed or was declined.");
+      });
+      rzp.open();
+    } catch (err) {
+      console.error("Razorpay order creation error:", err);
+      toast.error(
+        err.response?.data?.message || "Unable to create payment order. Please try again."
+      );
+      setPurchasingCourseId(null);
+    }
   };
 
-  const openCoursePlayer = (course) => {
-    setPlayerCourse(course);
-    // Find first lesson if available
+  const openCoursePlayer = async (course) => {
+    let fullCourse = course;
+    if (course._id && !course._id.startsWith("demo-")) {
+      try {
+        const res = await courseService.getCourseById(course._id);
+        fullCourse = res?.data?.data?.course || res?.data?.course || course;
+      } catch (e) {
+        console.warn("Could not fetch detailed course info:", e);
+      }
+    }
+    setPlayerCourse(fullCourse);
+
     let firstLesson = null;
-    if (course.modules && course.modules.length > 0) {
-      for (const mod of course.modules) {
+    if (fullCourse.modules && fullCourse.modules.length > 0) {
+      for (const mod of fullCourse.modules) {
         if (mod.lessons && mod.lessons.length > 0) {
           firstLesson = mod.lessons[0];
           break;
@@ -369,6 +423,22 @@ export default function AppCoursesPage() {
       }
     }
     setActiveLesson(firstLesson);
+  };
+
+  const handleSelectLessonInPlayer = (lesson) => {
+    if (lesson.isLocked) {
+      toast.error("This lesson is locked. Please purchase the course to access.");
+      return;
+    }
+    setActiveLesson(lesson);
+    if (playerCourse && playerCourse._id && !playerCourse._id.startsWith("demo-") && canPurchase) {
+      courseService
+        .updateCourseProgress(playerCourse._id, {
+          lessonId: lesson.title || lesson._id,
+          completed: true,
+        })
+        .catch(() => {});
+    }
   };
 
   const handleCreateCourse = async (e) => {
@@ -482,11 +552,7 @@ export default function AppCoursesPage() {
     }
   };
 
-  // Filtered Lists
-  const enrolledCoursesList = publishedCourses.filter((c) =>
-    enrolledCourseIds.includes(c._id || c.id)
-  );
-
+  // Filtered Explore List
   const filteredExploreCourses = publishedCourses.filter((c) => {
     const matchesSearch =
       c.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -500,22 +566,28 @@ export default function AppCoursesPage() {
   return (
     <DashboardShell
       title="EXPGLO Academy & Courses"
-      subtitle="Master fundraising, pitching, and startup scaling with video masterclasses."
+      subtitle={
+        isAdmin
+          ? "Admin Portal: Create and manage masterclasses, modules, and video lessons."
+          : "Master fundraising, pitching, and startup scaling with video masterclasses."
+      }
     >
       {/* Header Tabs */}
       <div className="flex items-center justify-between border-b border-gold/15 pb-4 mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-3 overflow-x-auto pb-1">
-          <button
-            onClick={() => setActiveTab("enrolled")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-              activeTab === "enrolled"
-                ? "bg-gold text-[#0F4A2E] shadow-md"
-                : "bg-card-bg/60 text-gray-300 hover:text-white border border-gold/15"
-            }`}
-          >
-            <HiBookOpen className="w-5 h-5" />
-            Enrolled Courses ({enrolledCoursesList.length})
-          </button>
+          {canPurchase && (
+            <button
+              onClick={() => setActiveTab("enrolled")}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                activeTab === "enrolled"
+                  ? "bg-gold text-[#0F4A2E] shadow-md"
+                  : "bg-card-bg/60 text-gray-300 hover:text-white border border-gold/15"
+              }`}
+            >
+              <HiBookOpen className="w-5 h-5" />
+              My Learning ({enrolledCourses.length})
+            </button>
+          )}
 
           <button
             onClick={() => setActiveTab("explore")}
@@ -529,22 +601,22 @@ export default function AppCoursesPage() {
             Explore Catalog ({publishedCourses.length})
           </button>
 
-          {isFounder && (
+          {isAdmin && (
             <button
-              onClick={() => setActiveTab("my-courses")}
+              onClick={() => setActiveTab("admin-courses")}
               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                activeTab === "my-courses"
+                activeTab === "admin-courses"
                   ? "bg-gold text-[#0F4A2E] shadow-md"
                   : "bg-card-bg/60 text-gray-300 hover:text-white border border-gold/15"
               }`}
             >
               <HiAcademicCap className="w-5 h-5" />
-              My Uploaded Courses ({myCourses.length})
+              Admin Course Management ({adminCourses.length})
             </button>
           )}
         </div>
 
-        {isFounder && activeTab === "my-courses" && (
+        {isAdmin && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-bold text-sm rounded-xl shadow-lg hover:from-emerald-500 hover:to-emerald-700 flex items-center gap-2 transition-all"
@@ -555,10 +627,10 @@ export default function AppCoursesPage() {
         )}
       </div>
 
-      {/* ENROLLED COURSES TAB (MY LEARNING) */}
-      {activeTab === "enrolled" && (
+      {/* ENROLLED COURSES TAB (FOUNDER & INVESTOR - MY LEARNING) */}
+      {canPurchase && activeTab === "enrolled" && (
         <div className="space-y-6">
-          {enrolledCoursesList.length === 0 ? (
+          {enrolledCourses.length === 0 ? (
             <div className="bg-card-bg/60 border border-gold/15 rounded-3xl p-10 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-gold/15 flex items-center justify-center mx-auto text-gold">
                 <HiBookOpen className="w-8 h-8" />
@@ -577,7 +649,7 @@ export default function AppCoursesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {enrolledCoursesList.map((course) => (
+              {enrolledCourses.map((course) => (
                 <div
                   key={course._id || course.id}
                   className="bg-card-bg/80 border border-gold/20 rounded-3xl overflow-hidden shadow-lg flex flex-col justify-between hover:border-gold/40 transition-all group"
@@ -619,7 +691,7 @@ export default function AppCoursesPage() {
                       onClick={() => openCoursePlayer(course)}
                       className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5 transition-all"
                     >
-                      <HiPlay className="w-4 h-4 text-gold" /> Start Learning
+                      <HiPlay className="w-4 h-4 text-gold" /> Continue Learning
                     </button>
                   </div>
                 </div>
@@ -629,33 +701,33 @@ export default function AppCoursesPage() {
         </div>
       )}
 
-      {/* MY UPLOADED COURSES TAB (FOUNDER ONLY) */}
-      {isFounder && activeTab === "my-courses" && (
+      {/* ADMIN COURSE MANAGEMENT TAB (ADMIN ONLY) */}
+      {isAdmin && activeTab === "admin-courses" && (
         <div className="space-y-6">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
             </div>
-          ) : myCourses.length === 0 ? (
+          ) : adminCourses.length === 0 ? (
             <div className="bg-card-bg/60 border border-gold/15 rounded-3xl p-10 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-gold/15 flex items-center justify-center mx-auto text-gold">
                 <HiAcademicCap className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-white">No courses uploaded yet</h3>
+              <h3 className="text-xl font-bold text-white">No courses created yet</h3>
               <p className="text-sm text-gray-400 max-w-md mx-auto">
-                Share your founder experience, pitch guides, and startup lessons with our network.
+                Create new startup masterclasses, attach modules, and upload video lessons for founders & investors.
               </p>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="px-6 py-3 bg-gold text-[#0F4A2E] font-bold text-sm rounded-xl shadow-lg hover:bg-[#FFD166] inline-flex items-center gap-2 transition-all"
               >
                 <HiPlus className="w-5 h-5" />
-                Upload Your First Course
+                Create First Course
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myCourses.map((course) => (
+              {adminCourses.map((course) => (
                 <div
                   key={course._id}
                   className="bg-card-bg/80 border border-gold/20 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between"
@@ -729,7 +801,6 @@ export default function AppCoursesPage() {
       {/* EXPLORE COURSES TAB */}
       {activeTab === "explore" && (
         <div className="space-y-6">
-          {/* Filters & Search */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative w-full sm:w-80">
               <HiSearch className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
@@ -759,10 +830,11 @@ export default function AppCoursesPage() {
             </div>
           </div>
 
-          {/* Courses Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExploreCourses.map((course) => {
-              const isAlreadyEnrolled = enrolledCourseIds.includes(course._id || course.id);
+              const isAlreadyEnrolled = enrolledCourses.some(
+                (c) => (c._id || c.id) === (course._id || course.id)
+              );
               return (
                 <div
                   key={course._id || course.id}
@@ -821,7 +893,7 @@ export default function AppCoursesPage() {
                         onClick={() => openCoursePlayer(course)}
                         className="px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-xl shadow-md flex items-center gap-1"
                       >
-                        <HiCheckCircle className="w-4 h-4" /> Start Learning
+                        <HiCheckCircle className="w-4 h-4" /> Continue Learning
                       </button>
                     ) : (
                       <button
@@ -839,225 +911,249 @@ export default function AppCoursesPage() {
         </div>
       )}
 
-      {/* CREATE COURSE MODAL (FOUNDER ONLY) */}
-      <Modal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create & Upload New Course"
-      >
-        <form onSubmit={handleCreateCourse} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">
-              Course Title *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Master the 60-Second Pitch"
-              value={courseForm.title}
-              onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-              className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">
-              Course Description & Curriculum Highlights
-            </label>
-            <textarea
-              rows={4}
-              placeholder="e.g. Master the art of pitching in 60 seconds.&#10;&#10;Key Takeaways:&#10;• How to frame your elevator hook&#10;• Essential traction metrics for VCs&#10;• Closing the round with confidence"
-              value={courseForm.description}
-              onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-              className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold whitespace-pre-line"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">
-              Tip: Supports line breaks and bullet points (•).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+      {/* CREATE COURSE MODAL (ADMIN ONLY) */}
+      {isAdmin && (
+        <Modal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="Create & Upload New Course (Admin)"
+        >
+          <form onSubmit={handleCreateCourse} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-300 mb-1">
-                Category
-              </label>
-              <select
-                value={courseForm.category}
-                onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
-                className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
-              >
-                <option value="General">General</option>
-                <option value="Pitching">Pitching</option>
-                <option value="Fundraising">Fundraising</option>
-                <option value="Financials">Financials</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-300 mb-1">
-                Price ($)
+                Course Title *
               </label>
               <input
-                type="number"
-                min="0"
-                value={courseForm.price}
-                onChange={(e) => setCourseForm({ ...courseForm, price: Number(e.target.value) })}
+                type="text"
+                required
+                placeholder="e.g. Master the 60-Second Pitch"
+                value={courseForm.title}
+                onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
                 className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">
-              Course Thumbnail Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setThumbnailFile(e.target.files[0])}
-              className="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">
-              Upload a cover image (JPEG, PNG, WEBP). Video lessons can be added inside the course after creation.
-            </p>
-          </div>
-
-          <div className="pt-4 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(false)}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submittingCourse}
-              className="px-6 py-2 bg-gold text-[#0F4A2E] rounded-xl text-xs font-bold hover:bg-[#FFD166] disabled:opacity-50"
-            >
-              {submittingCourse ? "Creating..." : "Create Course"}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* ADD LESSON MODAL */}
-      <Modal
-        open={showLessonModal}
-        onClose={() => setShowLessonModal(false)}
-        title={`Add Lesson Video to "${selectedCourseForLesson?.title || ""}"`}
-      >
-        <form onSubmit={handleAddLesson} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">
-              Lesson Title *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Crafting Your Elevator Hook"
-              value={lessonForm.title}
-              onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
-              className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">
-              Module Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Module 1: The 60-Second Hook"
-              value={lessonForm.moduleTitle}
-              onChange={(e) => setLessonForm({ ...lessonForm, moduleTitle: e.target.value })}
-              className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">
-              Lesson Description & Key Notes
-            </label>
-            <textarea
-              rows={2}
-              placeholder="e.g. Key takeaways covered in this lesson video..."
-              value={lessonForm.description}
-              onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
-              className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold whitespace-pre-line"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-300 mb-1">
-                Lesson Video File (MP4/WEBM)
-              </label>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => setLessonVideoFile(e.target.files[0])}
-                className="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
-              />
-            </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-300 mb-1">
-                Video Thumbnail Image (Optional)
+                Course Description & Curriculum Highlights
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setLessonThumbnailFile(e.target.files[0])}
-                className="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
+              <textarea
+                rows={4}
+                placeholder="e.g. Master the art of pitching in 60 seconds."
+                value={courseForm.description}
+                onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold whitespace-pre-line"
               />
             </div>
-          </div>
 
-          {submittingLesson && (
-            <div className="space-y-1.5 pt-2">
-              <div className="flex justify-between text-xs font-bold text-gold">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  Uploading Video & Media to Server...
-                </span>
-                <span>{uploadProgress}%</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Category
+                </label>
+                <select
+                  value={courseForm.category}
+                  onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
+                >
+                  <option value="General">General</option>
+                  <option value="Pitching">Pitching</option>
+                  <option value="Fundraising">Fundraising</option>
+                  <option value="Financials">Financials</option>
+                </select>
               </div>
-              <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden border border-gold/20">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 via-gold to-yellow-400 transition-all duration-300 rounded-full"
-                  style={{ width: `${uploadProgress}%` }}
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Price ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={courseForm.price}
+                  onChange={(e) => setCourseForm({ ...courseForm, price: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
                 />
               </div>
             </div>
-          )}
 
-          <div className="pt-4 flex justify-end gap-3">
-            <button
-              type="button"
-              disabled={submittingLesson}
-              onClick={() => setShowLessonModal(false)}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submittingLesson}
-              className="px-6 py-2 bg-gold text-[#0F4A2E] rounded-xl text-xs font-bold hover:bg-[#FFD166] disabled:opacity-50 flex items-center gap-2"
-            >
-              {submittingLesson ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-[#0F4A2E] border-t-transparent rounded-full animate-spin" />
-                  <span>Uploading ({uploadProgress}%)</span>
-                </>
-              ) : (
-                "Add Lesson Video"
-              )}
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Course Thumbnail Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setThumbnailFile(e.target.files[0])}
+                  className="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Course Preview Video (Intro / Trailer File)
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => setPreviewVideoFile(e.target.files[0])}
+                  className="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingCourse}
+                className="px-6 py-2 bg-gold text-[#0F4A2E] rounded-xl text-xs font-bold hover:bg-[#FFD166] disabled:opacity-50"
+              >
+                {submittingCourse ? "Creating..." : "Create Course"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* ADD LESSON MODAL (ADMIN ONLY) */}
+      {isAdmin && (
+        <Modal
+          open={showLessonModal}
+          onClose={() => setShowLessonModal(false)}
+          title={`Add Lesson Video & Resources to "${selectedCourseForLesson?.title || ""}" (Admin)`}
+        >
+          <form onSubmit={handleAddLesson} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-300 mb-1">
+                Lesson Title *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Crafting Your Elevator Hook"
+                value={lessonForm.title}
+                onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
+                className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-300 mb-1">
+                Module Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Module 1: The 60-Second Hook"
+                value={lessonForm.moduleTitle}
+                onChange={(e) => setLessonForm({ ...lessonForm, moduleTitle: e.target.value })}
+                className="w-full px-3 py-2 bg-card-bg border border-gold/20 rounded-xl text-xs text-white focus:outline-none focus:border-gold"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="isPreview"
+                checked={lessonForm.isPreview}
+                onChange={(e) => setLessonForm({ ...lessonForm, isPreview: e.target.checked })}
+                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gold/30 bg-card-bg"
+              />
+              <label htmlFor="isPreview" className="text-xs text-gray-300 font-semibold cursor-pointer">
+                Allow as Free Preview (accessible without purchase)
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Lesson Video File (MP4/WEBM) *
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => setLessonVideoFile(e.target.files[0])}
+                  className="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Video Thumbnail (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setLessonThumbnailFile(e.target.files[0])}
+                  className="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  Resource File (PDF/DOC)
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,image/*"
+                  onChange={(e) => setLessonDocFile(e.target.files[0])}
+                  className="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold/15 file:text-gold hover:file:bg-gold/25 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {submittingLesson && (
+              <div className="space-y-1.5 pt-2">
+                <div className="flex justify-between text-xs font-bold text-gold">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    Uploading Video & Media to Cloud Storage...
+                  </span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden border border-gold/20">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 via-gold to-yellow-400 transition-all duration-300 rounded-full"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={submittingLesson}
+                onClick={() => setShowLessonModal(false)}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingLesson}
+                className="px-6 py-2 bg-gold text-[#0F4A2E] rounded-xl text-xs font-bold hover:bg-[#FFD166] disabled:opacity-50 flex items-center gap-2"
+              >
+                {submittingLesson ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-[#0F4A2E] border-t-transparent rounded-full animate-spin" />
+                    <span>Uploading ({uploadProgress}%)</span>
+                  </>
+                ) : (
+                  "Add Lesson Video"
+                )}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* PREVIEW COURSE MODAL (BEFORE ENROLLMENT) */}
       <Modal
@@ -1093,7 +1189,6 @@ export default function AppCoursesPage() {
               {previewCourseModal.description || previewCourseModal.subtitle}
             </p>
 
-            {/* Modules Dropdown Syllabus */}
             {previewCourseModal.modules && previewCourseModal.modules.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-gold/15">
                 <p className="text-xs font-bold text-gray-300 mb-1">Curriculum & Modules:</p>
@@ -1114,18 +1209,23 @@ export default function AppCoursesPage() {
               <span className="text-lg font-bold text-gold">
                 Price: {typeof previewCourseModal.price === "number" ? `$${previewCourseModal.price}` : previewCourseModal.price || "Free"}
               </span>
-              <button
-                onClick={() => handleEnroll(previewCourseModal)}
-                className="px-6 py-2 bg-gold text-[#0F4A2E] font-bold text-xs rounded-xl shadow-md hover:bg-[#FFD166] transition-all"
-              >
-                Enroll Now
-              </button>
+              {canPurchase && (
+                <button
+                  disabled={purchasingCourseId === (previewCourseModal._id || previewCourseModal.id)}
+                  onClick={() => handleEnroll(previewCourseModal)}
+                  className="px-6 py-2 bg-gold text-[#0F4A2E] font-bold text-xs rounded-xl shadow-md hover:bg-[#FFD166] transition-all disabled:opacity-50"
+                >
+                  {purchasingCourseId === (previewCourseModal._id || previewCourseModal.id)
+                    ? "Opening Razorpay..."
+                    : "Purchase & Enroll Now"}
+                </button>
+              )}
             </div>
           </div>
         )}
       </Modal>
 
-      {/* ACTIVE COURSE VIDEO PLAYER MODAL (FOR ENROLLED COURSES) */}
+      {/* ACTIVE COURSE VIDEO PLAYER MODAL (FOR ENROLLED COURSES / ADMIN PREVIEW) */}
       <Modal
         open={!!playerCourse}
         onClose={() => setPlayerCourse(null)}
@@ -1133,7 +1233,6 @@ export default function AppCoursesPage() {
       >
         {playerCourse && (
           <div className="space-y-4">
-            {/* Video Player or Thumbnail Image */}
             <div className="relative rounded-2xl overflow-hidden bg-black aspect-video border border-gold/20 shadow-2xl">
               {(activeLesson?.videoUrl || playerCourse.previewVideoUrl || playerCourse.videoUrl) ? (
                 <video
@@ -1145,20 +1244,20 @@ export default function AppCoursesPage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <img
-                  src={
-                    activeLesson?.thumbnailUrl ||
-                    playerCourse.thumbnailUrl ||
-                    playerCourse.thumbnail ||
-                    "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=500&fit=crop"
-                  }
-                  alt={activeLesson?.title || playerCourse.title}
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full flex flex-col items-center justify-center bg-black/80 text-gray-400 p-6 text-center">
+                  <HiDocumentText className="w-12 h-12 text-gold mb-2" />
+                  <p className="text-sm font-bold text-white">
+                    {activeLesson?.isLocked ? "Lesson Locked" : "Media Resource"}
+                  </p>
+                  <p className="text-xs text-gray-400 max-w-sm mt-1">
+                    {activeLesson?.isLocked
+                      ? "Purchase this course to unlock full video access."
+                      : activeLesson?.title || "No video file attached for this lesson."}
+                  </p>
+                </div>
               )}
             </div>
 
-            {/* Now Playing Title */}
             <div className="p-3 bg-gold/10 border border-gold/20 rounded-xl flex items-center justify-between">
               <div>
                 <p className="text-[10px] text-gold font-bold uppercase tracking-wider">Now Playing</p>
@@ -1166,22 +1265,26 @@ export default function AppCoursesPage() {
                   {activeLesson?.title || playerCourse.title}
                 </h4>
               </div>
-              <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 font-bold text-[10px] rounded-full border border-emerald-500/30">
-                ✓ Unlocked
+              <span
+                className={`px-2.5 py-1 font-bold text-[10px] rounded-full border ${
+                  activeLesson?.isLocked
+                    ? "bg-red-500/20 text-red-400 border-red-500/30"
+                    : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                }`}
+              >
+                {activeLesson?.isLocked ? "🔒 Locked" : "✓ Unlocked"}
               </span>
             </div>
 
-            {/* Lesson Description */}
             {activeLesson?.description && (
               <div className="p-3 bg-black/40 border border-gold/15 rounded-xl">
-                <p className="text-[10px] text-gold font-bold uppercase tracking-wider mb-1">Lesson Description</p>
+                <p className="text-[10px] text-gold font-bold uppercase tracking-wider mb-1">Lesson Notes</p>
                 <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">
                   {activeLesson.description}
                 </p>
               </div>
             )}
 
-            {/* Lesson Modules Dropdown Playlist */}
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               <p className="text-xs font-bold text-gray-300">Course Syllabus & Lessons:</p>
               {playerCourse.modules?.map((mod, mIdx) => (
@@ -1190,7 +1293,7 @@ export default function AppCoursesPage() {
                   module={mod}
                   moduleIndex={mIdx}
                   activeLesson={activeLesson}
-                  onSelectLesson={(les) => setActiveLesson(les)}
+                  onSelectLesson={handleSelectLessonInPlayer}
                   defaultOpen={mIdx === 0}
                 />
               ))}
