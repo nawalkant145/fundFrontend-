@@ -226,46 +226,91 @@ export function CallProvider({ children }) {
   // ─── Outgoing call ──────────────────────────
   const startCall = useCallback(
     async ({ receiverId, name, avatar, type = "meeting" }) => {
+      console.log("CALL SOCKET STATUS", {
+        connected: socket?.connected,
+        id: socket?.id,
+      });
+      console.log("STARTING CALL", {
+        receiverId,
+        socketConnected: socket?.connected,
+      });
+
       if (!receiverId) {
         toast?.error("Recipient not found. Select a user first.");
-        return;
-      }
-      if (!socket) {
-        toast?.error("Connection not ready. Try again.");
         return;
       }
       if (status !== "idle") {
         toast?.error("You're already in a meeting session");
         return;
       }
-      try {
-        await getMedia(type);
-      } catch {
-        toast?.error("Camera/microphone permission denied");
-        cleanup();
-        return;
-      }
-      setCallInfo({
-        peerId: receiverId,
-        peerName: name,
-        peerAvatar: avatar,
-        type,
-        isCaller: true,
-      });
-      setStatus("calling");
-      startRingtone();
 
-      socket.emit("call_initiate", { receiverId, type, callType: type }, (ack) => {
-        if (!ack?.ok) {
-          toast?.error(ack?.error || "Could not start meeting");
+      if (socket && socket.connected) {
+        try {
+          await getMedia(type);
+        } catch {
+          toast?.error("Camera/microphone permission denied");
           cleanup();
           return;
         }
-        iceServersRef.current = ack.iceServers?.length
-          ? ack.iceServers
-          : FALLBACK_ICE;
-        setCallInfo((prev) => ({ ...prev, callId: ack.callId }));
-      });
+        setCallInfo({
+          peerId: receiverId,
+          peerName: name,
+          peerAvatar: avatar,
+          type,
+          isCaller: true,
+        });
+        setStatus("calling");
+        startRingtone();
+
+        socket.emit("call_initiate", { receiverId, type, callType: type }, (ack) => {
+          console.log("CALL ACK", ack);
+          if (!ack?.ok) {
+            const errMsg = ack?.error || "Could not start meeting";
+            console.error("Backend rejected call initiation:", errMsg);
+            toast?.error(errMsg);
+            cleanup();
+            return;
+          }
+          iceServersRef.current = ack.iceServers?.length
+            ? ack.iceServers
+            : FALLBACK_ICE;
+          setCallInfo((prev) => ({ ...prev, callId: ack.callId }));
+        });
+      } else {
+        // Socket not connected — try REST fallback
+        console.warn("🔌 Socket not connected, attempting REST fallback for meeting initiation...");
+        try {
+          const response = await callService.initiate({ receiverId, callType: type, type });
+          const data = response?.data?.data || response?.data || response;
+          const callDoc = data?.call;
+          const iceServers = data?.iceServers;
+
+          if (!callDoc?._id) {
+            throw new Error(data?.message || "Failed to start meeting");
+          }
+
+          await getMedia(type);
+          iceServersRef.current = iceServers?.length ? iceServers : FALLBACK_ICE;
+          setCallInfo({
+            callId: callDoc._id,
+            peerId: receiverId,
+            peerName: name,
+            peerAvatar: avatar,
+            type,
+            isCaller: true,
+          });
+          setStatus("calling");
+          startRingtone();
+        } catch (apiErr) {
+          const errMsg =
+            apiErr?.response?.data?.message ||
+            apiErr?.message ||
+            "Connection not ready. Try again.";
+          console.error("Call initiation failed via REST fallback:", apiErr);
+          toast?.error(errMsg);
+          cleanup();
+        }
+      }
     },
     [socket, status, toast, cleanup],
   );
