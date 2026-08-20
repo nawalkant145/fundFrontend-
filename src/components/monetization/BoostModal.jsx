@@ -33,22 +33,14 @@ export default function BoostModal({ open, onClose, pitch, onBoosted }) {
     }
     setSubmitting(true);
     try {
-      // 1. Create the boost order on the server
+      // 1. Create the boost order on the server (boost remains pending)
       const res = await boostService.createOrder({
         videoId: pitch._id,
         tier: selected,
       });
       const data = res?.data?.data || {};
 
-      // 2. Dev fallback — backend activated it without a gateway
-      if (data.activated) {
-        toast?.success(`${tier.name} activated for ${tier.duration}`);
-        onBoosted?.(data.boost);
-        onClose();
-        return;
-      }
-
-      // 3. Open the real Razorpay checkout
+      // 2. Open Razorpay Checkout modal
       const payment = await openRazorpayCheckout({
         keyId: data.keyId,
         order: data.order,
@@ -61,8 +53,10 @@ export default function BoostModal({ open, onClose, pitch, onBoosted }) {
         },
       });
 
-      // 4. Verify the signature server-side, then mark active
+      // 3. Verify signature server-side; backend marks boost active ONLY on success
       await boostService.verifyPayment(data.boost._id, payment);
+
+      // 4. Show success notification ONLY after payment verification succeeds
       toast?.success(`${tier.name} activated for ${tier.duration}`);
       onBoosted?.(data.boost);
       onClose();
