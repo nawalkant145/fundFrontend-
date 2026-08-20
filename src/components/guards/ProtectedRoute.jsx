@@ -5,8 +5,9 @@ import PageLoader from "../ui/PageLoader";
 /**
  * Route guard — redirects to /login if not authenticated.
  * Optional `roles` prop restricts to specific roles.
+ * Optional `allowSignupSession` allows unauthenticated access if a signup session is active.
  */
-export default function ProtectedRoute({ children, roles }) {
+export default function ProtectedRoute({ children, roles, allowSignupSession }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -14,6 +15,18 @@ export default function ProtectedRoute({ children, roles }) {
   if (loading) {
     return <PageLoader text="Loading your workspace…" />;
   }
+
+  /* === PRE-ACCOUNT SIGNUP SESSION BYPASS (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
+  if (!user && allowSignupSession) {
+    const params = new URLSearchParams(location.search);
+    const signupSessionId =
+      params.get("session") || sessionStorage.getItem("signupSessionId");
+    if (signupSessionId) {
+      return children;
+    }
+  }
+  ================================================================================================================ */
+
 
   // Not logged in → redirect to login, preserve intended destination
   if (!user) {
@@ -27,3 +40,4 @@ export default function ProtectedRoute({ children, roles }) {
 
   return children;
 }
+

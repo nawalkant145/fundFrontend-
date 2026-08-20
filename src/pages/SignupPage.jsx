@@ -29,6 +29,8 @@ import Select from "../components/auth/Select";
 import Stepper from "../components/auth/Stepper";
 import { setAuth } from "../lib/auth";
 import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
+import courseService from "../services/courseService";
 import {
   INDUSTRIES,
   FUNDING_STAGES,
@@ -37,11 +39,14 @@ import {
   COUNTRIES,
 } from "../constants/options";
 
-const STEPS = ["Role", "Account", "Profile"];
+const STEPS = ["Role", "Account", "Profile", "Identity Verification"];
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { register, refreshUser } = useAuth();
+
+
   const [step, setStep] = useState(0);
   const [userType, setUserType] = useState("");
   const [error, setError] = useState("");
@@ -197,11 +202,6 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Step 1: Send OTP to verify email (account is NOT created yet)
-      const res = await authService.sendPreRegisterOtp(data.email);
-      const devOtp = res?.data?.data?.devOtp || null;
-      setOtpSentEmail(data.email);
-
       // Convert the selected investment-range key → { min, max } for the API
       const rangeOpt = INVESTMENT_RANGES.find(
         (r) => r.value === data.investmentRange,
@@ -212,56 +212,77 @@ export default function SignupPage() {
 
       const isFounder = userType === "founder";
 
-      // Navigate to verify page with all form data so we can register after OTP
-      navigate("/verify", {
-        state: {
-          email: data.email,
-          phone: data.phone,
-          devOtp,
-          registerData: {
-            // Common
-            name: data.fullName,
-            username: data.username,
-            email: data.email,
-            password: data.password,
-            role: userType,
-            phone: data.phone || undefined,
-            country: data.country || undefined,
-            linkedIn: data.linkedIn || undefined,
-            // Founder-only
-            ...(isFounder
-              ? {
-                  companyName: data.companyName || undefined,
-                  industry: data.industry || undefined,
-                  fundingStage: data.fundingStage || undefined,
-                  website: data.website || undefined,
-                }
-              : {
-                  // Investor-only
-                  investorType: data.investorType || undefined,
-                  investmentRange,
-                  investmentThesis: data.investmentThesis || undefined,
-                  preferredIndustries: data.preferredIndustries?.length
-                    ? data.preferredIndustries
-                    : undefined,
-                  preferredStages: data.preferredStages?.length
-                    ? data.preferredStages
-                    : undefined,
-                }),
-          },
-        },
-      });
+      const signupPayload = {
+        // Common
+        name: data.fullName,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        role: userType,
+        phone: data.phone || undefined,
+        country: data.country || undefined,
+        linkedIn: data.linkedIn || undefined,
+        // Founder-only
+        ...(isFounder
+          ? {
+              companyName: data.companyName || undefined,
+              industry: data.industry || undefined,
+              fundingStage: data.fundingStage || undefined,
+              website: data.website || undefined,
+            }
+          : {
+              // Investor-only
+              investorType: data.investorType || undefined,
+              investmentRange,
+              investmentThesis: data.investmentThesis || undefined,
+              preferredIndustries: data.preferredIndustries?.length
+                ? data.preferredIndustries
+                : undefined,
+              preferredStages: data.preferredStages?.length
+                ? data.preferredStages
+                : undefined,
+            }),
+      };
+
+      /* === PRE-ACCOUNT IDENTITY VERIFICATION FLOW (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
+      // Step 1: Create temporary signup session in Redis (no User account created yet)
+      const res = await authService.initiateSignup(signupPayload);
+      const { signupSessionId } = res?.data?.data || res?.data || {};
+      if (!signupSessionId) throw new Error("Failed to create signup session. Please try again.");
+      sessionStorage.setItem("signupSessionId", signupSessionId);
+      navigate(`/kyc?session=${signupSessionId}`);
+      =================================================================================================================== */
+
+      // ACTIVE FLOW: Create account directly, set session, then claim pending purchase if any
+      const resData = await register(signupPayload);
+      const userRole = resData?.user?.role || userType;
+
+      const pendingClaimToken = sessionStorage.getItem("expglo_pending_purchase");
+      if (pendingClaimToken && ["founder", "investor"].includes(userRole)) {
+        try {
+          await courseService.claimPurchaseToken({ claimToken: pendingClaimToken });
+          sessionStorage.removeItem("expglo_pending_purchase");
+          navigate("/app/courses");
+          return;
+        } catch (claimErr) {
+          console.warn("Could not claim pending purchase on signup:", claimErr);
+        }
+      }
+
+      navigate("/kyc");
     } catch (err) {
       console.error("Signup error:", err);
       const msg =
         err.response?.data?.message ||
         err.message ||
-        "Failed to send verification email. Please try again.";
+        "Failed to create account. Please try again.";
       setError(msg);
     } finally {
       setLoading(false);
     }
   };
+
+
 
   return (
     <AuthShell maxWidth="max-w-3xl">
@@ -434,11 +455,6 @@ export default function SignupPage() {
               {phoneStatus === "available" && phoneValid && (
                 <p className="text-xs text-emerald-600 font-semibold mt-1.5">
                   Phone number available ✓
-                </p>
-              )}
-              {phoneStatus === "idle" && !data.phone && (
-                <p className="text-xs text-[#0A1F14]/55 mt-1.5">
-                  We'll send a verification code to this number.
                 </p>
               )}
             </div>
@@ -666,9 +682,11 @@ export default function SignupPage() {
             <div className="flex items-center justify-between gap-3 pt-2">
               <BackButton onClick={() => setStep(1)} />
               <NextButton type="submit" disabled={!profileStepValid || loading}>
-                {loading ? "Sending OTP…" : "Create account"}
+                {loading ? "Creating account…" : "Create account"}
               </NextButton>
             </div>
+
+
           </motion.form>
         )}
       </AnimatePresence>

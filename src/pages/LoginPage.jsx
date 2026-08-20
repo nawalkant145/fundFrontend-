@@ -1,14 +1,13 @@
-
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  HiUser,
+  HiAtSymbol,
   HiLockClosed,
-  HiTrendingUp,
   HiArrowRight,
+  HiTrendingUp,
   HiCheckCircle,
 } from "react-icons/hi";
-import { useState, useEffect } from "react";
 import { IoRocketSharp } from "react-icons/io5";
 import { FcGoogle } from "react-icons/fc";
 import { FaLinkedin } from "react-icons/fa";
@@ -16,32 +15,30 @@ import { FaLinkedin } from "react-icons/fa";
 import AuthShell from "../components/auth/AuthShell";
 import { FormField, Checkbox } from "../components/auth/FormField";
 import { useAuth } from "../context/AuthContext";
+import courseService from "../services/courseService";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+
+  const from = location.state?.from?.pathname || "/app";
+
   const [userType, setUserType] = useState("");
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
-    remember: true,
+    remember: false,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-    useEffect(() => {
-    const preSelectedRole = location.state?.role;
-    if (preSelectedRole && (preSelectedRole === "founder" || preSelectedRole === "investor")) {
-      setUserType(preSelectedRole);
-    }
-  }, [location.state]);
-
-  // Redirect to the page they were trying to visit before being redirected to login
-  const from = location.state?.from?.pathname || "/app";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.identifier || !formData.password) return;
+    if (!userType) {
+      setError("Please select whether you are a Founder or Investor.");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -53,6 +50,20 @@ export default function LoginPage() {
         role: userType,
       });
       const role = data.user?.role || userType;
+
+      // Check for pending guest course purchase claim
+      const pendingClaimToken = sessionStorage.getItem("expglo_pending_purchase");
+      if (pendingClaimToken && ["founder", "investor"].includes(role)) {
+        try {
+          await courseService.claimPurchaseToken({ claimToken: pendingClaimToken });
+          sessionStorage.removeItem("expglo_pending_purchase");
+          navigate("/app/courses", { replace: true });
+          return;
+        } catch (claimErr) {
+          console.warn("Could not claim pending purchase on login:", claimErr);
+        }
+      }
+
       navigate(role === "admin" ? "/admin" : from, { replace: true });
     } catch (err) {
       const msg =
@@ -69,11 +80,17 @@ export default function LoginPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: value }));
   };
 
+  const handleSocialLogin = (provider) => {
+    const backendUrl =
+      import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+    window.location.href = `${backendUrl}/auth/${provider}`;
+  };
+
   return (
     <AuthShell maxWidth="max-w-3xl">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 leading-tight tracking-tight">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-2 leading-tight tracking-tight">
           Welcome back to{" "}
           <span className="bg-gradient-to-r from-[#1B5E3F] via-[#2D7A4F] to-[#1B5E3F] bg-clip-text text-transparent">
             EXPGLO FUND
@@ -84,119 +101,153 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {!userType ? (
-        <div>
-          <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-3">
-            CHOOSE YOUR PATH
-          </p>
-          <h2 className="text-xl sm:text-2xl font-black text-center mb-6 text-[#0A1F14]">
-            I am a…
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
-            <RoleCard
-              role="founder"
-              title="Founder"
-              icon={<IoRocketSharp className="w-7 h-7 text-[#0F4A2E]" />}
-              description="Pitch your startup. Connect with investors. Close your round."
-              accent="gold"
-              onClick={() => setUserType("founder")}
-            />
-            <RoleCard
-              role="investor"
-              title="Investor"
-             icon={<HiTrendingUp className="w-7 h-7 text-[#0F4A2E]" />}
-              description="Discover promising startups. Back the next big thing."
-              accent="green"
-              onClick={() => setUserType("investor")}
-            />
-          </div>
-        </div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <RoleBadge userType={userType} onChange={() => setUserType("")} />
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField
-              label="Username, email, or phone"
-              name="identifier"
-              icon={HiUser}
-              value={formData.identifier}
-              onChange={handleChange}
-              placeholder="john_startup, you@example.com, or +91…"
-              autoComplete="username"
-              required
-            />
-
-            <FormField
-              label="Password"
-              name="password"
-              icon={HiLockClosed}
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-            />
-
-            <div className="flex items-center justify-between pt-1">
-              <Checkbox
-                name="remember"
-                checked={formData.remember}
-                onChange={handleChange}
-              >
-                Remember me
-              </Checkbox>
-              <Link
-                to="/forgot-password"
-                className="text-sm text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors"
-              >
-                Forgot password?
-              </Link>
+      <AnimatePresence mode="wait">
+        {!userType ? (
+          <motion.div
+            key="role-select"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.25 }}
+          >
+            <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-3">
+              CHOOSE YOUR PATH
+            </p>
+            <h2 className="text-xl sm:text-2xl font-black text-center mb-6 text-[#0A1F14]">
+              I am a…
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
+              <RoleCard
+                title="Founder"
+                icon={<IoRocketSharp className="w-7 h-7 text-[#0F4A2E]" />}
+                description="Pitch your startup. Connect with investors. Close your round."
+                accent="gold"
+                // bullets={[
+                //   "Access fundraising dashboard",
+                //   "Pitch deck & deal room tools",
+                //   "Connect with verified investors",
+                // ]}
+                onClick={() => setUserType("founder")}
+              />
+              <RoleCard
+                title="Investor"
+                icon={<HiTrendingUp className="w-7 h-7 text-[#0F4A2E]" />}
+                description="Discover promising startups. Back the next big thing."
+                accent="green"
+                // bullets={[
+                //   "Browse startup deal flow",
+                //   "Direct founder messaging",
+                //   "Portfolio tracking & analytics",
+                // ]}
+                onClick={() => setUserType("investor")}
+              />
             </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="login-form"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25 }}
+          >
+            <RoleBadge userType={userType} onChange={() => setUserType("")} />
 
             {error && (
-              <p className="text-red-500 text-sm font-medium text-center bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-600 text-sm font-semibold text-center">
                 {error}
-              </p>
+              </div>
             )}
 
-            <motion.button
-              type="submit"
-              disabled={loading}
-              className={`w-full mt-2 py-3.5 rounded-full font-bold text-base shadow-xl transition-all bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-[#1B5E3F]/30 inline-flex items-center justify-center gap-2 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
-              whileHover={loading ? {} : { y: -2 }}
-              whileTap={loading ? {} : { scale: 0.99 }}
-            >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  Log in
-                  <HiArrowRight />
-                </>
-              )}
-            </motion.button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <FormField
+                label="Email or username"
+                name="identifier"
+                icon={HiAtSymbol}
+                type="text"
+                value={formData.identifier}
+                onChange={handleChange}
+                placeholder="you@company.com or username"
+                autoComplete="username"
+                required
+              />
 
-          <Divider>Or continue with</Divider>
+              <FormField
+                label="Password"
+                name="password"
+                icon={HiLockClosed}
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+              />
 
-          <div className="grid grid-cols-2 gap-3">
-            <SocialButton icon={<FcGoogle className="w-5 h-5" />}>
-              Google
-            </SocialButton>
-            <SocialButton
-              icon={<FaLinkedin className="w-5 h-5 text-[#0A66C2]" />}
-            >
-              LinkedIn
-            </SocialButton>
-          </div>
-        </motion.div>
-      )}
+              <div className="flex items-center justify-between pt-1 pb-1 flex-wrap gap-2">
+                <Checkbox
+                  name="remember"
+                  checked={formData.remember}
+                  onChange={handleChange}
+                >
+                  Remember me
+                </Checkbox>
+
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-bold text-[#1B5E3F] hover:text-[#0F4A2E] transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-4 py-3.5 px-6 bg-gradient-to-r from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? (
+                  "Logging in..."
+                ) : (
+                  <>
+                    Log In <HiArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Social Login Divider & Buttons */}
+            {/* <div className="relative my-6 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#1B5E3F]/15" />
+              </div>
+              <div className="relative inline-block px-3 bg-white text-xs font-bold uppercase tracking-wider text-[#0A1F14]/50">
+                Or continue with
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleSocialLogin("google")}
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white border border-[#1B5E3F]/20 hover:border-[#1B5E3F]/50 hover:bg-[#FAFAF7] rounded-xl text-sm font-bold text-[#0A1F14] shadow-sm transition-all cursor-pointer"
+              >
+                <FcGoogle className="w-5 h-5 flex-shrink-0" />
+                <span>Google</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSocialLogin("linkedin")}
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white border border-[#1B5E3F]/20 hover:border-[#1B5E3F]/50 hover:bg-[#FAFAF7] rounded-xl text-sm font-bold text-[#0A1F14] shadow-sm transition-all cursor-pointer"
+              >
+                <FaLinkedin className="w-5 h-5 text-[#0A66C2] flex-shrink-0" />
+                <span>LinkedIn</span>
+              </button>
+            </div> */}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="text-center mt-7 pt-6 border-t border-[#1B5E3F]/10">
         <p className="text-[#0A1F14]/65 text-sm sm:text-base">
@@ -214,9 +265,7 @@ export default function LoginPage() {
   );
 }
 
-// ─── Sub-components ──────────────────────────
-
-function RoleCard({ title, icon, description, accent, onClick }) {
+function RoleCard({ title, icon, description, bullets, accent, onClick }) {
   const isGold = accent === "gold";
   return (
     <motion.button
@@ -231,13 +280,7 @@ function RoleCard({ title, icon, description, accent, onClick }) {
       }`}
     >
       <div className="flex items-center justify-between mb-4">
-        <div
-          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${
-            isGold
-              ? "bg-[#F5B942] shadow-[#F5B942]/35"
-              : "bg-[#F5B942] shadow-[#F5B942]/35"
-          }`}
-        >
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md bg-[#F5B942] shadow-[#F5B942]/35">
           {icon}
         </div>
         <span
@@ -258,12 +301,31 @@ function RoleCard({ title, icon, description, accent, onClick }) {
         {title}
       </h3>
       <p
-        className={`text-sm mb-3 leading-relaxed ${
+        className={`text-sm mb-4 leading-relaxed ${
           isGold ? "text-[#0A1F14]/75" : "text-white/80"
         }`}
       >
         {description}
       </p>
+      {bullets && (
+        <ul className="space-y-1.5 mb-3">
+          {bullets.map((b) => (
+            <li
+              key={b}
+              className={`flex items-center gap-2 text-sm ${
+                isGold ? "text-[#0A1F14]/80" : "text-white/85"
+              }`}
+            >
+              <HiCheckCircle
+                className={`w-4 h-4 flex-shrink-0 ${
+                  isGold ? "text-[#1B5E3F]" : "text-[#F5B942]"
+                }`}
+              />
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       <div
         className={`mt-3 font-bold flex items-center gap-1.5 text-sm ${
           isGold ? "text-[#0F4A2E]" : "text-[#F5B942]"
@@ -293,46 +355,16 @@ function RoleBadge({ userType, onChange }) {
           <HiTrendingUp className="w-4 h-4 text-[#1B5E3F]" />
         )}
         <span className="font-bold text-xs uppercase tracking-wider">
-          {isFounder ? "Founder" : "Investor"}
+           {isFounder ? "Founder" : "Investor"}
         </span>
       </div>
       <button
         type="button"
         onClick={onChange}
-        className="text-xs text-[#0A1F14]/55 hover:text-[#1B5E3F] transition-colors underline font-semibold"
+        className="text-xs font-bold text-[#1B5E3F] hover:text-[#0F4A2E] hover:underline transition-colors cursor-pointer"
       >
         Change
       </button>
     </div>
-  );
-}
-
-function Divider({ children }) {
-  return (
-    <div className="relative my-6">
-      <div className="absolute inset-0 flex items-center">
-        <div className="w-full border-t border-[#1B5E3F]/15" />
-      </div>
-      <div className="relative flex justify-center text-sm">
-        <span className="px-4 bg-white text-[#0A1F14]/55 font-semibold">
-          {children}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function SocialButton({ icon, children, onClick }) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.98 }}
-      className="py-3 px-4 bg-white border border-[#1B5E3F]/15 rounded-full hover:border-[#1B5E3F]/40 hover:shadow-md transition-all font-bold text-sm flex items-center justify-center gap-2 text-[#0A1F14]"
-    >
-      {icon}
-      <span>{children}</span>
-    </motion.button>
   );
 }
