@@ -325,7 +325,7 @@ export default function PitchCard({ pitch }) {
             {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
           </span>
         </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gold/10 text-xs text-gray-500">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gold/10 text-xs text-gray-500 gap-1.5 min-w-0">
           <Stat icon={HiEye} value={pitch.views || 0} />
           <Stat
             icon={HiHeart}
@@ -349,16 +349,27 @@ export default function PitchCard({ pitch }) {
   );
 }
 
+function formatViewsCount(num) {
+  const val = Number(num) || 0;
+  if (val < 1000) return `${val}`;
+  if (val < 1000000) {
+    const k = val / 1000;
+    return k % 1 === 0 ? `${k}K` : `${Number(k.toFixed(1))}K`;
+  }
+  const m = val / 1000000;
+  return m % 1 === 0 ? `${m}M` : `${Number(m.toFixed(1))}M`;
+}
+
 function Stat({ icon: Icon, value, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1 transition-colors ${
+      className={`flex items-center gap-1 min-w-0 transition-colors ${
         active ? "text-gold" : "hover:text-[#0A1F14]"
       }`}
     >
-      <Icon className="w-3.5 h-3.5" />
-      {value > 999 ? `${(value / 1000).toFixed(1)}k` : value}
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{formatViewsCount(value)}</span>
     </button>
   );
 }
