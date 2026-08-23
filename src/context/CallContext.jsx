@@ -124,22 +124,35 @@ export function CallProvider({ children }) {
 
   // ─── Media ──────────────────────────────────
   const getMedia = async (type) => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: type === "audio" ? false : { facingMode: "user" },
-    });
-    localStreamRef.current = stream;
-    setLocalStream(stream);
-    return stream;
+    try {
+      console.log("🎥 Getting user media for type:", type);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type === "audio" ? false : { facingMode: "user" },
+      });
+      console.log("🎥 Local media stream acquired:", {
+        streamId: stream.id,
+        tracks: stream.getTracks().map((t) => `${t.kind}:${t.label}:${t.readyState}`),
+      });
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      return stream;
+    } catch (err) {
+      console.error("❌ getUserMedia failed:", err);
+      throw err;
+    }
   };
 
   // ─── Peer connection ────────────────────────
   const createPeer = (peerId) => {
+    console.log("🌐 Creating RTCPeerConnection for peerId:", peerId, "with ICE servers:", iceServersRef.current);
     if (pcRef.current) {
       try {
+        console.log("Closing existing RTCPeerConnection before creating new one");
         pcRef.current.ontrack = null;
         pcRef.current.onicecandidate = null;
         pcRef.current.onconnectionstatechange = null;
+        pcRef.current.oniceconnectionstatechange = null;
         pcRef.current.close();
       } catch (err) {
         console.error("Error closing previous peer connection:", err);
@@ -151,6 +164,7 @@ export function CallProvider({ children }) {
 
     pc.onicecandidate = (e) => {
       if (e.candidate && socket) {
+        console.log("🧊 Sending ICE candidate to peerId:", peerId, e.candidate.candidate);
         socket.emit("ice_candidate", {
           targetId: peerId,
           candidate: e.candidate,
@@ -159,27 +173,68 @@ export function CallProvider({ children }) {
     };
 
     pc.ontrack = (e) => {
+      console.log("📹 ONTRACK EVENT FIRED:", {
+        streamsCount: e.streams?.length,
+        streamId: e.streams?.[0]?.id,
+        trackKind: e.track?.kind,
+        trackId: e.track?.id,
+        trackReadyState: e.track?.readyState,
+        trackEnabled: e.track?.enabled,
+      });
+
+      let streamToUse = null;
       if (e.streams && e.streams[0]) {
-        setRemoteStream(e.streams[0]);
+        streamToUse = e.streams[0];
+      } else if (e.track) {
+        streamToUse = new MediaStream([e.track]);
+      }
+
+      if (streamToUse) {
+        console.log("✅ Setting remoteStream state:", {
+          id: streamToUse.id,
+          videoTracks: streamToUse.getVideoTracks().map((t) => `${t.kind}:${t.readyState}:${t.enabled}`),
+          audioTracks: streamToUse.getAudioTracks().map((t) => `${t.kind}:${t.readyState}:${t.enabled}`),
+        });
+        setRemoteStream(streamToUse);
+      } else {
+        console.error("❌ No remote stream or track found in ontrack event!");
       }
     };
 
     pc.onconnectionstatechange = () => {
-      const st = pc.connectionState;
-      if (st === "connected") {
+      console.log("📡 PC connectionState:", pc.connectionState, "signalingState:", pc.signalingState);
+      if (pc.connectionState === "connected") {
         setStatus("connected");
         sendMediaState();
       }
-      if (st === "failed" || st === "closed") {
+      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
         if (callInfoRef.current) handleRemoteEnd();
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      console.log("🧊 PC iceConnectionState:", pc.iceConnectionState);
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+        setStatus("connected");
+      }
+    };
+
+    pc.onicegatheringstatechange = () => {
+      console.log("🧊 PC iceGatheringState:", pc.iceGatheringState);
+    };
+
+    pc.onsignalingstatechange = () => {
+      console.log("🚥 PC signalingState:", pc.signalingState);
+    };
+
     // Add local tracks
     if (localStreamRef.current) {
-      localStreamRef.current
-        .getTracks()
-        .forEach((t) => pc.addTrack(t, localStreamRef.current));
+      localStreamRef.current.getTracks().forEach((t) => {
+        console.log("➕ Adding local track to PC:", t.kind, t.id, t.label);
+        pc.addTrack(t, localStreamRef.current);
+      });
+    } else {
+      console.warn("⚠️ createPeer called but localStreamRef.current is empty!");
     }
 
     // Ensure a video transceiver exists so screen sharing can replace/send video track seamlessly
@@ -187,8 +242,11 @@ export function CallProvider({ children }) {
     const hasVideoSender = senders.some((s) => s.track?.kind === "video");
     if (!hasVideoSender) {
       try {
+        console.log("➕ Adding video transceiver sendrecv");
         pc.addTransceiver("video", { direction: "sendrecv" });
-      } catch {}
+      } catch (err) {
+        console.warn("Could not add video transceiver:", err);
+      }
     }
 
     pcRef.current = pc;
@@ -200,24 +258,36 @@ export function CallProvider({ children }) {
     if (!pc) return;
     const queued = pendingCandidates.current;
     pendingCandidates.current = [];
+    console.log("🧊 Draining queued ICE candidates count:", queued.length);
     for (const c of queued) {
       try {
         await pc.addIceCandidate(c);
-      } catch {}
+        console.log("✅ Drained ICE candidate added successfully");
+      } catch (err) {
+        console.error("❌ Error adding drained ICE candidate:", err);
+      }
     }
   };
 
   // Receiver: apply the caller's offer and send back an answer
   const processOffer = async (from, offer) => {
     const pc = pcRef.current;
-    if (!pc) return;
+    if (!pc) {
+      console.error("❌ processOffer failed: pcRef.current is null");
+      return;
+    }
     try {
+      console.log("📥 Setting remote description (offer) from:", from);
       await pc.setRemoteDescription(offer);
       await drainCandidates();
+      console.log("📤 Creating answer for:", from);
       const answer = await pc.createAnswer();
+      console.log("📝 Setting local description (answer)");
       await pc.setLocalDescription(answer);
+      console.log("📤 Emitting webrtc_answer to:", from);
       socket?.emit("webrtc_answer", { targetId: from, answer });
-    } catch {
+    } catch (err) {
+      console.error("❌ Error processing offer:", err);
       toast?.error("Failed to connect");
       endCallRef.current?.();
     }
@@ -602,25 +672,35 @@ export function CallProvider({ children }) {
 
     const onAccepted = async ({ iceServers }) => {
       // Caller side: build the peer, create + send the offer
+      console.log("📥 Received call_accepted event from receiver with iceServers:", iceServers);
       stopRingtone();
       iceServersRef.current = iceServers?.length ? iceServers : FALLBACK_ICE;
       const info = callInfoRef.current;
-      if (!info) return;
+      if (!info) {
+        console.error("❌ onAccepted failed: callInfoRef.current is null");
+        return;
+      }
       setStatus("connecting");
       const pc = createPeer(info.peerId);
       try {
+        console.log("📤 Creating offer for peer:", info.peerId);
         const offer = await pc.createOffer();
+        console.log("📝 Setting local description (offer)");
         await pc.setLocalDescription(offer);
+        console.log("📤 Emitting webrtc_offer to targetId:", info.peerId);
         socket.emit("webrtc_offer", { targetId: info.peerId, offer });
-      } catch {
+      } catch (err) {
+        console.error("❌ Error in onAccepted offer creation:", err);
         toast?.error("Failed to establish connection");
         endCall();
       }
     };
 
     const onOffer = async ({ from, offer }) => {
+      console.log("📥 Received webrtc_offer event from:", from);
       // Receiver side — buffer if the peer isn't ready yet
       if (!pcRef.current) {
+        console.log("⏳ Buffering offer because pcRef.current is not initialized yet");
         pendingOffer.current = { from, offer };
         return;
       }
@@ -628,22 +708,34 @@ export function CallProvider({ children }) {
     };
 
     const onAnswer = async ({ answer }) => {
+      console.log("📥 Received webrtc_answer event");
       // Caller side
       const pc = pcRef.current;
-      if (!pc) return;
+      if (!pc) {
+        console.error("❌ onAnswer failed: pcRef.current is null");
+        return;
+      }
       try {
+        console.log("📝 Setting remote description (answer)");
         await pc.setRemoteDescription(answer);
         await drainCandidates();
-      } catch {}
+      } catch (err) {
+        console.error("❌ Error setting remote description (answer):", err);
+      }
     };
 
     const onCandidate = async ({ candidate }) => {
+      console.log("📥 Received ice_candidate event:", candidate?.candidate);
       const pc = pcRef.current;
       if (pc && pc.remoteDescription && pc.remoteDescription.type) {
         try {
           await pc.addIceCandidate(candidate);
-        } catch {}
+          console.log("✅ Added remote ICE candidate successfully");
+        } catch (err) {
+          console.error("❌ Error adding remote ICE candidate:", err);
+        }
       } else {
+        console.log("⏳ Buffering ICE candidate until remote description is set");
         pendingCandidates.current.push(candidate);
       }
     };
