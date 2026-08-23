@@ -32,14 +32,13 @@ const FOUNDER_TABS = [
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
-  { to: "/app/studio", label: "Studio", icon: HiCollection },
 ];
 
 const INVESTOR_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
+  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
-  { to: "/app/saved", label: "Saved", icon: HiBookmark },
 ];
 
 const ADMIN_TABS = [
@@ -47,7 +46,6 @@ const ADMIN_TABS = [
   { to: "/admin/users", label: "Users", icon: HiUsers },
   { to: "/admin/pitches", label: "Pitches", icon: HiVideoCamera },
   { to: "/admin/courses", label: "Courses", icon: HiAcademicCap },
-  { to: "/admin/kyc", label: "KYC", icon: HiShieldCheck },
 ];
 
 const GUEST_TABS = [
@@ -55,7 +53,6 @@ const GUEST_TABS = [
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
-  { to: "/app/saved", label: "Saved", icon: HiBookmark },
 ];
 
 export default function BottomBar({ mode }) {
