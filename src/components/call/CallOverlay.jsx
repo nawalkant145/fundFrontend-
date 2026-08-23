@@ -35,15 +35,20 @@ export default function CallOverlay() {
 
   useEffect(() => {
     if (mainVideoRef.current && activeMainStream) {
+      console.log("📹 CallOverlay mainVideoRef setting srcObject:", activeMainStream.id, "tracks:", activeMainStream.getTracks());
       mainVideoRef.current.srcObject = activeMainStream;
-      mainVideoRef.current.play().catch(() => {});
+      mainVideoRef.current
+        .play()
+        .then(() => console.log("✅ Remote video playback started successfully"))
+        .catch((err) => console.warn("⚠️ Remote video autoplay failed:", err));
     }
-  }, [activeMainStream, peerMediaState.isScreenSharing]);
+  }, [activeMainStream, status, isMainActive, peerMediaState.isScreenSharing]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
+      console.log("🎥 CallOverlay localVideoRef setting srcObject:", localStream.id);
       localVideoRef.current.srcObject = localStream;
-      localVideoRef.current.play().catch(() => {});
+      localVideoRef.current.play().catch((err) => console.warn("⚠️ Local video autoplay failed:", err));
     }
   }, [localStream]);
 
@@ -65,7 +70,9 @@ export default function CallOverlay() {
           autoPlay
           ref={(el) => {
             if (el && el.srcObject !== remoteStream) {
+              console.log("🔊 Dedicated remote audio element setting srcObject:", remoteStream.id);
               el.srcObject = remoteStream;
+              el.play().catch((err) => console.warn("⚠️ Remote audio play failed:", err));
             }
           }}
         />
@@ -75,7 +82,16 @@ export default function CallOverlay() {
       <div className="absolute inset-0 flex items-center justify-center bg-[#0b141a]">
         {isMainActive ? (
           <video
-            ref={mainVideoRef}
+            ref={(el) => {
+              mainVideoRef.current = el;
+              if (el && activeMainStream && el.srcObject !== activeMainStream) {
+                console.log("📹 Callback ref setting mainVideoRef.srcObject:", activeMainStream.id);
+                el.srcObject = activeMainStream;
+                el.play()
+                  .then(() => console.log("✅ Remote video playback started via callback ref"))
+                  .catch((err) => console.warn("⚠️ Remote video play failed via callback ref:", err));
+              }
+            }}
             autoPlay
             playsInline
             muted
