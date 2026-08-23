@@ -16,7 +16,7 @@ export default function ProtectedRoute({ children, roles, allowSignupSession }) 
     return <PageLoader text="Loading your workspace…" />;
   }
 
-  /* === PRE-ACCOUNT SIGNUP SESSION BYPASS (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
+  // Allow pre-account signup flow (e.g. /kyc?session=...) to view the route without logging in
   if (!user && allowSignupSession) {
     const params = new URLSearchParams(location.search);
     const signupSessionId =
@@ -25,7 +25,7 @@ export default function ProtectedRoute({ children, roles, allowSignupSession }) 
       return children;
     }
   }
-  ================================================================================================================ */
+
 
 
   // Not logged in → redirect to login, preserve intended destination

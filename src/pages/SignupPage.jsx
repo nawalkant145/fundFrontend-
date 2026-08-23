@@ -244,43 +244,31 @@ export default function SignupPage() {
             }),
       };
 
-      /* === PRE-ACCOUNT IDENTITY VERIFICATION FLOW (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
-      // Step 1: Create temporary signup session in Redis (no User account created yet)
+      // Step 1: Create temporary signup session in Redis — NO account created, NO JWT issued
       const res = await authService.initiateSignup(signupPayload);
       const { signupSessionId } = res?.data?.data || res?.data || {};
-      if (!signupSessionId) throw new Error("Failed to create signup session. Please try again.");
-      sessionStorage.setItem("signupSessionId", signupSessionId);
-      navigate(`/kyc?session=${signupSessionId}`);
-      =================================================================================================================== */
 
-      // ACTIVE FLOW: Create account directly, set session, then claim pending purchase if any
-      const resData = await register(signupPayload);
-      const userRole = resData?.user?.role || userType;
-
-      const pendingClaimToken = sessionStorage.getItem("expglo_pending_purchase");
-      if (pendingClaimToken && ["founder", "investor"].includes(userRole)) {
-        try {
-          await courseService.claimPurchaseToken({ claimToken: pendingClaimToken });
-          sessionStorage.removeItem("expglo_pending_purchase");
-          navigate("/app/courses");
-          return;
-        } catch (claimErr) {
-          console.warn("Could not claim pending purchase on signup:", claimErr);
-        }
+      if (!signupSessionId) {
+        throw new Error("Failed to create signup session. Please try again.");
       }
 
-      navigate("/kyc");
+      // Store signupSessionId for KycPage to use when calling DigiLocker
+      sessionStorage.setItem("signupSessionId", signupSessionId);
+
+      // Step 2: Navigate to Identity Verification — account does NOT exist yet
+      navigate(`/kyc?session=${signupSessionId}`);
     } catch (err) {
       console.error("Signup error:", err);
       const msg =
         err.response?.data?.message ||
         err.message ||
-        "Failed to create account. Please try again.";
+        "Failed to initiate signup. Please try again.";
       setError(msg);
     } finally {
       setLoading(false);
     }
   };
+
 
 
 
@@ -682,9 +670,10 @@ export default function SignupPage() {
             <div className="flex items-center justify-between gap-3 pt-2">
               <BackButton onClick={() => setStep(1)} />
               <NextButton type="submit" disabled={!profileStepValid || loading}>
-                {loading ? "Creating account…" : "Create account"}
+                {loading ? "Saving…" : "Continue to Identity Verification"}
               </NextButton>
             </div>
+
 
 
           </motion.form>

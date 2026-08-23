@@ -107,7 +107,7 @@ function App() {
           <Route
             path="/kyc"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowSignupSession>
                 <KycPage />
               </ProtectedRoute>
             }

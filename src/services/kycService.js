@@ -17,11 +17,14 @@ const kycService = {
   // Switch back to manual upload after a DigiLocker failure.
   digilockerFallback: () => api.post("/kyc/digilocker/fallback"),
 
-  /* === PRE-ACCOUNT DIGILOCKER INITIATION (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
+  // --- DigiLocker for pre-account signup flow (no auth required) ---
+  // signupSessionId is stored in sessionStorage after initiateSignup.
+  // Returns { redirectUrl } — send the browser to DigiLocker OAuth.
+  // After successful verification, the backend creates the User and sets auth cookies.
   initiateDigiLockerForSignup: (signupSessionId) =>
     api.get("/kyc/digilocker/authorize", { params: { signupSessionId } }),
-  ================================================================================================================= */
 };
 
 export default kycService;
+
 
