@@ -99,14 +99,14 @@ export default function BottomBar({ mode }) {
   return (
     <nav
       data-bottombar
-      className={`md:hidden fixed bottom-0 left-0 right-0 z-50 ${
+      className={`md:hidden fixed bottom-0 left-0 right-0 z-50 w-full max-w-full ${
         immersive
           ? "bg-gradient-to-t from-black/85 to-transparent border-0"
           : "bg-white/90 backdrop-blur-xl border-t border-[#1B5E3F]/8 shadow-[0_-4px_24px_rgba(15,74,46,0.04)]"
       }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
     >
-      <div className="flex items-center justify-between h-14 px-1 w-full">
+      <div className="flex items-center justify-between h-14 px-1 w-full max-w-full">
         {tabs.map((tab) => (
           <TabButton
             key={tab.to}
@@ -147,7 +147,7 @@ function TabButton({ to, label, icon: Icon, active, badge, immersive, center }) 
           />
           {badge > 0 && (
             <span className="absolute -top-1 -right-2 min-w-[15px] h-3.5 px-1 bg-[#F5B942] text-[#0F4A2E] text-[8px] font-black rounded-full flex items-center justify-center">
-              {badge}
+              {badge > 99 ? "99+" : badge}
             </span>
           )}
         </div>

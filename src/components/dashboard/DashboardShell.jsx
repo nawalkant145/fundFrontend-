@@ -47,24 +47,24 @@ export default function DashboardShell({
 
       {/* Mobile top header — fixed top flex child (Instagram style) */}
       {!hideMobileHeader && (
-        <header className="md:hidden flex-shrink-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8">
-          <div className="flex items-center justify-between px-4 h-14">
-            <Link to="/app" className="flex items-center">
+        <header className="md:hidden flex-shrink-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8 w-full max-w-full">
+          <div className="flex items-center justify-between px-3.5 sm:px-4 h-14 w-full max-w-full">
+            <Link to="/app" className="flex items-center shrink-0">
               <img
                 src="/Logobgremove.jpeg"
                 alt="EXPGLO FUND"
-                className="h-8 w-auto mix-blend-multiply"
+                className="h-7 sm:h-8 w-auto mix-blend-multiply max-w-[140px] sm:max-w-[180px] object-contain"
               />
             </Link>
             <Link
               to="/app/notifications"
-              className="relative p-1 text-[#0F4A2E] flex items-center justify-center"
+              className="relative p-1.5 text-[#0F4A2E] flex items-center justify-center shrink-0"
               aria-label="Notifications"
             >
-              <HiBell className="w-6 h-6" />
+              <HiBell className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
               {unread > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
-                  {unread}
+                  {unread > 99 ? "99+" : unread}
                 </span>
               )}
             </Link>

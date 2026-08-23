@@ -20,6 +20,7 @@ export default function CallOverlay() {
     isScreenSharing,
     peerMediaState,
     duration,
+    canShareScreen,
     endCall,
     toggleMute,
     toggleCamera,
@@ -209,10 +210,17 @@ export default function CallOverlay() {
         {/* Share Screen */}
         <CtrlBtn
           active={isScreenSharing}
+          disabled={!canShareScreen && !isScreenSharing}
           activeBg="bg-emerald-500/40 text-emerald-300 border-emerald-500/70 shadow-lg shadow-emerald-500/20"
           icon={HiDesktopComputer}
           onClick={toggleScreenShare}
-          label={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
+          label={
+            !canShareScreen && !isScreenSharing
+              ? "Screen sharing is not supported on this device/browser"
+              : isScreenSharing
+              ? "Stop Sharing Screen"
+              : "Share Screen"
+          }
         />
 
         {/* End Call */}
@@ -230,15 +238,18 @@ export default function CallOverlay() {
   );
 }
 
-function CtrlBtn({ icon: Icon, onClick, active, activeBg = "", slash, label }) {
+function CtrlBtn({ icon: Icon, onClick, active, activeBg = "", slash, label, disabled = false }) {
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.92 }}
+      disabled={disabled}
+      whileHover={disabled ? {} : { scale: 1.08 }}
+      whileTap={disabled ? {} : { scale: 0.92 }}
       title={label}
       className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${
-        active
+        disabled
+          ? "bg-white/5 border-white/10 text-white/30 cursor-not-allowed"
+          : active
           ? activeBg
           : "bg-white/10 border-white/20 hover:bg-white/20 text-white"
       }`}
