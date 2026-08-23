@@ -24,6 +24,8 @@ import {
   HiEye,
   HiChatAlt2,
   HiAcademicCap,
+  HiUserCircle,
+  HiCollection,
 } from "react-icons/hi";
 import { FaLinkedin } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
@@ -42,16 +44,21 @@ import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 
 const FOUNDER_MENU = [
+  { to: "/app/profile", label: "My Profile", icon: HiUserCircle },
+  { to: "/app/studio", label: "Studio", icon: HiCollection },
+  { to: "/kyc", label: "Verification", icon: HiShieldCheck },
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
   { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
-  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
   { to: "/app/subscription", label: "Studio Pro", icon: HiSparkles },
   { to: "/app/settings", label: "Settings", icon: HiCog },
 ];
 
 const INVESTOR_MENU = [
+  { to: "/app/profile", label: "My Profile", icon: HiUserCircle },
+  { to: "/app/studio", label: "Studio", icon: HiCollection },
+  { to: "/kyc", label: "Verification", icon: HiShieldCheck },
   { to: "/app/discover", label: "Discover", icon: HiSearch },
   { to: "/app/investments", label: "Investments", icon: HiCurrencyDollar },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
@@ -386,8 +393,14 @@ export default function ProfilePage() {
         <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden divide-y divide-[#E5E7EB]">
           {menu.map((item) => (
             <Link
-              key={item.to}
+              key={item.to + item.label}
               to={item.to}
+              onClick={(e) => {
+                if (item.to === "/app/profile" && window.location.pathname === "/app/profile") {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
               className="flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 transition-colors"
             >
               <span className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 text-[#166534]">
