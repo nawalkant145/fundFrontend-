@@ -47,6 +47,8 @@ export function CallProvider({ children }) {
   });
   const [duration, setDuration] = useState(0);
 
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
+
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
@@ -55,12 +57,81 @@ export function CallProvider({ children }) {
   const iceServersRef = useRef(FALLBACK_ICE);
   const callInfoRef = useRef(null);
   const ringtoneRef = useRef(null);
+  const incomingRingtoneRef = useRef(null);
   const endCallRef = useRef(null);
 
   // Keep a ref copy of callInfo for use inside socket callbacks
   useEffect(() => {
     callInfoRef.current = callInfo;
   }, [callInfo]);
+
+  // ─── Incoming Ringtone Management (Receiver) ──
+  const stopIncomingRingtone = useCallback(() => {
+    console.log("🔕 Stopping incoming ringtone");
+    setIsAutoplayBlocked(false);
+
+    if (incomingRingtoneRef.current) {
+      const ringObj = incomingRingtoneRef.current;
+      ringObj.isPlaying = false;
+
+      if (ringObj.audio) {
+        try {
+          ringObj.audio.pause();
+          ringObj.audio.currentTime = 0;
+        } catch (err) {
+          console.warn("Error pausing incoming audio:", err);
+        }
+      }
+    }
+  }, []);
+
+  const startIncomingRingtone = useCallback(() => {
+    console.log("🔔 Starting incoming ringtone");
+
+    if (incomingRingtoneRef.current?.isPlaying) {
+      console.log("🔔 Incoming ringtone is already playing, ignoring duplicate start");
+      return;
+    }
+
+    try {
+      if (!incomingRingtoneRef.current) {
+        const audio = new Audio("/sounds/incoming-call.wav");
+        audio.loop = true;
+        audio.volume = 0.7;
+        audio.preload = "auto";
+        incomingRingtoneRef.current = {
+          audio,
+          isPlaying: false,
+        };
+      }
+
+      const ringObj = incomingRingtoneRef.current;
+      ringObj.isPlaying = true;
+
+      const playPromise = ringObj.audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("🔔 Incoming ringtone playback started successfully");
+            setIsAutoplayBlocked(false);
+          })
+          .catch((err) => {
+            console.warn("⚠️ Autoplay policy blocked incoming ringtone:", err?.name || err);
+            setIsAutoplayBlocked(true);
+          });
+      }
+    } catch (err) {
+      console.error("❌ Failed to start incoming ringtone:", err);
+      setIsAutoplayBlocked(true);
+    }
+  }, []);
+
+  // Stop incoming ringtone whenever call status leaves "incoming"
+  useEffect(() => {
+    if (status !== "incoming") {
+      stopIncomingRingtone();
+    }
+  }, [status, stopIncomingRingtone]);
 
   // ─── Cleanup ────────────────────────────────
   const cleanup = useCallback(() => {
@@ -91,9 +162,10 @@ export function CallProvider({ children }) {
     setPeerMediaState({ muted: false, cameraOff: false, isScreenSharing: false });
     setDuration(0);
     stopRingtone();
-  }, []);
+    stopIncomingRingtone();
+  }, [stopIncomingRingtone]);
 
-  // ─── Ringtone (simple oscillator beep loop) ──
+  // ─── Outgoing Ringback Tone (Caller) ────────
   const startRingtone = () => {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -653,8 +725,10 @@ export function CallProvider({ children }) {
     if (!socket) return;
 
     const onIncoming = (data) => {
+      console.log("📞 Incoming call received:", data.callId, "from caller:", data.callerName);
       // Busy → auto-decline
       if (callInfoRef.current) {
+        console.log("Busy: Auto-declining second incoming call:", data.callId);
         socket.emit("call_decline", { callId: data.callId });
         return;
       }
@@ -667,7 +741,7 @@ export function CallProvider({ children }) {
         isCaller: false,
       });
       setStatus("incoming");
-      startRingtone();
+      startIncomingRingtone();
     };
 
     const onAccepted = async ({ iceServers }) => {
@@ -745,15 +819,26 @@ export function CallProvider({ children }) {
     };
 
     const onDeclined = () => {
+      console.log("❌ Call declined by recipient");
       toast?.info("Call declined");
+      stopIncomingRingtone();
       cleanup();
     };
     const onEnded = () => {
+      console.log("📴 Call cancelled or ended by remote participant");
+      stopIncomingRingtone();
       cleanup();
     };
     const onNoAnswer = () => {
+      console.log("⏱️ Incoming call timed out");
       toast?.info("No answer");
+      stopIncomingRingtone();
       cleanup();
+    };
+
+    const onDisconnect = () => {
+      console.log("🔌 Socket disconnected, stopping ringtone");
+      stopIncomingRingtone();
     };
 
     socket.on("incoming_call", onIncoming);
@@ -765,6 +850,7 @@ export function CallProvider({ children }) {
     socket.on("call_declined", onDeclined);
     socket.on("call_ended", onEnded);
     socket.on("call_no_answer", onNoAnswer);
+    socket.on("disconnect", onDisconnect);
 
     return () => {
       socket.off("incoming_call", onIncoming);
@@ -776,9 +862,10 @@ export function CallProvider({ children }) {
       socket.off("call_declined", onDeclined);
       socket.off("call_ended", onEnded);
       socket.off("call_no_answer", onNoAnswer);
+      socket.off("disconnect", onDisconnect);
     };
     // eslint-disable-next-line
-  }, [socket, toast, cleanup, endCall]);
+  }, [socket, toast, cleanup, endCall, startIncomingRingtone, stopIncomingRingtone]);
 
   const value = {
     status,
@@ -791,6 +878,9 @@ export function CallProvider({ children }) {
     isScreenSharing,
     peerMediaState,
     duration,
+    isAutoplayBlocked,
+    startIncomingRingtone,
+    stopIncomingRingtone,
     startCall,
     acceptCall,
     declineCall,
