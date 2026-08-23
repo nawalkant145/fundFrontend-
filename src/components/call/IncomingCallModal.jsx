@@ -1,20 +1,52 @@
 import { motion } from "framer-motion";
-import { HiPhone, HiVideoCamera, HiX } from "react-icons/hi";
+import { HiPhone, HiVideoCamera, HiX, HiVolumeUp } from "react-icons/hi";
+import { useCall } from "../../context/CallContext";
 
 /**
- * Full-screen incoming-call prompt with accept / decline.
+ * Full-screen incoming-call prompt with accept / decline and ringtone handling.
  */
 export default function IncomingCallModal({ info, onAccept, onDecline }) {
+  const { isAutoplayBlocked, startIncomingRingtone } = useCall();
+
   if (!info) return null;
   const isVideo = info.type === "video";
 
+  const handleContainerClick = () => {
+    if (isAutoplayBlocked) {
+      startIncomingRingtone();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center">
+    <div
+      onClick={handleContainerClick}
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center cursor-pointer"
+    >
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-[#0F2A1E] to-[#0A1F14] border border-[#1B5E3F]/40 rounded-3xl p-8 w-[90%] max-w-sm text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-gradient-to-br from-[#0F2A1E] to-[#0A1F14] border border-[#1B5E3F]/40 rounded-3xl p-8 w-[90%] max-w-sm text-center shadow-2xl relative"
       >
+        {isAutoplayBlocked && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-2.5 bg-[#F5B942]/10 border border-[#F5B942]/40 rounded-xl text-xs text-[#F5B942] flex items-center justify-between gap-2"
+          >
+            <span className="flex items-center gap-1.5 font-medium text-left">
+              <HiVolumeUp className="w-4 h-4 shrink-0 text-[#F5B942]" />
+              Ringtone muted by browser policy.
+            </span>
+            <button
+              onClick={() => startIncomingRingtone()}
+              className="px-2.5 py-1 bg-[#F5B942] text-black font-bold rounded-lg text-[11px] hover:bg-[#f3ad22] transition-colors whitespace-nowrap"
+            >
+              Enable Ringtone
+            </button>
+          </motion.div>
+        )}
+
         <motion.img
           src={
             info.peerAvatar ||
