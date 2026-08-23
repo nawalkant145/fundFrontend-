@@ -1,10 +1,12 @@
 import api from "./api";
 
 export const authService = {
-  /* === PRE-ACCOUNT SIGNUP INITIATION (Commented out — uncomment when mandatory pre-account KYC is enabled) ===
+  // Initiates a temporary signup session (TTL 30 min).
+  // Does NOT create a User account, issue JWT, or set auth cookies.
+  // Returns { signupSessionId, expiresAt }.
+  // Account is only created after identity verification succeeds.
   initiateSignup: (data) => api.post("/auth/signup/initiate", data),
-  ============================================================================================================= */
-
+  skipSignup: (signupSessionId) => api.post("/auth/signup/skip", { signupSessionId }),
   register: (data) => api.post("/auth/register", data),
 
 
@@ -34,4 +36,3 @@ export const authService = {
   resetPassword: (data) => api.post("/auth/reset-password", data),
   changePassword: (data) => api.post("/auth/change-password", data),
 };
-
