@@ -21,6 +21,15 @@ const FALLBACK_ICE = [
 ];
 
 /**
+ * Screen sharing capability detection for browsers/devices.
+ */
+export const canShareScreen =
+  typeof window !== "undefined" &&
+  !!window.isSecureContext &&
+  !!navigator.mediaDevices &&
+  typeof navigator.mediaDevices.getDisplayMedia === "function";
+
+/**
  * Global call manager. Handles outgoing + incoming WebRTC calls end-to-end:
  * getUserMedia → RTCPeerConnection → offer/answer/ICE over Socket.IO.
  * Renders the call overlay + incoming-call modal so calls work from anywhere.
@@ -620,7 +629,11 @@ export function CallProvider({ children }) {
     if (isScreenSharing) {
       // Stop screen share & revert to camera
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+        try {
+          screenStreamRef.current.getTracks().forEach((t) => t.stop());
+        } catch (err) {
+          console.warn("Error stopping screen tracks:", err);
+        }
         screenStreamRef.current = null;
       }
       setScreenStream(null);
@@ -628,9 +641,10 @@ export function CallProvider({ children }) {
 
       const cameraTrack = await ensureCameraTrack();
       if (pcRef.current) {
-        const videoSender = pcRef.current.getSenders().find(
-          (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
-        ) || pcRef.current.getSenders().find((s) => s.track === null);
+        const videoSender =
+          pcRef.current.getSenders().find(
+            (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+          ) || pcRef.current.getSenders().find((s) => s.track === null);
 
         if (videoSender) {
           if (cameraTrack) {
@@ -648,20 +662,42 @@ export function CallProvider({ children }) {
       sendMediaState({ isScreenSharing: false });
       toast?.info("Stopped screen sharing");
     } else {
-      // Start screen share
+      // 1. Secure context check
+      if (typeof window !== "undefined" && !window.isSecureContext) {
+        console.error("Screen sharing failed: Page is not in a secure context (HTTPS required).");
+        toast?.error("Screen sharing requires a secure HTTPS connection.");
+        return;
+      }
+
+      // 2. Capability detection check
+      if (!canShareScreen) {
+        console.error("Screen sharing failed: navigator.mediaDevices.getDisplayMedia is not available.");
+        toast?.error(
+          "Screen sharing is not supported on this mobile browser. Please use a supported browser or desktop."
+        );
+        return;
+      }
+
+      // 3. Start display media capture
       try {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: { cursor: "always" },
           audio: false,
         });
+
         const screenTrack = displayStream.getVideoTracks()[0];
+        if (!screenTrack) {
+          throw new Error("No video track obtained from screen capture.");
+        }
+
         screenStreamRef.current = displayStream;
         setScreenStream(displayStream);
 
         if (pcRef.current) {
-          const videoSender = pcRef.current.getSenders().find(
-            (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
-          ) || pcRef.current.getSenders().find((s) => s.track === null);
+          const videoSender =
+            pcRef.current.getSenders().find(
+              (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+            ) || pcRef.current.getSenders().find((s) => s.track === null);
 
           if (videoSender) {
             await videoSender.replaceTrack(screenTrack);
@@ -671,9 +707,13 @@ export function CallProvider({ children }) {
           }
         }
 
+        // Handle user stopping screen share via browser bar
         screenTrack.onended = async () => {
+          console.log("🖥️ Screen track ended by user/browser");
           if (screenStreamRef.current) {
-            screenStreamRef.current.getTracks().forEach((t) => t.stop());
+            try {
+              screenStreamRef.current.getTracks().forEach((t) => t.stop());
+            } catch {}
             screenStreamRef.current = null;
           }
           setScreenStream(null);
@@ -681,9 +721,10 @@ export function CallProvider({ children }) {
 
           const cameraTrack = await ensureCameraTrack();
           if (pcRef.current) {
-            const videoSender = pcRef.current.getSenders().find(
-              (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
-            ) || pcRef.current.getSenders().find((s) => s.track === null);
+            const videoSender =
+              pcRef.current.getSenders().find(
+                (s) => s.track?.kind === "video" || (s.track === null && s.kind === "video"),
+              ) || pcRef.current.getSenders().find((s) => s.track === null);
 
             if (videoSender) {
               if (cameraTrack) {
@@ -702,8 +743,19 @@ export function CallProvider({ children }) {
         sendMediaState({ isScreenSharing: true });
         toast?.success("Sharing screen");
       } catch (err) {
-        if (err.name !== "NotAllowedError") {
-          toast?.error("Could not share screen");
+        console.error("Screen sharing failed:", err);
+
+        const errorName = err?.name || "";
+        if (errorName === "NotAllowedError") {
+          toast?.error("Screen sharing permission was denied.");
+        } else if (errorName === "NotSupportedError" || err instanceof TypeError) {
+          toast?.error("Screen sharing is not supported on this device/browser.");
+        } else if (errorName === "AbortError") {
+          toast?.error("Screen sharing was cancelled.");
+        } else if (errorName === "SecurityError") {
+          toast?.error("Screen sharing is blocked by the browser or page security policy.");
+        } else {
+          toast?.error(err?.message || "Unable to start screen sharing. Please try again.");
         }
       }
     }
@@ -878,6 +930,7 @@ export function CallProvider({ children }) {
     isScreenSharing,
     peerMediaState,
     duration,
+    canShareScreen,
     isAutoplayBlocked,
     startIncomingRingtone,
     stopIncomingRingtone,

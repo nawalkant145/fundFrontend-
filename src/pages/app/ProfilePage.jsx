@@ -498,9 +498,9 @@ function EmptyGrid({ title, cta, to }) {
 
 function Chip({ icon: Icon, children }) {
   return (
-    <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-100/90 border border-slate-200/80 rounded-full text-xs font-semibold text-slate-700">
-      <Icon className="w-4 h-4 text-[#0F4A2E]" />
-      {children}
+    <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 bg-slate-100/90 border border-slate-200/80 rounded-full text-[11px] sm:text-xs font-semibold text-slate-700 max-w-full truncate">
+      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0F4A2E] shrink-0" />
+      <span className="truncate">{children}</span>
     </span>
   );
 }
