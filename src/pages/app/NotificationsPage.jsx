@@ -18,6 +18,8 @@ import DropdownMenu from "../../components/ui/DropdownMenu";
 import { useToast } from "../../components/ui/Toast";
 import { notificationService } from "../../services/notificationService";
 import { useNotifications } from "../../context/NotificationContext";
+import { useSocket } from "../../context/SocketContext";
+import { useAuth } from "../../context/AuthContext";
 
 const ICONS = {
   like: { icon: HiHeart, cls: "bg-red-500/15 text-red-400" },
@@ -44,35 +46,78 @@ const ICONS = {
 const FILTERS = [
   { v: "all", l: "All" },
   { v: "unread", l: "Unread" },
-  { v: "like", l: "Likes" },
-  { v: "save", l: "Saves" },
-  { v: "message", l: "Messages" },
   { v: "investment", l: "Investments" },
+  { v: "mentions", l: "Mentions" },
+  { v: "system", l: "System" },
 ];
 
 export default function NotificationsPage() {
   const toast = useToast();
+  const { user } = useAuth();
   const { refreshUnread } = useNotifications();
+  const { socket } = useSocket();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  // Fetch real notifications on mount
   useEffect(() => {
+    console.log("[FOUNDER_FRONTEND_USER]", {
+      userId: user?._id,
+      role: user?.role,
+      name: user?.name,
+    });
+  }, [user]);
+
+  const fetchList = () => {
+    setLoading(true);
     notificationService
       .list({ limit: 50 })
       .then((res) => {
         const data = res?.data?.data;
         const list = data?.notifications || data || [];
         setItems(list);
+        console.log("[FOUNDER_NOTIFICATION_FRONTEND]", {
+          currentUserId: user?._id,
+          responseCount: list.length,
+          investmentNotifications: list
+            .filter((n) => n.type === "investment")
+            .map((n) => ({
+              id: n._id,
+              userId: n.userId,
+              type: n.type,
+              title: n.title,
+              dataStatus: n.data?.status,
+              dataInvestmentId: n.data?.investmentId,
+            })),
+        });
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchList();
   }, []);
+
+  // Real-time socket listener
+  useEffect(() => {
+    if (!socket) return;
+    const onNotif = (notif) => {
+      if (notif) {
+        setItems((prev) => [notif, ...prev.filter((x) => x._id !== notif._id)]);
+        refreshUnread();
+      }
+    };
+    socket.on("notification", onNotif);
+    return () => socket.off("notification", onNotif);
+  }, [socket]);
 
   const filtered = items.filter((n) => {
     if (filter === "all") return true;
     if (filter === "unread") return !n.isRead;
+    if (filter === "investment") return n.type === "investment" || n.type === "investment_received";
+    if (filter === "mentions") return n.type === "comment" || n.type === "like";
+    if (filter === "system") return n.type === "system" || n.type === "verification";
     return n.type === filter;
   });
 
@@ -107,9 +152,9 @@ export default function NotificationsPage() {
             <button
               key={f.v}
               onClick={() => setFilter(f.v)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 filter === f.v
-                  ? "bg-gold text-dark-navy"
+                  ? "bg-gold text-dark-navy shadow-sm"
                   : "bg-card-bg/60 text-gray-300 border border-gold/15 hover:border-gold/40"
               }`}
             >
@@ -120,7 +165,7 @@ export default function NotificationsPage() {
         {unread > 0 && !loading && (
           <button
             onClick={markAllRead}
-            className="text-sm text-gold hover:text-bright-gold font-semibold"
+            className="text-sm text-gold hover:text-bright-gold font-semibold cursor-pointer"
           >
             Mark all as read
           </button>
@@ -142,38 +187,45 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <HiBell className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-          <p className="text-gray-400">No notifications here.</p>
+        <div className="text-center py-20 bg-white border border-[#1B5E3F]/12 rounded-2xl">
+          <HiBell className="w-12 h-12 text-[#1B5E3F]/30 mx-auto mb-3" />
+          <p className="text-gray-500 font-bold text-sm">No notifications here.</p>
         </div>
       ) : (
-        <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl divide-y divide-gold/10 overflow-hidden">
+        <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl divide-y divide-[#1B5E3F]/10 overflow-hidden shadow-sm">
           {filtered.map((n) => {
             const meta = ICONS[n.type] || ICONS.system;
             const Icon = meta.icon;
             return (
               <motion.div
                 key={n._id}
-                className={`flex items-start gap-3 p-4 hover:bg-dark-bg/40 transition-colors ${
-                  !n.isRead ? "bg-gold/5" : ""
+                className={`flex items-start gap-3.5 p-4 hover:bg-[#FAFAF7] transition-colors ${
+                  !n.isRead ? "bg-emerald-50/40" : ""
                 }`}
-                whileHover={{ x: 4 }}
+                whileHover={{ x: 2 }}
               >
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.cls}`}
                 >
                   <Icon className="w-5 h-5" />
                 </div>
-                <button
-                  onClick={() => markRead(n._id)}
-                  className="flex-1 min-w-0 text-left"
+                <a
+                  href={`/app/notifications/${n._id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    markRead(n._id);
+                    window.location.href = `/app/notifications/${n._id}`;
+                  }}
+                  className="flex-1 min-w-0 text-left cursor-pointer"
                 >
-                  <p className="font-bold text-sm">{n.title}</p>
-                  <p className="text-sm text-gray-400">{n.body}</p>
-                  <p className="text-xs text-gray-500 mt-1">{n.createdAt}</p>
-                </button>
+                  <p className="font-bold text-sm text-[#0A1F14]">{n.title}</p>
+                  <p className="text-xs text-[#0A1F14]/70 mt-0.5">{n.body}</p>
+                  <p className="text-[11px] text-[#0A1F14]/40 mt-1">
+                    {new Date(n.createdAt).toLocaleString("en-IN")}
+                  </p>
+                </a>
                 {!n.isRead && (
-                  <span className="w-2.5 h-2.5 rounded-full bg-gold flex-shrink-0 mt-2" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 flex-shrink-0 mt-2" />
                 )}
                 <DropdownMenu
                   items={[
