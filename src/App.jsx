@@ -34,14 +34,19 @@ const InvestorFeed = lazy(() => import("./pages/app/InvestorFeed"));
 const DiscoverPage = lazy(() => import("./pages/app/DiscoverPage"));
 const SavedPitchesPage = lazy(() => import("./pages/app/SavedPitchesPage"));
 const InvestmentsPage = lazy(() => import("./pages/app/InvestmentsPage"));
+const InvestInStartupPage = lazy(() => import("./pages/app/InvestInStartupPage"));
 const MessagesPage = lazy(() => import("./pages/app/MessagesPage"));
 const NotificationsPage = lazy(() => import("./pages/app/NotificationsPage"));
+const NotificationDetailPage = lazy(() => import("./pages/app/NotificationDetailPage"));
+const InvestmentDetailPage = lazy(() => import("./pages/app/InvestmentDetailPage"));
 const ProfilePage = lazy(() => import("./pages/app/ProfilePage"));
 const PublicProfilePage = lazy(() => import("./pages/app/PublicProfilePage"));
 const SettingsPage = lazy(() => import("./pages/app/SettingsPage"));
+const AppEventsPage = lazy(() => import("./pages/app/AppEventsPage"));
 
 // Admin (protected — admin role only)
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminFundingPage = lazy(() => import("./pages/admin/AdminFundingPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminPitchesPage = lazy(() => import("./pages/admin/AdminPitchesPage"));
 const AdminKycPage = lazy(() => import("./pages/admin/AdminKycPage"));
@@ -54,6 +59,7 @@ const AdminInvestmentsPage = lazy(
   () => import("./pages/admin/AdminInvestmentsPage"),
 );
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const AdminEventsPage = lazy(() => import("./pages/admin/AdminEventsPage"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AdminTrashPage = lazy(() => import("./pages/admin/AdminTrashPage"));
 const AdminBroadcastPage = lazy(
@@ -187,6 +193,22 @@ function App() {
             }
           />
           <Route
+            path="/app/deals/:dealId"
+            element={
+              <ProtectedRoute roles={["founder", "investor"]}>
+                <InvestmentDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/investments/:investmentId"
+            element={
+              <ProtectedRoute roles={["founder", "investor"]}>
+                <InvestmentDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/app/courses"
             element={
               <ProtectedRoute roles={["founder", "admin"]}>
@@ -243,6 +265,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/app/invest"
+            element={
+              <ProtectedRoute roles={["investor"]}>
+                <InvestInStartupPage />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/app/subscription"
@@ -273,6 +303,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/events"
+            element={
+              <ProtectedRoute>
+                <AppEventsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/app/notifications/:id"
+            element={
+              <ProtectedRoute>
+                <NotificationDetailPage />
               </ProtectedRoute>
             }
           />
@@ -310,6 +356,14 @@ function App() {
             element={
               <AdminRoute>
                 <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/funding"
+            element={
+              <AdminRoute>
+                <AdminFundingPage />
               </AdminRoute>
             }
           />
@@ -374,6 +428,14 @@ function App() {
             element={
               <AdminRoute>
                 <AdminSettingsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/events"
+            element={
+              <AdminRoute>
+                <AdminEventsPage />
               </AdminRoute>
             }
           />

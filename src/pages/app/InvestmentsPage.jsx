@@ -30,7 +30,21 @@ export default function InvestmentsPage() {
       .then((res) => {
         const data = res?.data?.data || res?.data;
         const list = data?.deals || data?.investments || data || [];
-        setDeals(Array.isArray(list) ? list : []);
+        const arr = Array.isArray(list) ? list : [];
+        setDeals(arr);
+        console.log("[INVESTOR_MY_INVESTMENTS]", {
+          authenticatedInvestorId: user?._id,
+          endpoint: "GET /api/v1/investment/my-deals",
+          responseCount: arr.length,
+          deals: arr.map((d) => ({
+            id: d._id,
+            founderId: d.founderId?._id || d.founderId,
+            investorId: d.investorId?._id || d.investorId,
+            videoId: d.videoId?._id || d.videoId,
+            status: d.status,
+            stage: d.stage,
+          })),
+        });
       })
       .catch(() => setDeals([]))
       .finally(() => setLoading(false));

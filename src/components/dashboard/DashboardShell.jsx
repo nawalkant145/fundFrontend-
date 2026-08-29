@@ -1,22 +1,18 @@
-import { Link } from "react-router-dom";
-import { HiBell } from "react-icons/hi";
+import { useState } from "react";
+import TopBar from "./TopBar";
 import Sidebar from "./Sidebar";
-import BottomBar from "./BottomBar";
 import UploadProgressBar from "./UploadProgressBar";
 import { useAuth } from "../../context/AuthContext";
-import { useNotifications } from "../../context/NotificationContext";
 import { useUploadModal } from "../../context/UploadModalContext";
 import UploadPitchModal from "./UploadPitchModal";
 import UploadPostModal from "./UploadPostModal";
 
 /**
- * Standard dashboard layout — light premium theme.
- *   - Desktop: Instagram-style collapsed sidebar on the left
- *   - Mobile:  slim top header (logo + notifications) + bottom tab bar
- *
- * Props:
- *   noPad      — full-bleed pages (Messages) skip the centered wrapper
- *   hideMobileHeader — hide the mobile top header (e.g. chat windows)
+ * Standard EXPGLO FUND Dashboard Shell matching Figma specification.
+ * - Header: Fixed at top (h-16 / 64px)
+ * - Left Sidebar: Stationary (~280px), height calc(100vh - 64px)
+ * - Right Sidebar: Stationary (~360-380px), height calc(100vh - 64px)
+ * - Main Center: Scrollable container (or overflow-hidden if noScroll is true for Pitch route)
  */
 export default function DashboardShell({
   children,
@@ -24,83 +20,92 @@ export default function DashboardShell({
   subtitle,
   mode,
   noPad,
-  hideMobileHeader,
+  noScroll,
+  fullWidth,
+  rightSidebar,
 }) {
   const { user } = useAuth();
   const resolvedMode = mode || user?.role || "founder";
-  const unread = useNotifications().unreadCount;
   const { pitchOpen, closePitchModal, postOpen, closePostModal } = useUploadModal();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
     <div
       data-light-app="true"
-      className="bg-[#f3f2ef] text-[#0A1F14] h-[100dvh] md:h-auto md:min-h-screen flex flex-col md:block overflow-hidden md:overflow-visible relative"
+      className="bg-[#F8FAFC] text-[#0F172A] h-screen max-h-screen w-screen max-w-full overflow-hidden flex flex-col relative antialiased"
     >
-      {/* Soft brand ambient glows */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#1B5E3F]/[0.05] rounded-full blur-[160px]" />
-        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-[#F5B942]/[0.07] rounded-full blur-[180px]" />
-      </div>
+      {/* 1. Fixed Header (TopBar ~72px) */}
+      <TopBar onMenuClick={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
-      <Sidebar mode={resolvedMode} />
-      <UploadProgressBar />
+      {/* 2. Main Body Container (Below 72px Header) */}
+      <div
+        className={`flex-1 min-h-0 h-[calc(100vh-72px)] w-full flex relative overflow-hidden ${
+          fullWidth
+            ? "max-w-full p-0 m-0 gap-0"
+            : "max-w-[1440px] mx-auto w-full gap-5 xl:gap-6 px-4 sm:px-6"
+        }`}
+      >
+        {/* Desktop Left Sidebar (Constant 280px width) */}
+        <div className="hidden md:block w-[280px] min-w-[280px] max-w-[280px] shrink-0 flex-none h-full">
+          <Sidebar mode={resolvedMode} />
+        </div>
 
-      {/* Mobile top header — fixed top flex child (Instagram style) */}
-      {!hideMobileHeader && (
-        <header className="md:hidden flex-shrink-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#1B5E3F]/8 w-full max-w-full">
-          <div className="flex items-center justify-between px-3.5 sm:px-4 h-14 w-full max-w-full">
-            <Link to="/app" className="flex items-center shrink-0">
-              <img
-                src="/Logobgremove.jpeg"
-                alt="EXPGLO FUND"
-                className="h-7 sm:h-8 w-auto mix-blend-multiply max-w-[140px] sm:max-w-[180px] object-contain"
-              />
-            </Link>
-            <Link
-              to="/app/notifications"
-              className="relative p-1.5 text-[#0F4A2E] flex items-center justify-center shrink-0"
-              aria-label="Notifications"
-            >
-              <HiBell className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
-              {unread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              )}
-            </Link>
+        {/* Mobile Sidebar Overlay Drawer */}
+        {mobileSidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <div className="relative w-[270px] max-w-[80vw] bg-white h-full shadow-2xl z-10 overflow-y-auto">
+              <Sidebar mode={resolvedMode} />
+            </div>
           </div>
-        </header>
-      )}
+        )}
 
-      {/* Dedicated scrollable container for feed content */}
-      <div className="flex-1 min-h-0 w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-y-contain md:overflow-visible md:h-auto md:pl-[72px] relative z-10">
-        {noPad ? (
-          <main className="h-full flex flex-col md:h-auto pb-16 md:pb-0">
-            {children}
-          </main>
-        ) : (
-          <main className="px-4 sm:px-6 py-5 sm:py-7 max-w-7xl mx-auto pb-20 md:pb-7">
-            {(title || subtitle) && (
-              <div className="mb-5 md:mb-7">
-                {title && (
-                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#0A1F14]">
-                    {title}
-                  </h1>
-                )}
-                {subtitle && (
-                  <p className="text-xs sm:text-sm text-[#0A1F14]/60 mt-0.5">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-            )}
-            {children}
-          </main>
+        {/* Upload progress indicator */}
+        <UploadProgressBar />
+
+        {/* Center Main Content Container */}
+        <div
+          className={`flex-1 min-w-0 h-full ${
+            noScroll
+              ? "overflow-hidden"
+              : "overflow-y-auto sidebar-scroll overscroll-contain"
+          }`}
+        >
+          {noPad ? (
+            children
+          ) : (
+            <main className="w-full py-5 sm:py-6">
+              {(title || subtitle) && (
+                <div className="mb-5">
+                  {title && (
+                    <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                      {title}
+                    </h1>
+                  )}
+                  {subtitle && (
+                    <p className="text-xs sm:text-sm text-[#64748B] mt-0.5 font-medium">
+                      {subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
+              {children}
+            </main>
+          )}
+        </div>
+
+        {/* Desktop Right Sidebar (Stationary, rendered if provided) */}
+        {rightSidebar && (
+          <div className="hidden lg:block w-[340px] xl:w-[350px] shrink-0 h-full overflow-y-auto sidebar-scroll py-5 space-y-5">
+            {rightSidebar}
+          </div>
         )}
       </div>
 
-      <BottomBar mode={resolvedMode} />
-
+      {/* Global Modals */}
       <UploadPitchModal open={pitchOpen} onClose={closePitchModal} />
       <UploadPostModal open={postOpen} onClose={closePostModal} />
     </div>

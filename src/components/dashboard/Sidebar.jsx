@@ -15,16 +15,16 @@ import {
   HiFlag,
   HiLogout,
   HiSearch,
-  HiDocumentText,
   HiSparkles,
   HiCollection,
   HiPlay,
   HiBookmark,
   HiTrash,
   HiAcademicCap,
+  HiTrendingUp,
+  HiCalendar,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
-import { isPro } from "../../lib/auth";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { useUploadModal } from "../../context/UploadModalContext";
@@ -34,9 +34,9 @@ const founderNav = [
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/studio", label: "My Studio", icon: HiCollection },
-  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
   { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
+  { to: "/app/events", label: "Events", icon: HiCalendar },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
   { to: "/app/subscription", label: "Studio Pro", icon: HiSparkles },
@@ -48,6 +48,7 @@ const investorNav = [
   { to: "/app/discover", label: "Discover", icon: HiSearch },
   { to: "/app/saved", label: "Saved", icon: HiBookmark },
   { to: "/app/investments", label: "Investments", icon: HiCurrencyDollar },
+  { to: "/app/events", label: "Events", icon: HiCalendar },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2 },
   { to: "/app/notifications", label: "Notifications", icon: HiBell },
   { to: "/app/subscription", label: "Investor Pro", icon: HiSparkles },
@@ -55,6 +56,8 @@ const investorNav = [
 
 const adminNav = [
   { to: "/admin", label: "Dashboard", icon: HiHome, end: true },
+  { to: "/admin/funding", label: "Funding Impact", icon: HiTrendingUp },
+  { to: "/admin/events", label: "Events", icon: HiCalendar },
   { to: "/admin/users", label: "Users", icon: HiUsers },
   { to: "/admin/pitches", label: "Pitches", icon: HiVideoCamera },
   { to: "/admin/courses", label: "Courses", icon: HiAcademicCap },
@@ -64,16 +67,9 @@ const adminNav = [
   { to: "/admin/reports", label: "Reports", icon: HiFlag },
   { to: "/admin/audit", label: "Audit Log", icon: HiClipboardList },
   { to: "/admin/trash", label: "Trash", icon: HiTrash },
-  { to: "/admin/broadcast", label: "Broadcast", icon: HiBell },
   { to: "/admin/settings", label: "Settings", icon: HiCog },
 ];
 
-/**
- * Instagram-style desktop sidebar — light theme:
- *   - Collapsed (72px) by default, expands to 240px on hover
- *   - Labels fade in on expand
- *   - Sidebar OVERLAYS content during hover — main area doesn't shift
- */
 export default function Sidebar({ mode }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -81,14 +77,13 @@ export default function Sidebar({ mode }) {
   const { unreadCount } = useNotifications();
   const { openPitchModal } = useUploadModal();
   const role = mode || user?.role || "founder";
+
   const items =
     role === "investor"
       ? investorNav
       : role === "admin"
         ? adminNav
         : founderNav;
-
-  const unread = unreadCount;
 
   const isActive = (item) =>
     item.end
@@ -97,56 +92,38 @@ export default function Sidebar({ mode }) {
         location.pathname.startsWith(item.to + "/");
 
   return (
-    <aside className="hidden md:flex group fixed top-0 left-0 z-50 h-screen w-[72px] hover:w-60 transition-[width] duration-200 ease-out bg-white border-r border-[#1B5E3F]/12 flex-col overflow-hidden shadow-[2px_0_24px_rgba(15,74,46,0.04)]">
-      {/* Logo */}
-      <Link
-        to="/"
-        className="flex items-center h-16 px-3 border-b border-[#1B5E3F]/10 flex-shrink-0"
-      >
-        <img
-          src="/Logobgremove.jpeg"
-          alt="EXPGLO"
-          className="h-10 w-10 flex-shrink-0 object-contain mix-blend-multiply"
-        />
-        <span className="ml-3 font-black text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-[#0F4A2E]">
-          EXPGLO FUND
-        </span>
-      </Link>
-
-      {/* Profile chip */}
-      <Link
-        to="/app/profile"
-        className="flex items-center h-16 px-3 border-b border-[#1B5E3F]/10 hover:bg-[#FAFAF7] transition-colors flex-shrink-0"
-      >
-        <div className="relative flex-shrink-0">
+    <aside className="w-[280px] min-w-[280px] max-w-[280px] bg-white border-r border-[#E2E8F0] flex flex-col flex-shrink-0 h-full overflow-hidden">
+      {/* Top User Profile Card (Compact Figma layout) */}
+      <div className="p-4 border-b border-[#E2E8F0] flex items-center gap-3 bg-gradient-to-b from-[#F8FAFC] to-white shrink-0">
+        <Link to="/app/profile" className="relative flex-shrink-0">
           <img
             src={
               user?.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=7C3AED&color=fff&size=80`
             }
             alt={user?.name || "User"}
-            className="w-10 h-10 rounded-full ring-2 ring-[#1B5E3F]/20 object-cover"
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#7C3AED]/20"
           />
-          {user?.isVerified && (
-            <MdVerified className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-[#F5B942] bg-white rounded-full" />
-          )}
-        </div>
-        <div className="ml-3 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <p className="font-bold text-sm truncate text-[#0A1F14] inline-flex items-center gap-1.5">
-            {user?.name || "User"}
-            {isPro() && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-br from-[#F5B942] to-[#FFD166] text-[#0F4A2E] text-[8px] font-black uppercase tracking-wider rounded-full">
-                <HiSparkles className="w-2.5 h-2.5" /> PRO
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-[#0A1F14]/55 capitalize truncate">
-            {role}
-          </p>
-        </div>
-      </Link>
+        </Link>
 
-      {/* Nav */}
+        <div className="min-w-0 flex-1">
+          <Link
+            to="/app/profile"
+            className="font-extrabold text-sm text-[#0F172A] hover:text-[#7C3AED] transition-colors inline-flex items-center gap-1 truncate max-w-full"
+          >
+            <span className="truncate">{user?.name || "Nawal Kant"}</span>
+            <MdVerified className="w-4 h-4 text-[#10B981] flex-shrink-0" />
+          </Link>
+          <p className="text-xs text-[#64748B] capitalize font-medium">
+            {role === "investor" ? "Investor" : (role || "Founder")}
+          </p>
+          <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 bg-[#F3E8FF] text-[#7C3AED] text-[10px] font-bold rounded-full border border-[#7C3AED]/20">
+            ✓ Verified {role === "investor" ? "Investor" : "User"}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Navigation Links */}
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto sidebar-scroll">
         {items.map((item) => (
           <NavLink
@@ -155,40 +132,79 @@ export default function Sidebar({ mode }) {
             label={item.label}
             icon={item.icon}
             active={isActive(item)}
-            badge={item.to.endsWith("/notifications") ? unread : 0}
+            role={role}
+            badge={item.to.endsWith("/notifications") ? unreadCount : 0}
             onClick={item.to === "/app/upload" ? openPitchModal : undefined}
           />
         ))}
-      </nav>
 
-      {/* Bottom — Settings + Logout */}
-      <div className="border-t border-[#1B5E3F]/10 px-3 py-3 space-y-1 flex-shrink-0">
+        <div className="pt-2 pb-1">
+          <div className="border-t border-[#E2E8F0] my-2" />
+        </div>
+
         {role !== "admin" && (
           <NavLink
             to="/app/settings"
             label="Settings"
             icon={HiCog}
+            role={role}
             active={location.pathname === "/app/settings"}
           />
         )}
+
         <button
           onClick={async () => {
             await logout();
             navigate("/login");
           }}
-          className="w-full flex items-center h-12 rounded-xl text-[#0A1F14]/65 hover:bg-red-50 hover:text-red-500 transition-colors"
+          className="w-full flex items-center h-10 px-3 rounded-xl text-xs font-bold text-[#64748B] hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
         >
-          <HiLogout className="w-6 h-6 flex-shrink-0 mx-3" />
-          <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-semibold">
-            Log out
-          </span>
+          <HiLogout className="w-4.5 h-4.5 mr-3 text-red-500/80 shrink-0" />
+          <span className="text-xs">Log out</span>
         </button>
-      </div>
+      </nav>
+
+      {/* Bottom Promo Card (Investor Pro for Investor, Studio Pro for Founder) */}
+      {role !== "admin" && (
+        <div className="p-3 m-3 rounded-2xl shrink-0 shadow-sm transition-all duration-200">
+          {role === "investor" ? (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#5B21B6] text-white shadow-md">
+              <div className="flex items-center gap-2 mb-1.5">
+                <HiSparkles className="w-4.5 h-4.5 text-[#F59E0B] shrink-0" />
+                <span className="font-extrabold text-xs tracking-wide">Investor Pro</span>
+              </div>
+              <p className="text-[11px] text-white/90 leading-relaxed mb-3 font-medium">
+                Get advanced insights, early access to deals & exclusive opportunities.
+              </p>
+              <Link to="/app/subscription">
+                <button className="w-full py-2 bg-white hover:bg-slate-50 text-[#5B21B6] text-xs font-black rounded-xl shadow-sm transition-all cursor-pointer">
+                  Upgrade Now
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white shadow-md">
+              <div className="flex items-center gap-2 mb-1.5">
+                <HiSparkles className="w-4 h-4 text-[#F5B942] shrink-0" />
+                <span className="font-black text-xs tracking-wide">Studio Pro</span>
+              </div>
+              <p className="text-[11px] text-white/80 leading-relaxed mb-3">
+                Unlock advanced analytics, more visibility & boost your pitches.
+              </p>
+              <Link to="/app/subscription">
+                <button className="w-full py-2 bg-white hover:bg-[#FAFAF7] text-[#0F4A2E] text-xs font-extrabold rounded-xl shadow transition-colors cursor-pointer">
+                  Upgrade Now
+                </button>
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 }
 
-function NavLink({ to, label, icon: Icon, active, badge, onClick }) {
+function NavLink({ to, label, icon: Icon, active, role, badge, onClick }) {
   const handleClick = (e) => {
     if (onClick) {
       e.preventDefault();
@@ -196,27 +212,36 @@ function NavLink({ to, label, icon: Icon, active, badge, onClick }) {
     }
   };
 
+  const isInvestor = role === "investor";
+
   return (
     <Link
       to={to}
       onClick={handleClick}
-      className={`flex items-center h-12 rounded-xl transition-colors relative ${
+      className={`flex items-center h-10 px-3 rounded-xl transition-all relative ${
         active
-          ? "bg-[#1B5E3F]/10 text-[#0F4A2E]"
-          : "text-[#0A1F14]/70 hover:bg-[#FAFAF7] hover:text-[#0F4A2E]"
+          ? isInvestor
+            ? "bg-[#F3E8FF] text-[#7C3AED] font-extrabold shadow-none"
+            : "bg-[#1B5E3F]/10 text-[#1B5E3F] font-black"
+          : "text-[#475569] font-semibold hover:bg-[#F8FAFC] hover:text-[#0F172A]"
       }`}
     >
-      <div className="relative mx-3 flex-shrink-0">
-        <Icon className="w-6 h-6" />
-        {badge > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#F5B942] text-[#0F4A2E] text-[9px] font-black rounded-full flex items-center justify-center">
-            {badge}
-          </span>
-        )}
-      </div>
-      <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap text-sm font-semibold">
-        {label}
-      </span>
+      <Icon
+        className={`w-4.5 h-4.5 mr-3 shrink-0 ${
+          active
+            ? isInvestor
+              ? "text-[#7C3AED]"
+              : "text-[#1B5E3F]"
+            : "text-[#64748B]"
+        }`}
+      />
+      <span className="text-xs truncate flex-1">{label}</span>
+
+      {badge > 0 && (
+        <span className="min-w-[18px] h-4.5 px-1 bg-[#F59E0B] text-white text-[10px] font-black rounded-full flex items-center justify-center shrink-0">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }

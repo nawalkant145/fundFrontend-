@@ -449,22 +449,22 @@ export default function MessagesPage() {
   };
 
   return (
-    <DashboardShell title={null} noPad hideMobileHeader>
-      <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden max-w-full">
-        {/* ─── Chat list (left column) ─────────────── */}
-        <div
-          className={`md:border-r-2 md:border-gold/15 md:w-80 lg:w-96 md:flex-shrink-0 h-full
+    <DashboardShell title={null} noPad fullWidth hideMobileHeader>
+      <div className="flex flex-col md:flex-row h-full min-h-0 overflow-hidden max-w-none m-0 p-0 flex-1 w-full">
+        {/* ─── Chat list (Message User List fixed column) ─────────────── */}
+        <section
+          className={`md:border-r md:border-[#1B5E3F]/10 w-full md:w-[380px] lg:w-[420px] md:min-w-[380px] md:max-w-[420px] shrink-0 flex-none h-full min-h-0 bg-white
                      ${chatId ? "hidden md:flex" : "flex"}
-                     flex-col`}
+                     flex-col overflow-hidden`}
         >
           {/* Header */}
-          <div className="px-4 sm:px-6 pt-5 pb-3 border-b border-gold/10 flex items-center justify-between">
-            <h2 className="text-xl font-black flex items-center gap-1">
+          <div className="px-4 sm:px-5 pt-4 pb-3 border-b border-[#1B5E3F]/10 flex items-center justify-between flex-shrink-0">
+            <h2 className="text-lg font-black flex items-center gap-1 text-[#0A1F14]">
               {user?.username ? `@${user.username}` : "messages"}
             </h2>
             <button
               onClick={() => searchInputRef.current?.focus()}
-              className="p-2 hover:bg-card-bg rounded-lg"
+              className="p-2 hover:bg-[#FAFAF7] rounded-lg text-[#0A1F14]/70 hover:text-[#1B5E3F] transition-colors"
               title="New message"
             >
               <HiPencilAlt className="w-5 h-5" />
@@ -472,28 +472,28 @@ export default function MessagesPage() {
           </div>
 
           {/* Search */}
-          <div className="p-3">
+          <div className="p-3 flex-shrink-0">
             <div className="relative">
-              <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A1F14]/40" />
               <input
                 ref={searchInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search username or name..."
-                className="w-full pl-9 pr-3 py-2 bg-dark-bg/60 border border-gold/15 rounded-lg text-sm text-white placeholder-gray-500 focus:border-gold focus:outline-none"
+                className="w-full pl-9 pr-3 py-2 bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-xl text-sm text-[#0A1F14] placeholder-[#0A1F14]/40 focus:border-[#1B5E3F] focus:outline-none transition-all"
               />
             </div>
           </div>
 
           {/* Section label */}
-          <div className="px-4 py-2 flex items-center justify-between">
-            <span className="font-bold text-sm">
+          <div className="px-4 py-2 flex items-center justify-between flex-shrink-0">
+            <span className="font-bold text-xs uppercase tracking-wider text-[#0A1F14]/60">
               {qClean ? "Search Results" : "Messages"}
             </span>
           </div>
 
           {/* Chat list & search results */}
-          <div className="flex-1 overflow-y-auto divide-y divide-gold/5">
+          <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[#1B5E3F]/5 sidebar-scroll">
             {/* 0. Skeleton loader while fetching chats initially */}
             {chatsLoading && chats.length === 0 && !qClean && (
               <div className="p-4 space-y-4">
@@ -647,13 +647,13 @@ export default function MessagesPage() {
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         {/* ─── Active chat (right column) ─────────────── */}
-        <div
-          className={`flex-1 ${
+        <main
+          className={`flex-1 min-w-0 w-auto min-h-0 ${
             chatId ? "flex" : "hidden md:flex"
-          } flex-col h-full`}
+          } flex-col h-full overflow-hidden bg-white`}
         >
           {chatsLoading && chatId && !activeChat ? (
             <div className="flex-1 flex items-center justify-center">
@@ -680,7 +680,7 @@ export default function MessagesPage() {
           ) : (
             <EmptyState />
           )}
-        </div>
+        </main>
       </div>
 
       <Confirm
@@ -1309,7 +1309,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden max-w-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-200/80 flex-shrink-0 bg-white/95 backdrop-blur z-20 text-[#0A1F14]">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#1B5E3F]/10 flex-shrink-0 bg-white/95 backdrop-blur z-20 text-[#0A1F14] h-16 sm:h-18">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
@@ -1395,7 +1395,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       {/* Messages */}
       <div
         ref={messagesListRef}
-        className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden max-w-full px-3 py-3 space-y-1.5 min-h-0"
+        className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden max-w-full px-4 sm:px-6 py-6 space-y-2 min-h-0"
       >
         {(() => {
           const grouped = [];
@@ -1425,7 +1425,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           return grouped.map((item) => {
             if (item.type === "separator") {
               return (
-                <div key={item.id} className="flex justify-center my-3">
+                <div key={item.id} className="flex justify-center my-5 sm:my-6">
                   <span className="bg-white text-gray-600 text-[11px] font-semibold px-3 py-1 rounded-full border border-gray-200 shadow-xs">
                     {formatDateSeparator(item.date)}
                   </span>
@@ -1471,7 +1471,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     backgroundColor: isMe ? "#005c4b" : "#ffffff",
                     color: isMe ? "#ffffff" : "#111827",
                   }}
-                  className={`relative max-w-[85%] sm:max-w-[70%] overflow-hidden rounded-xl px-3.5 py-2 shadow-sm break-words ${
+                  className={`relative max-w-[85%] sm:max-w-[75%] md:max-w-[70%] overflow-hidden rounded-xl px-3.5 py-2 shadow-sm break-words ${
                     isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100"
                   }`}
                 >
@@ -1618,7 +1618,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
 
       {/* Reply Preview Banner */}
       {replyingTo && (
-        <div className="px-4 py-2 bg-[#1f2c34] border-t border-gold/15 flex items-center justify-between animate-fadeIn">
+        <div className="px-4 py-2 bg-[#1f2c34] border-t border-gold/15 flex items-center justify-between animate-fadeIn flex-shrink-0">
           <div className="border-l-4 border-[#00a884] pl-3 min-w-0 flex-1">
             <span className="text-xs font-bold text-[#00a884]">
               {(replyingTo.senderId?._id || replyingTo.senderId || "").toString() === user?._id?.toString()
@@ -1642,7 +1642,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       {/* Composer */}
       <form
         onSubmit={send}
-        className="sticky bottom-0 z-20 flex-shrink-0 border-t border-gold/10 p-3 flex items-center gap-2 bg-dark-bg/40 backdrop-blur"
+        className="flex-shrink-0 w-full min-h-[72px] border-t border-[#1B5E3F]/10 px-3.5 sm:px-5 py-3 flex items-center gap-2.5 sm:gap-3 bg-white shadow-sm z-20"
       >
         <input
           ref={fileInputRef}

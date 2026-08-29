@@ -89,32 +89,72 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      const refreshToken =
+        localStorage.getItem("expglo:refreshToken") ||
+        sessionStorage.getItem("expglo:refreshToken");
+
+      if (!refreshToken) {
+        isRefreshing = false;
+        processQueue(new Error("No refresh token available"), null);
+        localStorage.removeItem("expglo:accessToken");
+        localStorage.removeItem("expglo:refreshToken");
+        localStorage.removeItem("expglo:remember");
+        sessionStorage.removeItem("expglo:accessToken");
+        sessionStorage.removeItem("expglo:refreshToken");
+        const path = window.location.pathname;
+        if (path.startsWith("/app") || path.startsWith("/admin")) {
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+
       try {
         const { data } = await axios.post(
           `${BASE_URL}/auth/refresh-token`,
-          {},
+          { refreshToken },
           { withCredentials: true },
         );
 
-        const newToken = data.data?.accessToken || data.accessToken;
+        const payload = data.data || data;
+        const newAccessToken = payload?.accessToken;
+        const newRefreshToken = payload?.refreshToken || refreshToken;
+
+        if (!newAccessToken) {
+          throw new Error("Invalid refresh response");
+        }
+
         // Store in the same storage the user originally used
         const remembered = localStorage.getItem("expglo:remember") === "1";
         if (remembered) {
-          localStorage.setItem("expglo:accessToken", newToken);
+          localStorage.setItem("expglo:accessToken", newAccessToken);
+          if (newRefreshToken) {
+            localStorage.setItem("expglo:refreshToken", newRefreshToken);
+          }
+          sessionStorage.removeItem("expglo:accessToken");
+          sessionStorage.removeItem("expglo:refreshToken");
         } else {
-          sessionStorage.setItem("expglo:accessToken", newToken);
+          sessionStorage.setItem("expglo:accessToken", newAccessToken);
+          if (newRefreshToken) {
+            sessionStorage.setItem("expglo:refreshToken", newRefreshToken);
+          }
+          localStorage.removeItem("expglo:accessToken");
+          localStorage.removeItem("expglo:refreshToken");
         }
-        api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-        processQueue(null, newToken);
 
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
+        processQueue(null, newAccessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // Refresh failed — session is truly gone. Clear tokens.
+        // Refresh failed — session is truly gone. Clear tokens from all storages.
         localStorage.removeItem("expglo:accessToken");
+        localStorage.removeItem("expglo:refreshToken");
         localStorage.removeItem("expglo:remember");
         sessionStorage.removeItem("expglo:accessToken");
+        sessionStorage.removeItem("expglo:refreshToken");
+
         // Only hard-redirect if the user is on a protected (/app or /admin)
         // page. On public pages, let them keep browsing as a guest.
         const path = window.location.pathname;

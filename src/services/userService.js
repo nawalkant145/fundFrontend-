@@ -31,6 +31,8 @@ export const userService = {
   updateFcmToken: (fcmToken) => api.put("/user/fcm-token", { fcmToken }),
   getPublicProfile: (userId) => api.get(`/user/public/${userId}`),
   getProfileViewers: (params) => api.get("/user/profile-viewers", { params }),
+  getRecommendedStartups: (params) =>
+    api.get("/user/recommended-startups", { params }),
   search: (params) => api.get("/user/search", { params }),
   blockUser: (userId) => api.post(`/user/block/${userId}`),
   unblockUser: (userId) => api.delete(`/user/block/${userId}`),

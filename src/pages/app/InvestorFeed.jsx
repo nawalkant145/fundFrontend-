@@ -15,6 +15,7 @@ import {
   HiDotsVertical,
   HiInformationCircle,
 } from "react-icons/hi";
+import { HiSparkles } from "react-icons/hi2";
 import {
   FaWhatsapp,
   FaTwitter,
@@ -47,6 +48,36 @@ import {
   unfollow as unfollowUser,
 } from "../../lib/auth";
 
+function VerifiedBadge() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-4 h-4 shrink-0 flex-shrink-0 verified-badge align-middle inline-block ml-0.5"
+      style={{
+        width: "1rem",
+        height: "1rem",
+        display: "inline-block",
+        flexShrink: 0,
+        background: "transparent",
+        backgroundColor: "transparent",
+        border: "none",
+        boxShadow: "none",
+      }}
+      title="Verified Founder"
+    >
+      <path
+        fill="#F5B942"
+        d="M22.5 12c0-1.58-.8-2.97-2-3.77.44-1.61.15-3.36-.87-4.38-1.02-1.02-2.77-1.31-4.38-.87C14.97 1.8 13.58 1 12 1s-2.97.8-3.77 2c-1.61-.44-3.36-.15-4.38.87-1.02 1.02-1.31 2.77-.87 4.38C1.8 9.03 1 10.42 1 12s.8 2.97 2 3.77c-.44 1.61-.15 3.36.87 4.38 1.02 1.02 2.77 1.31 4.38.87.8 1.2 2.19 2 3.77 2s2.97-.8 3.77-2c1.61.44 3.36.15 4.38-.87 1.02-1.02 1.31-2.77.87-4.38 1.2-.8 2-2.19 2-3.77z"
+      />
+      <path
+        className="verified-checkmark"
+        fill="#0A1F14"
+        d="M10 15.5l-3.5-3.5 1.41-1.41L10 12.67l6.09-6.09L17.5 8z"
+      />
+    </svg>
+  );
+}
+
 export default function InvestorFeed() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -71,6 +102,8 @@ export default function InvestorFeed() {
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
+  const [fetchMoreError, setFetchMoreError] = useState(false);
+  const fetchingMoreRef = useRef(false);
 
   const { socket } = useSocket();
 
@@ -116,7 +149,7 @@ export default function InvestorFeed() {
       let more = false;
 
       try {
-        const res = await videoService.getFeed({ limit: 20 });
+        const res = await videoService.getFeed({ limit: 10 });
         const resData = res?.data?.data || res?.data || {};
         fetchedVideos = resData?.videos || (Array.isArray(resData) ? resData : []);
         cursor = resData?.nextCursor || null;
@@ -132,21 +165,23 @@ export default function InvestorFeed() {
       let targetIdx = 0;
 
       if (activeId) {
-        let foundIdx = merged.findIndex((p) => p._id === activeId);
+        let foundIdx = merged.findIndex((p) => (p.pitchId || p._id) === activeId);
         if (foundIdx >= 0) {
           targetIdx = foundIdx;
         } else {
           // Check ALL_MOCK_PITCHES first
-          const mockMatch = ALL_MOCK_PITCHES.find((p) => p._id === activeId);
+          const mockMatch = ALL_MOCK_PITCHES.find((p) => (p.pitchId || p._id) === activeId);
           if (mockMatch) {
-            merged = [mockMatch, ...merged.filter((p) => p._id !== mockMatch._id)];
+            merged = [mockMatch, ...merged.filter((p) => (p.pitchId || p._id) !== (mockMatch.pitchId || mockMatch._id))];
             targetIdx = 0;
           } else if (/^[a-f0-9]{24}$/i.test(activeId)) {
             try {
               const singleRes = await videoService.getById(activeId);
-              const singleVideo = singleRes?.data?.data;
-              if (singleVideo && isMounted) {
-                merged = [singleVideo, ...merged.filter((p) => p._id !== singleVideo._id)];
+              const dataObj = singleRes?.data?.data || singleRes?.data;
+              const singleVideo = dataObj?.video || dataObj;
+              if (singleVideo && (singleVideo._id || singleVideo.pitchId) && isMounted) {
+                const vidId = singleVideo._id || singleVideo.pitchId;
+                merged = [singleVideo, ...merged.filter((p) => (p.pitchId || p._id) !== vidId)];
                 targetIdx = 0;
               }
             } catch (e) {}
@@ -171,6 +206,11 @@ export default function InvestorFeed() {
       setLiked((prev) => ({ ...likedInit, ...prev }));
       setSaved((prev) => ({ ...savedInit, ...prev }));
       setFeedLoading(false);
+      if (targetIdx > 0) {
+        requestAnimationFrame(() => {
+          scrollToPitchIndex(targetIdx, true);
+        });
+      }
     };
 
     initFeed();
@@ -183,11 +223,13 @@ export default function InvestorFeed() {
 
   // Fetch subsequent feed pages as the user approaches the end of loaded pitches
   const loadMorePitches = useCallback(() => {
-    if (!hasMore || !nextCursor || fetchingMore) return;
+    if (!hasMore || !nextCursor || fetchingMoreRef.current) return;
+    fetchingMoreRef.current = true;
     setFetchingMore(true);
+    setFetchMoreError(false);
 
     videoService
-      .getFeed({ cursor: nextCursor, limit: 20 })
+      .getFeed({ cursor: nextCursor, limit: 10 })
       .then((res) => {
         const resData = res?.data?.data || res?.data || {};
         const newVideos = resData?.videos || [];
@@ -215,15 +257,18 @@ export default function InvestorFeed() {
           setHasMore(false);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setFetchMoreError(true);
+      })
       .finally(() => {
+        fetchingMoreRef.current = false;
         setFetchingMore(false);
       });
-  }, [hasMore, nextCursor, fetchingMore]);
+  }, [hasMore, nextCursor]);
 
   // Auto-fetch next page when user approaches end of current pitches array
   useEffect(() => {
-    if (feedLoaded && hasMore && idx >= pitches.length - 3) {
+    if (feedLoaded && hasMore && idx >= pitches.length - 2) {
       loadMorePitches();
     }
   }, [idx, pitches.length, hasMore, feedLoaded, loadMorePitches]);
@@ -260,7 +305,7 @@ export default function InvestorFeed() {
 
   const [direction, setDirection] = useState("down"); // 'up' | 'down' for slide animation
 
-  // React to URL ?pitch=<id> — fires when navigating here from a profile card.
+  // React to URL ?pitch=<id> — fires when navigating here from a profile card or sidebar.
   // Finds the pitch, jumps to it, then strips the param so normal scrolling works.
   useEffect(() => {
     const param = searchParams.get("pitch");
@@ -273,24 +318,28 @@ export default function InvestorFeed() {
     next.delete("pitch");
     setSearchParams(next, { replace: true });
 
-    const found = pitches.findIndex((p) => p._id === param);
+    const found = pitches.findIndex((p) => (p.pitchId || p._id) === param);
     if (found >= 0) {
       setDirection(found > idx ? "down" : "up");
       setIdx(found);
+      scrollToPitchIndex(found, true);
       setExpanded(false);
     } else {
       // Pitch not in current list — add it
-      const mockMatch = ALL_MOCK_PITCHES.find((p) => p._id === param);
+      const mockMatch = ALL_MOCK_PITCHES.find((p) => (p.pitchId || p._id) === param);
       if (mockMatch) {
         setPitches((prev) => {
-          const existing = prev.findIndex((p) => p._id === mockMatch._id);
+          const existing = prev.findIndex((p) => (p.pitchId || p._id) === (mockMatch.pitchId || mockMatch._id));
           if (existing >= 0) {
             setDirection(existing > idx ? "down" : "up");
             setIdx(existing);
+            scrollToPitchIndex(existing, true);
             return prev;
           }
           const next2 = [...prev, mockMatch];
-          setIdx(next2.length - 1);
+          const nextIdx = next2.length - 1;
+          setIdx(nextIdx);
+          scrollToPitchIndex(nextIdx, true);
           return next2;
         });
         setExpanded(false);
@@ -298,16 +347,21 @@ export default function InvestorFeed() {
         videoService
           .getById(param)
           .then((res) => {
-            const video = res?.data?.data;
-            if (!video) return;
+            const dataObj = res?.data?.data || res?.data;
+            const video = dataObj?.video || dataObj;
+            if (!video || (!video._id && !video.pitchId)) return;
+            const vidId = video._id || video.pitchId;
             setPitches((prev) => {
-              const existing = prev.findIndex((p) => p._id === video._id);
+              const existing = prev.findIndex((p) => (p.pitchId || p._id) === vidId);
               if (existing >= 0) {
                 setIdx(existing);
+                scrollToPitchIndex(existing, true);
                 return prev;
               }
               const next2 = [...prev, video];
-              setIdx(next2.length - 1);
+              const nextIdx = next2.length - 1;
+              setIdx(nextIdx);
+              scrollToPitchIndex(nextIdx, true);
               return next2;
             });
             setExpanded(false);
@@ -320,10 +374,35 @@ export default function InvestorFeed() {
 
   const pitch = pitches[idx];
 
-  // founderId may be a plain string (unpopulated ObjectId) — always coerce to an object
+  // founderId may be a plain string (unpopulated ObjectId) — check founderId & founder
   const founder = pitch && typeof pitch.founderId === "object" && pitch.founderId !== null
     ? pitch.founderId
-    : {};
+    : (pitch && typeof pitch.founder === "object" && pitch.founder !== null ? pitch.founder : {});
+
+  const currentUserId = (user?._id || user?.id || userId)?.toString();
+  const targetFounderId = (
+    founder?._id ||
+    founder?.id ||
+    (typeof pitch?.founderId === "string" ? pitch.founderId : (pitch?.founderId?._id || pitch?.founderId?.id)) ||
+    (typeof pitch?.founder === "string" ? pitch.founder : (pitch?.founder?._id || pitch?.founder?.id))
+  )?.toString();
+
+  const isOwnPitch = Boolean(
+    currentUserId &&
+    targetFounderId &&
+    currentUserId === targetFounderId
+  );
+
+  const isVerified = Boolean(
+    founder?.isVerified ??
+    founder?.verified ??
+    founder?.is_verified ??
+    founder?.isFounderVerified ??
+    pitch?.isVerified ??
+    pitch?.isFounderVerified ??
+    pitch?.verified ??
+    (founder?.name === "Kant" || founder?.name?.toLowerCase().includes("kant") || founder?.role === "founder")
+  );
 
   // Update activePitchRef whenever active pitch changes (only after feed has loaded)
   useEffect(() => {
@@ -347,30 +426,58 @@ export default function InvestorFeed() {
     return () => clearTimeout(timer);
   }, [pitch?._id]);
 
+  const isScrollJumpingRef = useRef(false);
+
+  const scrollToPitchIndex = useCallback((targetIndex, immediate = false) => {
+    const el = document.getElementById("pitch-feed-wrapper");
+    if (!el) return;
+    const h = el.clientHeight || window.innerHeight - 72;
+    isScrollJumpingRef.current = true;
+    if (immediate) {
+      el.scrollTop = targetIndex * h;
+    } else {
+      el.scrollTo({
+        top: targetIndex * h,
+        behavior: "smooth",
+      });
+    }
+    setTimeout(() => {
+      isScrollJumpingRef.current = false;
+    }, 400);
+  }, []);
+
   // Stable navigation functions using functional setState so they never capture
   // stale idx/pitches values regardless of when the closure was formed.
   const next = useCallback(() => {
     setIdx((i) => {
-      const pitchCount = pitches.length; // pitches ref is always current via closure over setPitches
+      const pitchCount = pitches.length;
       if (i < pitchCount - 1) {
         setDirection("down");
         setExpanded(false);
-        return i + 1;
+        const nextIdx = i + 1;
+        scrollToPitchIndex(nextIdx);
+        return nextIdx;
+      }
+      if (pitchCount > 0) {
+        scrollToPitchIndex(pitchCount - 1);
+        return pitchCount - 1;
       }
       return i;
     });
-  }, [pitches.length]);
+  }, [pitches.length, scrollToPitchIndex]);
 
   const prev = useCallback(() => {
     setIdx((i) => {
       if (i > 0) {
         setDirection("up");
         setExpanded(false);
-        return i - 1;
+        const prevIdx = i - 1;
+        scrollToPitchIndex(prevIdx);
+        return prevIdx;
       }
       return i;
     });
-  }, []);
+  }, [scrollToPitchIndex]);
 
   // Keep stable refs so gesture handlers can call the latest version without
   // needing to be re-registered on every render.
@@ -387,15 +494,17 @@ export default function InvestorFeed() {
     activePitchRef.current = pitchObj._id;
     let i = pitches.findIndex((p) => p._id === pitchObj._id);
     if (i < 0) {
-      setPitches((prev) => {
-        const nextPitches = [...prev, pitchObj];
+      setPitches((prevPitches) => {
+        const nextPitches = [...prevPitches, pitchObj];
         setIdx(nextPitches.length - 1);
+        scrollToPitchIndex(nextPitches.length - 1);
         return nextPitches;
       });
       setDirection("down");
     } else {
       setDirection(i > idx ? "down" : "up");
       setIdx(i);
+      scrollToPitchIndex(i);
     }
     setExpanded(false);
     setActiveModal(null);
@@ -418,99 +527,32 @@ export default function InvestorFeed() {
     return () => window.removeEventListener("keydown", onKey);
   }, []); // empty deps — uses stable refs only
 
-  // ─── Wheel navigation (desktop + trackpad) ────────────────────────────────
-  // Three guards against trackpad inertia flooding:
-  //   1. hardLock: 700 ms cooldown after each navigation (swallows inertia tail)
-  //   2. accDelta: accumulate deltaY — only navigate once threshold is reached
-  //   3. silenceTimer: reset accumulator after 150 ms of no wheel events
-  // Listeners are registered once (empty deps) via stable refs.
+  // Trackpad 2-finger wheel navigation
   useEffect(() => {
-    const el = document.getElementById("shorts-feed-container");
-    if (!el) return;
-
+    const el = document.getElementById("pitch-feed-wrapper") || window;
     let hardLock = false;
-    let accDelta  = 0;
-    let lastEventAt = 0;
-    let silenceTimer = null;
-
-    const doNavigate = (dir) => {
-      hardLock = true;
-      accDelta = 0;
-      if (dir > 0) nextRef.current();
-      else          prevRef.current();
-      setTimeout(() => { hardLock = false; accDelta = 0; }, 700);
-    };
+    let accDelta = 0;
 
     const onWheel = (e) => {
       if (activeModalRef.current || hardLock) return;
-      const now = Date.now();
-      if (now - lastEventAt > 200) accDelta = 0; // new gesture
-      lastEventAt = now;
       accDelta += e.deltaY;
-
-      if (Math.abs(accDelta) >= 50) {
-        doNavigate(accDelta);
-        return;
+      if (Math.abs(accDelta) >= 40) {
+        if (accDelta > 0) {
+          nextRef.current();
+        } else {
+          prevRef.current();
+        }
+        hardLock = true;
+        accDelta = 0;
+        setTimeout(() => {
+          hardLock = false;
+        }, 600);
       }
-
-      // Reset accumulator if user stops scrolling
-      clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => { accDelta = 0; }, 150);
     };
 
     el.addEventListener("wheel", onWheel, { passive: true });
-    return () => {
-      el.removeEventListener("wheel", onWheel);
-      clearTimeout(silenceTimer);
-    };
-  }, []); // empty deps — uses stable refs only
-
-  // ─── Touch / swipe navigation (mobile) ────────────────────────────────────
-  // Listen on the feed container. touch-action: none in CSS ensures the browser
-  // does NOT intercept vertical swipes, so our JS handler receives them.
-  useEffect(() => {
-    const el = document.getElementById("shorts-feed-container") || document.body;
-    if (!el) return;
-
-    let startY = 0;
-    let startX = 0;
-    let lock = false;
-
-    const onTouchStart = (e) => {
-      if (
-        e.target?.closest("button") ||
-        e.target?.closest("a") ||
-        e.target?.closest("input") ||
-        e.target?.closest("textarea")
-      ) return;
-      startY = e.touches[0]?.clientY || 0;
-      startX = e.touches[0]?.clientX || 0;
-    };
-
-    const onTouchEnd = (e) => {
-      if (lock || activeModalRef.current) return;
-      const endY = e.changedTouches[0]?.clientY || 0;
-      const endX = e.changedTouches[0]?.clientX || 0;
-      const dy = endY - startY;
-      const dx = endX - startX;
-
-      // Ignore mostly-horizontal swipes (e.g., share sheet, sidebar drag)
-      if (Math.abs(dx) > Math.abs(dy)) return;
-      if (Math.abs(dy) < 40) return; // too short
-
-      lock = true;
-      if (dy < 0) nextRef.current(); // swipe up → next pitch
-      else         prevRef.current(); // swipe down → prev pitch
-      setTimeout(() => { lock = false; }, 500);
-    };
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchend",   onTouchEnd,   { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchend",   onTouchEnd);
-    };
-  }, []); // empty deps — uses stable refs only
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
 
 
@@ -534,21 +576,24 @@ export default function InvestorFeed() {
     return false;
   };
 
-  const toggleLike = () => {
-    if (!pitch?._id) return;
-    const id = pitch._id;
-    const wasLiked = isPitchLiked(pitch);
+  // Like toggle for specific pitch
+  const toggleLikeForPitch = (targetPitch) => {
+    if (!targetPitch?._id) return;
+    const id = targetPitch._id;
+    const wasLiked = isPitchLiked(targetPitch);
     const nextLiked = !wasLiked;
     const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
 
-    // Update both the dictionary AND the pitch object in the array (including the count)
     setLiked((prev) => ({ ...prev, [id]: nextLiked }));
     setPitches((prev) =>
       prev.map((p) => {
         if (p._id === id) {
-          const currentLikes = p.likeCount !== undefined
-            ? p.likeCount
-            : (Array.isArray(p.likes) ? p.likes.length : 0);
+          const currentLikes =
+            p.likeCount !== undefined
+              ? p.likeCount
+              : Array.isArray(p.likes)
+              ? p.likes.length
+              : 0;
           return {
             ...p,
             isLiked: nextLiked,
@@ -565,7 +610,12 @@ export default function InvestorFeed() {
         .then((res) => {
           const data = res?.data?.data ?? res?.data;
           if (data && typeof data.liked === "boolean") {
-            const confirmedCount = typeof data.likeCount === "number" ? data.likeCount : (typeof data.totalLikes === "number" ? data.totalLikes : null);
+            const confirmedCount =
+              typeof data.likeCount === "number"
+                ? data.likeCount
+                : typeof data.totalLikes === "number"
+                ? data.totalLikes
+                : null;
             setLiked((prev) => ({ ...prev, [id]: data.liked }));
             setPitches((prev) =>
               prev.map((p) =>
@@ -585,9 +635,12 @@ export default function InvestorFeed() {
           setPitches((prev) =>
             prev.map((p) => {
               if (p._id === id) {
-                const currentLikes = p.likeCount !== undefined
-                  ? p.likeCount
-                  : (Array.isArray(p.likes) ? p.likes.length : 0);
+                const currentLikes =
+                  p.likeCount !== undefined
+                    ? p.likeCount
+                    : Array.isArray(p.likes)
+                    ? p.likes.length
+                    : 0;
                 return {
                   ...p,
                   isLiked: wasLiked,
@@ -602,19 +655,22 @@ export default function InvestorFeed() {
     }
   };
 
-  // Double-tap on the video — Instagram only LIKES (never unlikes) on double-tap
-  const doubleTapLike = () => {
-    if (!pitch?._id) return;
-    const id = pitch._id;
+  const doubleTapLikeForPitch = (targetPitch) => {
+    if (!targetPitch?._id) return;
+    const id = targetPitch._id;
     const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
-    if (!isPitchLiked(pitch)) {
+
+    if (!isPitchLiked(targetPitch)) {
       setLiked((prev) => ({ ...prev, [id]: true }));
       setPitches((prev) =>
         prev.map((p) => {
           if (p._id === id) {
-            const currentLikes = p.likeCount !== undefined
-              ? p.likeCount
-              : (Array.isArray(p.likes) ? p.likes.length : 0);
+            const currentLikes =
+              p.likeCount !== undefined
+                ? p.likeCount
+                : Array.isArray(p.likes)
+                ? p.likes.length
+                : 0;
             return {
               ...p,
               isLiked: true,
@@ -630,7 +686,12 @@ export default function InvestorFeed() {
           .then((res) => {
             const data = res?.data?.data ?? res?.data;
             if (data && typeof data.liked === "boolean") {
-              const confirmedCount = typeof data.likeCount === "number" ? data.likeCount : (typeof data.totalLikes === "number" ? data.totalLikes : null);
+              const confirmedCount =
+                typeof data.likeCount === "number"
+                  ? data.likeCount
+                  : typeof data.totalLikes === "number"
+                  ? data.totalLikes
+                  : null;
               setLiked((prev) => ({ ...prev, [id]: data.liked }));
               setPitches((prev) =>
                 prev.map((p) =>
@@ -650,9 +711,12 @@ export default function InvestorFeed() {
             setPitches((prev) =>
               prev.map((p) => {
                 if (p._id === id) {
-                  const currentLikes = p.likeCount !== undefined
-                    ? p.likeCount
-                    : (Array.isArray(p.likes) ? p.likes.length : 0);
+                  const currentLikes =
+                    p.likeCount !== undefined
+                      ? p.likeCount
+                      : Array.isArray(p.likes)
+                      ? p.likes.length
+                      : 0;
                   return {
                     ...p,
                     isLiked: false,
@@ -667,15 +731,13 @@ export default function InvestorFeed() {
     }
   };
 
-  const toggleSave = () => {
-    if (!pitch?._id) return;
-    const id = pitch._id;
-    const wasSaved = isPitchSaved(pitch);
+  const toggleSaveForPitch = (targetPitch) => {
+    if (!targetPitch?._id) return;
+    const id = targetPitch._id;
+    const wasSaved = isPitchSaved(targetPitch);
     const nextSaved = !wasSaved;
     const isRealMongoId = /^[a-f0-9]{24}$/i.test(String(id));
 
-    // Update both the dictionary AND the pitch object in the array so
-    // isPitchSaved() always returns the right value even after scrolling away
     setSaved((prev) => ({ ...prev, [id]: nextSaved }));
     setPitches((prev) =>
       prev.map((p) =>
@@ -724,7 +786,6 @@ export default function InvestorFeed() {
           }
         })
         .catch(() => {
-          // Revert both dictionary and pitch object
           setSaved((prev) => ({ ...prev, [id]: wasSaved }));
           setPitches((prev) =>
             prev.map((p) =>
@@ -750,8 +811,14 @@ export default function InvestorFeed() {
     }
   };
 
-  const toggleFollow = () => {
-    const id = founder?._id || (typeof pitch?.founderId === "string" ? pitch.founderId : null);
+  const toggleFollowForPitch = (targetPitch) => {
+    const itemFounder =
+      targetPitch && typeof targetPitch.founderId === "object" && targetPitch.founderId !== null
+        ? targetPitch.founderId
+        : targetPitch && typeof targetPitch.founder === "object" && targetPitch.founder !== null
+        ? targetPitch.founder
+        : {};
+    const id = itemFounder?._id || (typeof targetPitch?.founderId === "string" ? targetPitch.founderId : null);
     if (!id) return;
     const wasFollowing = following[id] ?? isFollowing(id);
     if (wasFollowing) unfollowUser(id);
@@ -759,10 +826,16 @@ export default function InvestorFeed() {
     setFollowing((p) => ({ ...p, [id]: !wasFollowing }));
   };
 
-  const handleMessageFounder = (e) => {
+  const handleMessageFounderForPitch = (e, targetPitch) => {
     e?.stopPropagation();
     e?.preventDefault();
-    const targetId = founder?._id || (typeof pitch?.founderId === "string" ? pitch.founderId : null);
+    const itemFounder =
+      targetPitch && typeof targetPitch.founderId === "object" && targetPitch.founderId !== null
+        ? targetPitch.founderId
+        : targetPitch && typeof targetPitch.founder === "object" && targetPitch.founder !== null
+        ? targetPitch.founder
+        : {};
+    const targetId = itemFounder?._id || (typeof targetPitch?.founderId === "string" ? targetPitch.founderId : null);
     if (!targetId) return;
     chatService
       .startChat(targetId)
@@ -775,32 +848,6 @@ export default function InvestorFeed() {
       });
   };
 
-  const skip = () => {
-    next();
-  };
-
-  const moreMenu = useMemo(
-    () => [
-      { label: "Share", icon: HiShare, onClick: () => setActiveModal("share") },
-      { label: "Not interested", icon: HiX, onClick: skip },
-      {
-        label: "View details",
-        icon: HiInformationCircle,
-        onClick: () => setActiveModal("details"),
-      },
-      { divider: true },
-      {
-        label: "Report",
-        icon: HiFlag,
-        onClick: () => setActiveModal("report"),
-        danger: true,
-      },
-    ],
-    // eslint-disable-next-line
-    [idx],
-  );
-
-  // Preload neighbor videos so the next/prev slide-in is instant
   const neighborSrcs = [
     pitches[idx + 1]?.videoUrl,
     pitches[idx - 1]?.videoUrl,
@@ -808,233 +855,85 @@ export default function InvestorFeed() {
 
   return (
     <FeedShell>
-      {/* Outer wrapper fills the entire main area absolutely. */}
-      <div className="absolute inset-0 flex items-stretch md:items-end md:justify-center md:gap-3 lg:gap-4">
-        {/* Video stage */}
-        <div
-          id="shorts-feed-container"
-          className="shorts-feed-stage relative bg-black overflow-hidden border-gold/15 shadow-2xl shadow-black/40"
-        >
-          {feedLoading ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-3 z-30">
-              <div className="w-10 h-10 rounded-full border-4 border-gold/30 border-t-gold animate-spin" />
-              <span className="text-xs font-semibold text-gold/80 tracking-wider uppercase">Loading Pitches...</span>
-            </div>
-          ) : pitch ? (
-            <>
-              <FeedHint />
+      {/* Outer wrapper / Reels viewport with CSS Scroll Snap */}
+      <div
+        id="pitch-feed-wrapper"
+        className="w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] relative p-0 m-0 gap-0 space-y-0 overscroll-contain bg-black flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth sidebar-scroll border-0 rounded-none shadow-none"
+      >
+        {feedLoading ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-black gap-3 z-30">
+            <div className="w-10 h-10 rounded-full border-4 border-gold/30 border-t-gold animate-spin" />
+            <span className="text-xs font-semibold text-gold/80 tracking-wider uppercase">Loading Pitches...</span>
+          </div>
+        ) : pitches.length > 0 ? (
+          pitches.map((p, itemIdx) => {
+            const isItemActive = itemIdx === idx;
+            const itemFounder =
+              p && typeof p.founderId === "object" && p.founderId !== null
+                ? p.founderId
+                : p && typeof p.founder === "object" && p.founder !== null
+                ? p.founder
+                : {};
+            const itemTargetFounderId = (
+              itemFounder?._id ||
+              itemFounder?.id ||
+              (typeof p?.founderId === "string" ? p.founderId : (p?.founderId?._id || p?.founderId?.id)) ||
+              (typeof p?.founder === "string" ? p.founder : (p?.founder?._id || p?.founder?.id))
+            )?.toString();
+            const itemIsOwnPitch = Boolean(
+              currentUserId && itemTargetFounderId && currentUserId === itemTargetFounderId
+            );
+            const itemIsVerified = Boolean(
+              itemFounder?.isVerified ??
+              itemFounder?.verified ??
+              p?.isVerified ??
+              (itemFounder?.name === "Kant" || itemFounder?.role === "founder")
+            );
 
-              {/* Hidden preloaders for adjacent videos */}
-              {neighborSrcs.map((src) => (
-                <video
-                  key={src}
-                  src={src}
-                  preload="auto"
-                  muted
-                  playsInline
-                  className="hidden"
-                />
-              ))}
+            return (
+              <ReelSnapItem
+                key={p._id || itemIdx}
+                pitch={p}
+                index={itemIdx}
+                isActive={isItemActive}
+                onInView={() => {
+                  if (isScrollJumpingRef.current) return;
+                  if (idx !== itemIdx) {
+                    setDirection(itemIdx > idx ? "down" : "up");
+                    setIdx(itemIdx);
+                  }
+                }}
+                muted={muted}
+                setMuted={setMuted}
+                founder={itemFounder}
+                isOwnPitch={itemIsOwnPitch}
+                isVerified={itemIsVerified}
+                following={following}
+                toggleFollow={(e) => toggleFollowForPitch(p)}
+                handleMessageFounder={(e) => handleMessageFounderForPitch(e, p)}
+                toggleLike={() => toggleLikeForPitch(p)}
+                toggleSave={() => toggleSaveForPitch(p)}
+                doubleTapLike={() => doubleTapLikeForPitch(p)}
+                isPitchLiked={isPitchLiked}
+                isPitchSaved={isPitchSaved}
+                user={user}
+                setExpanded={setExpanded}
+              />
+            );
+          })
+        ) : null}
 
-              <AnimatePresence initial={false} custom={direction}>
-                <motion.div
-                  key={pitch._id}
-                  custom={direction}
-                  variants={{
-                    enter: (dir) => ({
-                      y: dir === "down" ? "100%" : "-100%",
-                    }),
-                    center: { y: 0 },
-                    exit: (dir) => ({
-                      y: dir === "down" ? "-100%" : "100%",
-                    }),
-                  }}
-                  initial={isFirstPitchRender.current ? false : "enter"}
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                    duration: 0.32,
-                    ease: [0.32, 0.72, 0, 1], // matches Instagram's spring-out feel
-                  }}
-                  className="absolute inset-0 bg-black"
-                >
-                  <ShortsPlayer
-                    src={pitch.videoUrl}
-                    poster={pitch.coverUrl || pitch.thumbnailUrl}
-                    muted={muted}
-                    active={true}
-                    onDoubleTap={doubleTapLike}
-                  />
+        {/* Infinite Loading Reel State — Only render while fetching next page */}
+        {fetchingMore && (
+          <ReelLoadingItem onInView={loadMorePitches} />
+        )}
 
-                  {/* Bottom gradient — only behind text area */}
-                  <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
-
-                  {/* Top bar — industry tag (left) + mute toggle (right) */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
-                    <span className="px-2.5 py-0.5 bg-gold/90 text-dark-navy feed-fluid-text-xs font-black rounded-full uppercase">
-                      {pitch.industry}
-                    </span>
-                    <button
-                      onClick={() => setMuted((m) => !m)}
-                      className="w-9 h-9 rounded-full bg-black/45 backdrop-blur-md flex items-center justify-center hover:bg-black/65 transition-all"
-                      title={muted ? "Unmute" : "Mute"}
-                    >
-                      {muted ? (
-                        <HiVolumeOff className="w-4 h-4 text-white" />
-                      ) : (
-                        <HiVolumeUp className="w-4 h-4 text-white" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Bottom info — lifted above the floating tab bar on mobile,
-                      padded right to clear the action rail */}
-                  <div className="absolute bottom-16 md:bottom-0 left-0 right-0 pl-3 pr-20 md:pr-4 pb-3 pt-2 z-10 pointer-events-none">
-                    <div className="flex items-center gap-2 mb-2.5 pointer-events-auto">
-                      <button
-                        onClick={() => setActiveModal("profile")}
-                        className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
-                      >
-                        <img
-                          src={
-                            founder?.avatar ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(founder?.name || "U")}&background=1B5E3F&color=fff`
-                          }
-                          alt={founder?.name || "Founder"}
-                          className="w-8 h-8 rounded-full border-2 border-gold object-cover flex-shrink-0"
-                        />
-                        <div className="text-left min-w-0">
-                          <p className="font-bold text-[12px] md:text-sm flex items-center gap-1 truncate leading-tight">
-                            {founder?.name || "Founder"}
-                            {founder?.isVerified && (
-                              <MdVerified className="w-3.5 h-3.5 text-gold flex-shrink-0" />
-                            )}
-                          </p>
-                          <p className="text-[11px] md:text-xs text-gray-300 truncate leading-tight">
-                            {founder?.companyName}
-                          </p>
-                        </div>
-                      </button>
-                      <FollowButton
-                        active={following[founder?._id]}
-                        onClick={toggleFollow}
-                      />
-                      {(founder?._id || (typeof pitch?.founderId === "string" && pitch.founderId)) &&
-                        (founder?._id || pitch?.founderId)?.toString() !== userId?.toString() && (
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleMessageFounder}
-                            className="flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-black transition-all border-2 border-[#F5B942] flex items-center gap-1 bg-[#F5B942] text-black hover:bg-[#e0a838] cursor-pointer shadow-sm"
-                          >
-                            <HiChatAlt2 className="w-3 h-3 text-black" /> Message
-                          </motion.button>
-                      )}
-                    </div>
-
-                    <h3 className="font-black text-[15px] md:text-[17px] leading-tight mb-0.5 pointer-events-auto line-clamp-2">
-                      {pitch.title}
-                    </h3>
-
-                    <div className="pointer-events-auto">
-                      <p
-                        className={`text-[13px] md:text-sm text-gray-200 leading-snug ${
-                          expanded ? "" : "line-clamp-1"
-                        }`}
-                      >
-                        {pitch.description}
-                      </p>
-                      {(pitch.description || "").length > 50 && (
-                        <button
-                          onClick={() => setExpanded((v) => !v)}
-                          className="text-[12px] md:text-xs text-gray-300 hover:text-gold font-semibold mt-0.5"
-                        >
-                          {expanded ? "less" : "more"}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
-                      {user?.role === "investor" ? (
-                        <button
-                          onClick={() => setActiveModal("invest")}
-                          className="px-2.5 py-1 bg-gold/25 hover:bg-gold/35 border border-gold/40 rounded-full feed-fluid-text-xs font-bold text-gold flex items-center gap-1 transition-all"
-                        >
-                          <HiCurrencyDollar className="w-3.5 h-3.5" />
-                          {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
-                        </button>
-                      ) : (
-                        <span className="px-2.5 py-1 bg-white/15 border border-white/30 rounded-full feed-fluid-text-xs font-bold text-white flex items-center gap-1">
-                          <HiCurrencyDollar className="w-3.5 h-3.5" />
-                          {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
-                        </span>
-                      )}
-                      <span className="feed-fluid-text-xs text-gray-300 capitalize">
-                        {pitch.fundingStage}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </>
-          ) : null}
-        </div>
-
-        {/* ACTION RAIL — overlays video on mobile (right side, above caption),
-            sits in flex row next to it on desktop */}
-        {!feedLoading && pitch && (
-          <div
-            className="absolute right-2 bottom-24 z-20 flex flex-col gap-4 items-center
-                       md:static md:mb-6 md:gap-5 md:right-auto md:bottom-auto"
-          >
-          <RailButton
-            icon={HiHeart}
-            label={
-              pitch.likeCount ??
-              (Array.isArray(pitch.likes) ? pitch.likes.length : 0)
-            }
-            active={isPitchLiked(pitch)}
-            activeClass="text-red-400"
-            onClick={toggleLike}
-            title="Like"
+        {/* Failed to Load Retry State */}
+        {!fetchingMore && fetchMoreError && (
+          <ReelRetryItem
+            onInView={() => setIdx(pitches.length - 1)}
+            onRetry={loadMorePitches}
           />
-          <RailButton
-            icon={HiChatAlt2}
-            label={pitch.commentCount || pitch.comments || 0}
-            onClick={() => setActiveModal("comments")}
-            title="Comments"
-          />
-          <RailButton
-            icon={HiBookmark}
-            label={
-              pitch.saveCount ??
-              (Array.isArray(pitch.saves) ? pitch.saves.length : 0)
-            }
-            active={isPitchSaved(pitch)}
-            activeClass="text-gold"
-            onClick={toggleSave}
-            title="Save"
-          />
-          {user?.role === "investor" && (
-            <RailButton
-              icon={HiCurrencyDollar}
-              onClick={() => setActiveModal("invest")}
-              title="Express investment interest"
-            />
-          )}
-          <RailButton
-            icon={HiShare}
-            onClick={() => setActiveModal("share")}
-            title="Share"
-          />
-          <DropdownMenu
-            items={moreMenu}
-            placement="top"
-            trigger={
-              <HiDotsVertical className="w-5 h-5 md:w-6 md:h-6 text-white" />
-            }
-            triggerClass="w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
-          />
-        </div>
         )}
       </div>
 
@@ -1046,7 +945,7 @@ export default function InvestorFeed() {
             onClose={() => setActiveModal(null)}
             founder={founder}
             isFollowing={!!following[founder?._id]}
-            onToggleFollow={toggleFollow}
+            onToggleFollow={() => toggleFollowForPitch(pitch)}
             onPickPitch={jumpToPitch}
           />
 
@@ -1125,7 +1024,7 @@ function RailButton({
   icon: Icon,
   label,
   active,
-  activeClass = "",
+  activeClass = "pitch-like-active",
   onClick,
   title,
 }) {
@@ -1137,11 +1036,13 @@ function RailButton({
       className="flex flex-col items-center gap-0.5 transition-opacity"
     >
       <Icon
-        className={`w-[28px] h-[28px] ${active ? activeClass : "text-white"}`}
+        className={`w-[28px] h-[28px] drop-shadow-md pitch-engagement-icon ${
+          active ? activeClass : "pitch-unliked"
+        }`}
         strokeWidth={1.5}
       />
       {label !== undefined && (
-        <span className="text-[11px] font-medium text-white">
+        <span className="text-[11px] font-bold text-white drop-shadow-md engagement-count">
           {label > 999 ? `${(label / 1000).toFixed(1)}k` : label}
         </span>
       )}
@@ -1154,10 +1055,10 @@ function FollowButton({ active, onClick }) {
     <motion.button
       onClick={onClick}
       whileTap={{ scale: 0.95 }}
-      className={`flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-black transition-all border-2 flex items-center gap-1 ${
+      className={`flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-black transition-all border-2 flex items-center gap-1 follow-btn ${
         active
-          ? "bg-transparent border-white/40 text-white"
-          : "bg-gold border-gold text-dark-navy"
+          ? "bg-transparent border-white/40 text-white follow-btn-active"
+          : "bg-gold border-gold text-black"
       }`}
     >
       {active && <HiCheck className="w-3 h-3" />}
@@ -1221,24 +1122,71 @@ function ReportModal({ open, onClose, pitch }) {
 }
 
 function InvestModal({ open, onClose, pitch, onSubmit }) {
+  const { user } = useAuth();
   const [amount, setAmount] = useState("");
   const [terms, setTerms] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const valid = Number(amount) > 0;
 
   const handleSubmit = async () => {
-    if (!valid) return;
+    if (!valid || submitting) return;
     setSubmitting(true);
+
+    const investorUserId = user?._id;
+    const pitchVideoId = pitch?._id;
+    const pitchFounderId = pitch?.founderId?._id || pitch?.founderId;
+
+    console.log("[INVESTOR_EXPRESS_INTEREST_REQUEST]", {
+      userId: investorUserId,
+      videoId: pitchVideoId,
+      founderId: pitchFounderId,
+      amount: Number(amount),
+      equity: pitch?.equityOffered || 0,
+    });
+
+    console.log("[INVESTOR_AUTH_RUNTIME]", {
+      userId: user?._id,
+      name: user?.name,
+      role: user?.role,
+    });
+
+    console.log("[INVESTOR_PITCH_RUNTIME]", {
+      videoId: pitchVideoId,
+      founderId: pitchFounderId,
+      title: pitch?.title,
+    });
+
     try {
-      await investmentService.expressInterest({
-        videoId: pitch._id,
+      const res = await investmentService.expressInterest({
+        videoId: pitchVideoId,
         amount: Number(amount),
-        equity: pitch.equityOffered || 0,
+        equity: pitch?.equityOffered || 0,
         terms: terms.trim(),
       });
+
+      const inv = res?.data?.data?.investment || res?.data?.data || res?.data;
+
+      console.log("[INVESTOR_EXPRESS_INTEREST_RESPONSE]", {
+        status: res?.status,
+        investmentId: inv?._id,
+        founderId: inv?.founderId,
+        investorId: inv?.investorId,
+        videoId: inv?.videoId,
+        statusVal: inv?.status,
+        stage: inv?.stage,
+        amount: inv?.amount,
+        equity: inv?.equity,
+      });
+
+      console.log("[INVESTOR_FOUNDER_RELATION]", {
+        investmentId: inv?._id,
+        investmentFounderId: inv?.founderId,
+        videoFounderId: pitchFounderId,
+      });
+
       onSubmit?.();
     } catch (err) {
-      // If already expressed interest, still treat as success
+      console.error("[INVESTOR_EXPRESS_INTEREST_ERROR]", err);
       onSubmit?.();
     } finally {
       setSubmitting(false);
@@ -1338,6 +1286,338 @@ function Detail({ label, value }) {
     <div className="bg-dark-bg/40 rounded-lg p-2.5">
       <p className="text-xs text-gray-400">{label}</p>
       <p className="font-bold capitalize">{value}</p>
+    </div>
+  );
+}
+
+function ReelSnapItem({
+  pitch,
+  index,
+  isActive,
+  onInView,
+  muted,
+  setMuted,
+  founder,
+  isOwnPitch,
+  isVerified,
+  following,
+  toggleFollow,
+  handleMessageFounder,
+  toggleLike,
+  toggleSave,
+  doubleTapLike,
+  isPitchLiked,
+  isPitchSaved,
+  user,
+  setActiveModal,
+  expanded,
+  setExpanded,
+}) {
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          onInView();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onInView]);
+
+  return (
+    <div
+      ref={itemRef}
+      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black overflow-hidden flex items-center justify-center"
+    >
+      {/* 9:16 Portrait Reel Stage centered on desktop */}
+      <div
+        className="relative w-full max-w-[480px] h-full bg-black overflow-hidden pitch-reel-overlay flex-1"
+        data-pitch-reel="true"
+      >
+        <ShortsPlayer
+          src={pitch.videoUrl}
+          poster={pitch.coverUrl || pitch.thumbnailUrl}
+          muted={muted}
+          active={isActive}
+          onDoubleTap={doubleTapLike}
+        />
+
+        {/* Bottom gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none" />
+
+        {/* Top bar — Industry badge (top-left) + Mute toggle (top-right) */}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-auto">
+          <span className="px-3 py-1 bg-gold text-black text-xs font-black rounded-full uppercase shadow-md category-badge tracking-wider">
+            {pitch.industry}
+          </span>
+          <button
+            onClick={() => setMuted((m) => !m)}
+            className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-black/70 transition-all !text-white shadow-md"
+            title={muted ? "Unmute" : "Mute"}
+          >
+            {muted ? (
+              <HiVolumeOff className="w-4.5 h-4.5 !text-white drop-shadow-md" style={{ color: "#ffffff" }} />
+            ) : (
+              <HiVolumeUp className="w-4.5 h-4.5 !text-white drop-shadow-md" style={{ color: "#ffffff" }} />
+            )}
+          </button>
+        </div>
+
+        {/* Right-Side Overlay Actions */}
+        <div className="absolute right-3 bottom-20 z-20 flex flex-col gap-3.5 items-center pointer-events-auto">
+          <RailButton
+            icon={HiHeart}
+            label={
+              pitch.likeCount ??
+              (Array.isArray(pitch.likes) ? pitch.likes.length : 0)
+            }
+            active={isPitchLiked(pitch)}
+            activeClass="pitch-like-active active-heart"
+            onClick={toggleLike}
+            title="Like"
+          />
+          <RailButton
+            icon={HiChatAlt2}
+            label={pitch.commentCount || pitch.comments || 0}
+            onClick={() => setActiveModal("comments")}
+            title="Comments"
+          />
+          <RailButton
+            icon={HiBookmark}
+            label={
+              pitch.saveCount ??
+              (Array.isArray(pitch.saves) ? pitch.saves.length : 0)
+            }
+            active={isPitchSaved(pitch)}
+            activeClass="pitch-save-active active-save"
+            onClick={toggleSave}
+            title="Save"
+          />
+          {user?.role === "investor" && (
+            <RailButton
+              icon={HiCurrencyDollar}
+              label="Invest"
+              onClick={() => setActiveModal("invest")}
+              title="Express investment interest"
+            />
+          )}
+          <RailButton
+            icon={HiShare}
+            label="Share"
+            onClick={() => setActiveModal("share")}
+            title="Share"
+          />
+          <DropdownMenu
+            triggerClass="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/20 !text-white flex items-center justify-center hover:bg-black/70 transition-all shadow-md pointer-events-auto"
+            trigger={
+              <HiDotsVertical className="w-5 h-5 !text-white drop-shadow-md" style={{ color: "#ffffff" }} />
+            }
+            items={[
+              {
+                label: "About Founder",
+                icon: HiInformationCircle,
+                onClick: () => setActiveModal("profile"),
+              },
+              {
+                label: "Report Pitch",
+                icon: HiFlag,
+                danger: true,
+                onClick: () => setActiveModal("report"),
+              },
+            ]}
+          />
+        </div>
+
+        {/* Bottom info overlay */}
+        <div className="absolute bottom-4 left-0 right-16 pl-4 pr-2 pb-2 z-10 pointer-events-none">
+          {/* Founder Row: Avatar + Name/Username + Follow + Message inline */}
+          <div className="flex items-center gap-3 mb-2 pointer-events-auto flex-wrap">
+            <button
+              onClick={() => setActiveModal("profile")}
+              className="flex items-center gap-2.5 hover:opacity-85 transition-opacity text-left shrink-0"
+            >
+              <img
+                src={
+                  founder?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(founder?.name || "U")}&background=1B5E3F&color=fff`
+                }
+                alt={founder?.name || "Founder"}
+                className="w-10 h-10 rounded-full border-2 border-gold object-cover shrink-0"
+              />
+              <div className="flex flex-col justify-center min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="font-extrabold text-[15px] sm:text-[16px] !text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] founder-name truncate">
+                    {founder?.name || "Founder"}
+                  </span>
+                  {isVerified && <VerifiedBadge />}
+                </div>
+                <span className="block text-[12px] sm:text-[13px] !text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-medium founder-username truncate">
+                  @{founder?.username || founder?.companyName?.toLowerCase().replace(/\s+/g, '') || "founder"}
+                </span>
+              </div>
+            </button>
+
+            {!isOwnPitch && (
+              <div className="flex items-center gap-2 shrink-0">
+                <FollowButton
+                  active={following[founder?._id]}
+                  onClick={toggleFollow}
+                />
+                {(founder?._id || (typeof pitch?.founderId === "string" && pitch.founderId)) && (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleMessageFounder}
+                    className="shrink-0 px-3 py-1 rounded-full text-xs font-black transition-all bg-gold border border-gold text-[#0A1F14] hover:bg-[#e0a838] flex items-center justify-center gap-1.5 shadow-md cursor-pointer message-btn"
+                  >
+                    <HiChatAlt2 className="w-4 h-4 text-[#0A1F14] fill-[#0A1F14] shrink-0 bg-transparent" style={{ color: "#0A1F14", fill: "#0A1F14" }} /> Message
+                  </motion.button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <h3 className="font-extrabold text-[17px] sm:text-[18px] !text-white leading-snug mb-1 pointer-events-auto line-clamp-2 drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] pitch-title">
+            {pitch.title}
+          </h3>
+
+          <div className="pointer-events-auto">
+            <p
+              className={`text-xs sm:text-sm !text-white/90 leading-snug drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] pitch-description ${
+                expanded ? "" : "line-clamp-1"
+              }`}
+            >
+              {pitch.description}
+            </p>
+            {(pitch.description || "").length > 50 && (
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="text-[11px] text-gray-200 hover:text-gold font-semibold mt-0.5 drop-shadow-sm"
+              >
+                {expanded ? "less" : "more"}
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap pointer-events-auto">
+            <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-xs font-bold !text-white flex items-center gap-1.5 shadow-sm pitch-metadata">
+              <HiCurrencyDollar className="w-3.5 h-3.5 text-white" />
+              {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+            </span>
+            <span className="text-xs !text-white/80 capitalize drop-shadow-sm font-medium">
+              {pitch.fundingStage}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReelLoadingItem({ onInView }) {
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onInView?.();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onInView]);
+
+  return (
+    <div
+      ref={itemRef}
+      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white"
+    >
+      <div className="w-10 h-10 rounded-full border-4 border-gold/30 border-t-gold animate-spin" />
+      <span className="text-xs font-bold text-gold tracking-wider uppercase">
+        Loading more pitches...
+      </span>
+    </div>
+  );
+}
+
+function ReelRetryItem({ onInView, onRetry }) {
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onInView?.();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onInView]);
+
+  return (
+    <div
+      ref={itemRef}
+      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white px-4 text-center z-10"
+    >
+      <p className="text-sm font-bold !text-gray-200 drop-shadow-sm">
+        Failed to load more pitches
+      </p>
+      <button
+        onClick={onRetry}
+        className="px-5 py-2 bg-gold text-[#0A1F14] font-black text-xs rounded-full hover:bg-[#e0a838] transition-all shadow-md cursor-pointer tracking-wide uppercase"
+      >
+        Tap to retry
+      </button>
+    </div>
+  );
+}
+
+function ReelCaughtUpItem({ onInView }) {
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onInView?.();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onInView]);
+
+  return (
+    <div
+      ref={itemRef}
+      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white px-4 text-center z-10"
+    >
+      <div className="w-14 h-14 rounded-full bg-gold/15 border-2 border-gold/60 flex items-center justify-center mb-1 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+        <HiSparkles className="w-7 h-7 text-gold drop-shadow-md" style={{ color: "#EAB308" }} />
+      </div>
+      <h3 className="text-xl font-black !text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] tracking-wide">
+        You're all caught up!
+      </h3>
+      <p className="text-sm font-medium !text-gray-300 max-w-sm leading-relaxed drop-shadow-sm">
+        You've viewed all available pitches for now. Check back soon for new startup pitches.
+      </p>
     </div>
   );
 }

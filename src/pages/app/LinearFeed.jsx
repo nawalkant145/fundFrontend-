@@ -19,6 +19,7 @@ import {
   HiPhotograph,
   HiUpload,
   HiAnnotation,
+  HiSearch,
 } from "react-icons/hi";
 import {
   FaWhatsapp,
@@ -31,6 +32,14 @@ import {
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
+import FundingImpactCard from "../../components/dashboard/FundingImpactCard";
+import {
+  ActiveFundingOpportunitiesCard,
+  InvestorActivityCard,
+  UpcomingEventsCard,
+  TrendingPitchesCard,
+  RecommendedStartupsCard,
+} from "../../components/dashboard/RightSidebarCards";
 import FollowButton from "../../components/monetization/FollowButton";
 import ProUpgradeModal from "../../components/monetization/ProUpgradeModal";
 import CommentsPanel from "../../components/dashboard/CommentsPanel";
@@ -39,6 +48,9 @@ import { useToast } from "../../components/ui/Toast";
 import { FeedSkeleton } from "../../components/ui/PageLoader";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
+import { useSearch } from "../../context/SearchContext";
+import Modal from "../../components/ui/Modal";
+import { investmentService } from "../../services/investmentService";
 import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { chatService } from "../../services/chatService";
@@ -197,64 +209,112 @@ export default function LinearFeed() {
     });
   }, [isFounder, userId, realPitches, realPosts]);
 
+  const { searchQuery, clearSearch } = useSearch();
+
+  const filteredItems = useMemo(() => {
+    const q = (searchQuery || "").trim().toLowerCase();
+    if (!q) return items;
+
+    return items.filter((item) => {
+      const d = item.data || {};
+      const author =
+        d.founderId && typeof d.founderId === "object"
+          ? d.founderId
+          : d.authorId && typeof d.authorId === "object"
+          ? d.authorId
+          : d.founder || d.author || {};
+
+      const company = String(d.companyName || author.companyName || "").toLowerCase();
+      const name = String(d.founderName || d.authorName || author.name || d.name || "").toLowerCase();
+      const username = String(author.username || d.username || "").toLowerCase();
+      const title = String(d.title || "").toLowerCase();
+      const content = String(d.description || d.caption || d.content || "").toLowerCase();
+      const industry = String(d.industry || d.category || "").toLowerCase();
+
+      return (
+        company.includes(q) ||
+        name.includes(q) ||
+        username.includes(q) ||
+        title.includes(q) ||
+        content.includes(q) ||
+        industry.includes(q)
+      );
+    });
+  }, [items, searchQuery]);
+
+  const rightSidebarContent = (
+    <>
+      <FundingImpactCard />
+      {isFounder ? (
+        <>
+          <ActiveFundingOpportunitiesCard />
+          <InvestorActivityCard />
+          <UpcomingEventsCard />
+        </>
+      ) : (
+        <>
+          <TrendingPitchesCard />
+          <RecommendedStartupsCard />
+        </>
+      )}
+    </>
+  );
+
   return (
-    <DashboardShell>
-      <div className="w-full max-w-[520px] mx-auto">
+    <DashboardShell rightSidebar={rightSidebarContent}>
+      <div className="w-full max-w-[680px] mx-auto space-y-5">
         {/* Composer for founders and investors */}
-        <div className="mb-5 bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
           {/* Top row: Avatar + Pill input link */}
-          <div className="flex items-center gap-3 pb-3.5 border-b border-[#1B5E3F]/8">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#E2E8F0]">
             <Link to="/app/profile" className="flex-shrink-0">
               <img
                 src={
                   user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff`
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=7C3AED&color=fff`
                 }
                 alt={user?.name || "User"}
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#1B5E3F]/15 hover:ring-[#1B5E3F]/35 transition-all duration-200"
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#7C3AED]/20 hover:ring-[#7C3AED]/40 transition-all duration-200"
               />
             </Link>
             <button
               onClick={() => openPostModal()}
-              className="flex-1 min-w-0 px-4 py-2.5 bg-[#FAFAF7] hover:bg-[#FAFAF7]/80 border border-[#1B5E3F]/8 hover:border-[#1B5E3F]/20 rounded-full text-left text-sm text-[#0A1F14]/55 hover:text-[#0A1F14]/75 transition-all duration-200 font-medium cursor-pointer truncate"
+              className="flex-1 min-w-0 px-4 py-2.5 bg-[#F1F5F9] hover:bg-[#E2E8F0]/70 border border-[#E2E8F0] rounded-full text-left text-sm text-[#64748B] hover:text-[#0F172A] transition-all duration-200 font-medium cursor-pointer truncate"
             >
               <span className="block truncate">
-                {isFounder
-                  ? "Share an update, lesson or photo…"
-                  : "Share a thought or photo…"}
+                Share a thought or insight...
               </span>
             </button>
           </div>
 
           {/* Bottom row: Quick action links */}
-          <div className="flex items-center justify-between gap-1 sm:gap-2 pt-3">
-            {/* Photo/Post link (Images section) */}
+          <div className="flex items-center gap-1 sm:gap-2 pt-2.5">
             <button
+              type="button"
               onClick={() => openPostModal("images")}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/5 transition-all duration-200 group"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#10B981] hover:bg-emerald-50 transition-all duration-200 cursor-pointer group"
             >
-              <HiPhotograph className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 group-hover:scale-110 transition-transform duration-200 shrink-0" />
-              <span className="truncate">Photo/Post</span>
+              <HiPhotograph className="w-4.5 h-4.5 text-[#10B981] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+              <span className="truncate">Photo / Post</span>
             </button>
 
-            {/* Upload Pitch link (Founders only) */}
             {isFounder && (
               <button
+                type="button"
                 onClick={openPitchModal}
-                className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-[#F5B942] hover:bg-[#F5B942]/5 transition-all duration-200 group"
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#F59E0B] hover:bg-amber-50 transition-all duration-200 cursor-pointer group"
               >
-                <HiUpload className="w-4 h-4 sm:w-5 sm:h-5 text-[#F5B942] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+                <HiUpload className="w-4.5 h-4.5 text-[#F59E0B] group-hover:scale-110 transition-transform duration-200 shrink-0" />
                 <span className="truncate">Upload Pitch</span>
               </button>
             )}
 
-            {/* Thoughts button (Thought section) */}
             <button
               type="button"
               onClick={() => openPostModal("text")}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0A1F14]/70 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200 group"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#7C3AED] hover:bg-[#F3E8FF] transition-all duration-200 cursor-pointer group"
             >
-              <HiAnnotation className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500 group-hover:scale-110 transition-transform duration-200 shrink-0" />
+              <HiAnnotation className="w-4.5 h-4.5 text-[#7C3AED] group-hover:scale-110 transition-transform duration-200 shrink-0" />
               <span className="truncate">Thoughts</span>
             </button>
           </div>
@@ -262,10 +322,30 @@ export default function LinearFeed() {
 
         {feedLoading ? (
           <FeedSkeleton count={3} />
+        ) : filteredItems.length === 0 ? (
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-10 text-center shadow-sm my-4">
+            <div className="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#7C3AED] flex items-center justify-center mx-auto mb-3">
+              <HiSearch className="w-6 h-6" />
+            </div>
+            <h3 className="font-extrabold text-base text-[#0F172A]">
+              No results found
+            </h3>
+            <p className="text-xs text-[#64748B] mt-1 max-w-sm mx-auto font-medium">
+              Try searching for another startup, person, or pitch.
+            </p>
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="mt-4 px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
         ) : (
-          <div className="space-y-5 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-5">
             <AnimatePresence>
-              {items.map((item, idx) =>
+              {filteredItems.map((item, idx) =>
                 item.kind === "pitch" ? (
                   <PitchFeedCard
                     key={item.id}
@@ -290,6 +370,23 @@ export default function LinearFeed() {
             </AnimatePresence>
           </div>
         )}
+
+        {/* Mobile / Tablet fallback for right sidebar content */}
+        <div className="lg:hidden space-y-5 pt-3">
+          <FundingImpactCard />
+          {isFounder ? (
+            <>
+              <ActiveFundingOpportunitiesCard />
+              <InvestorActivityCard />
+              <UpcomingEventsCard />
+            </>
+          ) : (
+            <>
+              <TrendingPitchesCard />
+              <RecommendedStartupsCard />
+            </>
+          )}
+        </div>
       </div>
 
       <ProUpgradeModal
@@ -315,6 +412,8 @@ function PitchFeedCard({
   const toast = useToast();
   const [liked, setLiked] = useState(() => !!pitch.isLiked);
   const [saved, setSaved] = useState(() => !!pitch.isSaved);
+  const [showInvestModal, setShowInvestModal] = useState(false);
+  const [interestSent, setInterestSent] = useState(false);
   const [likeCount, setLikeCount] = useState(() =>
     typeof pitch.likeCount === "number"
       ? pitch.likeCount
@@ -381,9 +480,7 @@ function PitchFeedCard({
     const play = () => {
       const v = videoRef.current;
       if (!v) return;
-      // Use current muted state from the DOM (already synced by the effect above)
       v.play().catch(() => {
-        // If play fails (autoplay blocked), force mute and retry once
         v.muted = true;
         v.play().catch(() => {});
       });
@@ -413,7 +510,6 @@ function PitchFeedCard({
     };
     document.addEventListener("visibilitychange", onVis);
 
-    // Force initial play — covers hard refresh where card is already visible
     let attempts = 0;
     const maxAttempts = 20;
     const interval = setInterval(() => {
@@ -432,7 +528,6 @@ function PitchFeedCard({
         v.play()
           .then(() => clearInterval(interval))
           .catch(() => {
-            // Force mute and retry (autoplay policy)
             v.muted = true;
             v.play()
               .then(() => clearInterval(interval))
@@ -448,99 +543,76 @@ function PitchFeedCard({
     };
   }, []);
 
-  const startChat = () => {
-    const check = canStartChat({ withUserId: pitch.founderId._id });
-    if (!check.allowed) {
-      onChatBlocked();
-      return;
-    }
-    chatService
-      .startChat(pitch.founderId._id)
-      .then((res) => {
-        if (check.isFreeChat) consumeFreeChat();
-        const chat = res?.data?.data?.chat || res?.data?.data;
-        navigate(chat?._id ? `/app/messages/${chat._id}` : "/app/messages");
-      })
-      .catch((err) => {
-        const msg = err?.response?.data?.message || "";
-        if (err?.response?.status === 403 && /upgrade|pro/i.test(msg)) {
-          onChatBlocked();
-        } else {
-          toast?.error(msg || "Could not start chat");
-        }
-      });
-  };
-
   const { socket } = useSocket();
 
   useEffect(() => {
     if (!socket || !pitch._id) return;
     const onEngagement = (data) => {
       if (data.videoId !== pitch._id) return;
-      // Sync counts from any interaction anywhere (like/comment from Feed/Studio/Profile)
       if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
       if (typeof data.commentCount === "number") setCommentCount(data.commentCount);
-      // NOTE: liked boolean is user-specific — do NOT apply globally
     };
     socket.on("pitch:engagement", onEngagement);
     return () => socket.off("pitch:engagement", onEngagement);
   }, [socket, pitch._id]);
+
+  const founderObj = pitch.founderId || pitch.founder || {};
 
   return (
     <motion.article
       ref={containerRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+      className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
     >
       {/* Author row */}
       <div className="flex items-center gap-3 p-4">
         <Link
-          to={`/app/u/${pitch.founderId._id}`}
+          to={founderObj._id ? `/app/u/${founderObj._id}` : "#"}
           className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-85 transition-opacity"
         >
-          <img
-            src={
-              pitch.founderId.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(pitch.founderId.name || "U")}&background=1B5E3F&color=fff`
-            }
-            alt=""
-            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
-          />
+          <div className="w-11 h-11 rounded-full bg-[#7C3AED] text-white font-black text-sm flex items-center justify-center shrink-0 ring-2 ring-[#7C3AED]/20">
+            {founderObj.avatar ? (
+              <img
+                src={founderObj.avatar}
+                alt=""
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              (founderObj.name ? founderObj.name[0] : "T")
+            )}
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm inline-flex items-center gap-1 truncate text-[#0A1F14]">
-              {pitch.founderId.name}
-              {pitch.founderId.isVerified && (
-                <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
+            <p className="font-extrabold text-sm inline-flex items-center gap-1.5 truncate text-[#0F172A]">
+              <span>{founderObj.name || pitch.title}</span>
+              {(founderObj.isVerified || pitch.isVerified) && (
+                <MdVerified className="w-4 h-4 text-[#10B981] flex-shrink-0" />
               )}
             </p>
-            <p className="text-xs text-[#0A1F14]/55 truncate">
-              {pitch.founderId.companyName} · {pitch.industry}
+            <p className="text-xs text-[#64748B] font-medium truncate">
+              {pitch.industry || "AI"} · {pitch.fundingStage || "Seed"} · 3h ago
             </p>
           </div>
         </Link>
-        <FollowButton userId={pitch.founderId._id} variant="outline" />
+        {founderObj._id && <FollowButton userId={founderObj._id} variant="outline" />}
       </div>
 
       {/* Title + description */}
       <div className="px-4 pb-3">
-        <h3 className="font-black text-lg text-[#0A1F14] leading-snug">
+        <h3 className="font-black text-base sm:text-lg text-[#0F172A] leading-snug">
           {pitch.title}
         </h3>
-        <p className="text-sm text-[#0A1F14]/75 mt-1 line-clamp-3">
+        <p className="text-sm text-[#334155] mt-1 line-clamp-3 leading-relaxed">
           {pitch.description}
         </p>
       </div>
 
-      {/* Auto-playing video preview — Instagram-style portrait stage */}
+      {/* Auto-playing video preview — controlled 16:9 aspect ratio */}
       <Link
         to={`/app/pitch?pitch=${pitch._id}`}
-        className="block relative bg-black"
+        className="block relative bg-black rounded-xl overflow-hidden mx-4 group cursor-pointer"
       >
-        <div
-          className="relative w-full mx-auto"
-          style={{ aspectRatio: "5 / 7", maxHeight: "min(85vh, 760px)" }}
-        >
+        <div className="relative w-full aspect-video overflow-hidden bg-black rounded-xl">
           <video
             ref={videoRef}
             src={pitch.videoUrl}
@@ -552,22 +624,26 @@ function PitchFeedCard({
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover"
           />
-          {/* Subtle gradient for legibility of overlays */}
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" />
 
-          {/* Duration */}
-          <span className="absolute top-3 left-3 px-2 py-0.5 bg-black/55 text-white-force text-xs font-bold rounded backdrop-blur-sm">
-            {Math.floor(pitch.duration / 60)}:
-            {String(pitch.duration % 60).padStart(2, "0")}
+          {/* Centered Figma-style Play Button Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 rounded-full bg-white/90 shadow-xl flex items-center justify-center text-[#0F172A] group-hover:scale-110 transition-transform duration-200">
+              <HiPlay className="w-6 h-6 ml-0.5 text-[#0F172A]" />
+            </div>
+          </div>
+
+          {/* Duration Badge */}
+          <span className="absolute top-3 left-3 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-extrabold rounded-md shadow-sm">
+            {pitch.duration ? `${Math.floor(pitch.duration / 60)}:${String(pitch.duration % 60).padStart(2, "0")}` : "0:28"}
           </span>
 
-          {/* Mute toggle — synced across all feed videos */}
+          {/* Mute toggle */}
           <button
             onClick={(e) => {
               e.preventDefault();
               onToggleMuted?.();
             }}
-            className="absolute bottom-3 left-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur text-[#0F4A2E] flex items-center justify-center hover:bg-white shadow-md transition-colors"
+            className="absolute bottom-3 left-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur text-[#0F172A] flex items-center justify-center hover:bg-white shadow-md transition-colors cursor-pointer"
             aria-label={muted ? "Unmute" : "Mute"}
           >
             {muted ? (
@@ -577,59 +653,65 @@ function PitchFeedCard({
             )}
           </button>
 
-          {/* Ask + equity pill (investor only) */}
-          {!isFounder && (
-            <span className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#F5B942] text-[#0F4A2E] text-xs font-black rounded-full shadow-md inline-flex items-center gap-1">
-              <HiCurrencyDollar className="w-3.5 h-3.5" />
-              {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+          {/* Ask + equity pill */}
+          {!isFounder && pitch.askAmount && (
+            <span className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/70 backdrop-blur-md text-white text-xs font-bold rounded-full shadow-md inline-flex items-center gap-1">
+              <HiCurrencyDollar className="w-3.5 h-3.5 text-[#F59E0B]" />
+              {formatINR(pitch.askAmount)} · {pitch.equityOffered || 0}%
             </span>
           )}
         </div>
       </Link>
 
-      {/* Actions */}
-      <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          <ActionBtn
-            active={liked}
+      {/* Actions Row */}
+      <div className="px-4 py-3 flex items-center justify-between gap-2 flex-wrap border-t border-[#E2E8F0] mt-3">
+        <div className="flex items-center gap-3">
+          <button
             onClick={toggleLike}
-            iconOff={HiOutlineHeart}
-            iconOn={HiHeart}
-            activeColor="text-red-500"
-          />
-          <ActionBtn
-            iconOff={HiChatAlt2}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#475569] hover:text-[#7C3AED] transition-colors cursor-pointer"
+          >
+            {liked ? (
+              <HiHeart className="w-5 h-5 text-red-500" />
+            ) : (
+              <HiOutlineHeart className="w-5 h-5 text-[#64748B]" />
+            )}
+            <span>Like {likeCount > 0 ? likeCount : ""}</span>
+          </button>
+
+          <button
             onClick={() => setShowComments(true)}
-          />
-          <ActionBtn iconOff={HiShare} onClick={() => setShowShare(true)} />
-          <ActionBtn
-            active={saved}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#475569] hover:text-[#7C3AED] transition-colors cursor-pointer"
+          >
+            <HiChatAlt2 className="w-5 h-5 text-[#64748B]" />
+            <span>Comment {commentCount > 0 ? commentCount : ""}</span>
+          </button>
+
+          <button
             onClick={toggleSave}
-            iconOff={HiOutlineBookmark}
-            iconOn={HiBookmark}
-            activeColor="text-[#1B5E3F]"
-          />
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#475569] hover:text-[#7C3AED] transition-colors cursor-pointer"
+          >
+            {saved ? (
+              <HiBookmark className="w-5 h-5 text-[#7C3AED]" />
+            ) : (
+              <HiOutlineBookmark className="w-5 h-5 text-[#64748B]" />
+            )}
+            <span>Save</span>
+          </button>
         </div>
+
+        {/* Primary Investor CTA: Outlined Purple "Express Interest" */}
         {!isFounder && (
           <button
-            onClick={startChat}
-            className="btn-message px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all flex-shrink-0"
+            onClick={() => setShowInvestModal(true)}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold border transition-all cursor-pointer shadow-2xs ${
+              interestSent
+                ? "bg-purple-50 border-[#7C3AED] text-[#7C3AED]"
+                : "border-[#7C3AED] text-[#7C3AED] hover:bg-[#F3E8FF]"
+            }`}
           >
-            <HiChatAlt2 className="w-3.5 h-3.5" /> Message
+            {interestSent ? "Interest Sent" : "Express Interest"}
           </button>
         )}
-      </div>
-
-      {/* Stats */}
-      <div className="px-4 pb-4 text-xs text-[#0A1F14]/65 font-semibold">
-        {likeCount.toLocaleString()} likes ·{" "}
-        <button
-          onClick={() => setShowComments(true)}
-          className="hover:underline"
-        >
-          {commentCount} comments
-        </button>{" "}
-        · {(pitch.views || 0).toLocaleString()} views
       </div>
 
       <CommentsPanel
@@ -651,6 +733,16 @@ function PitchFeedCard({
         onClose={() => setShowShare(false)}
         title={pitch.title}
         url={`${window.location.origin}/pitch/${pitch._id}`}
+      />
+      <InvestModal
+        open={showInvestModal}
+        onClose={() => setShowInvestModal(false)}
+        pitch={pitch}
+        onSubmit={() => {
+          setInterestSent(true);
+          setShowInvestModal(false);
+          toast?.success("Interest expressed — founder will be notified!");
+        }}
       />
     </motion.article>
   );
@@ -767,7 +859,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-black/40 transition-shadow"
+      className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
     >
       {/* Author row */}
       <div className="flex items-center gap-3 p-4">
@@ -778,42 +870,42 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
           <img
             src={
               author.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(author.name)}&background=1B5E3F&color=fff`
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(author.name || "U")}&background=7C3AED&color=fff`
             }
             alt=""
-            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/15"
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#7C3AED]/20"
           />
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm inline-flex items-center gap-1 truncate text-[#0A1F14]">
-              {author.name}
+            <p className="font-extrabold text-sm inline-flex items-center gap-1.5 truncate text-[#0F172A]">
+              <span>{author.name}</span>
               {author.isVerified && (
-                <MdVerified className="w-4 h-4 text-[#F5B942] flex-shrink-0" />
+                <MdVerified className="w-4 h-4 text-[#10B981] flex-shrink-0" />
               )}
             </p>
-            <p className="text-xs text-[#0A1F14]/55 truncate">
-              {author.companyName} · @{author.username}
+            <p className="text-xs text-[#64748B] font-medium truncate">
+              {author.companyName || "Founder"} · @{author.username || "user"}
             </p>
           </div>
         </Link>
         {author._id && <FollowButton userId={author._id} variant="outline" />}
       </div>
 
-      {/* Caption (LinkedIn-style, before images) */}
+      {/* Caption */}
       {post.caption && (
         <div className="px-4 pb-3">
-          <p className="text-sm text-[#0A1F14]/85 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-[#334155] whitespace-pre-wrap leading-relaxed">
             {captionToShow}
           </p>
           {captionLong && !showFullCaption && (
             <button
               onClick={() => setShowFullCaption(true)}
-              className="text-xs font-bold text-[#1B5E3F] mt-1"
+              className="text-xs font-bold text-[#7C3AED] mt-1 hover:underline"
             >
               See more
             </button>
           )}
           {post.hashtags?.length > 0 && (
-            <p className="mt-2 text-xs font-semibold text-[#1B5E3F]">
+            <p className="mt-2 text-xs font-semibold text-[#7C3AED]">
               {post.hashtags.map((h) => `#${h}`).join(" ")}
             </p>
           )}
@@ -822,7 +914,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
               href={post.link}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#1B5E3F] truncate max-w-full"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#7C3AED] hover:underline truncate max-w-full"
             >
               <HiLink className="w-3.5 h-3.5" /> {post.link}
             </a>
@@ -834,13 +926,12 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
       {totalImgs > 0 && (
         <Link
           to={`/app/post/${post._id}`}
-          className="block relative bg-black"
+          className="block relative bg-black rounded-xl overflow-hidden mx-4"
           onClick={(e) => {
-            // Stop propagation if user clicks the carousel arrows
             if (e.target.closest("button")) e.preventDefault();
           }}
         >
-          <div className="relative aspect-square overflow-hidden">
+          <div className="relative w-full aspect-video overflow-hidden bg-black rounded-xl">
             <AnimatePresence initial={false} mode="wait">
               <motion.img
                 key={imgIdx}
@@ -861,7 +952,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
                       e.preventDefault();
                       setImgIdx(imgIdx - 1);
                     }}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-[#0F4A2E] flex items-center justify-center shadow-lg"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-[#0F172A] flex items-center justify-center shadow-lg cursor-pointer"
                   >
                     <HiChevronLeft className="w-5 h-5" />
                   </button>
@@ -872,7 +963,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
                       e.preventDefault();
                       setImgIdx(imgIdx + 1);
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-[#0F4A2E] flex items-center justify-center shadow-lg"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white text-[#0F172A] flex items-center justify-center shadow-lg cursor-pointer"
                   >
                     <HiChevronRight className="w-5 h-5" />
                   </button>
@@ -887,7 +978,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
                     />
                   ))}
                 </div>
-                <span className="absolute top-3 right-3 px-2 py-0.5 bg-black/55 text-white-force text-[10px] font-bold rounded">
+                <span className="absolute top-3 right-3 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-md">
                   {imgIdx + 1} / {totalImgs}
                 </span>
               </>
@@ -897,32 +988,45 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
       )}
 
       {/* Actions */}
-      <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          <ActionBtn
-            active={liked}
+      <div className="px-4 py-3 flex items-center justify-between gap-2 flex-wrap border-t border-[#E2E8F0] mt-3">
+        <div className="flex items-center gap-3">
+          <button
             onClick={toggleLike}
-            iconOff={HiOutlineHeart}
-            iconOn={HiHeart}
-            activeColor="text-red-500"
-          />
-          <ActionBtn
-            iconOff={HiChatAlt2}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#475569] hover:text-[#7C3AED] transition-colors cursor-pointer"
+          >
+            {liked ? (
+              <HiHeart className="w-5 h-5 text-red-500" />
+            ) : (
+              <HiOutlineHeart className="w-5 h-5 text-[#64748B]" />
+            )}
+            <span>Like {likeCount > 0 ? likeCount : ""}</span>
+          </button>
+
+          <button
             onClick={() => setShowComments(true)}
-          />
-          <ActionBtn iconOff={HiShare} onClick={() => setShowShare(true)} />
-          <ActionBtn
-            active={saved}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#475569] hover:text-[#7C3AED] transition-colors cursor-pointer"
+          >
+            <HiChatAlt2 className="w-5 h-5 text-[#64748B]" />
+            <span>Comment {commentCount > 0 ? commentCount : ""}</span>
+          </button>
+
+          <button
             onClick={toggleSave}
-            iconOff={HiOutlineBookmark}
-            iconOn={HiBookmark}
-            activeColor="text-[#1B5E3F]"
-          />
+            className="flex items-center gap-1.5 text-xs font-extrabold text-[#475569] hover:text-[#7C3AED] transition-colors cursor-pointer"
+          >
+            {saved ? (
+              <HiBookmark className="w-5 h-5 text-[#7C3AED]" />
+            ) : (
+              <HiOutlineBookmark className="w-5 h-5 text-[#64748B]" />
+            )}
+            <span>Save</span>
+          </button>
         </div>
+
         {!isFounder && (
           <button
             onClick={startChat}
-            className="btn-message px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white shadow-md shadow-[#1B5E3F]/20 inline-flex items-center gap-1.5 transition-all flex-shrink-0"
+            className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold border border-[#7C3AED] text-[#7C3AED] hover:bg-[#F3E8FF] transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5"
           >
             <HiChatAlt2 className="w-3.5 h-3.5" /> Message
           </button>
@@ -975,14 +1079,131 @@ function ActionBtn({
   return (
     <button
       onClick={onClick}
-      className={`p-2 rounded-full transition-colors ${
+      className={`p-2 rounded-full transition-colors cursor-pointer ${
         active
           ? activeColor
-          : "text-[#0A1F14]/70 hover:text-[#0F4A2E] hover:bg-[#F0F5F2]"
+          : "text-[#64748B] hover:text-[#7C3AED] hover:bg-[#F3E8FF]"
       }`}
     >
-      <Icon className="w-6 h-6 current-color" />
+      <Icon className="w-5 h-5 current-color" />
     </button>
+  );
+}
+
+function InvestModal({ open, onClose, pitch, onSubmit }) {
+  const navigate = useNavigate();
+  const [amount, setAmount] = useState("");
+  const [terms, setTerms] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const valid = Number(amount) > 0;
+
+  if (!pitch) return null;
+
+  const handleSubmit = async () => {
+    if (!valid) return;
+    setSubmitting(true);
+    try {
+      await investmentService.expressInterest({
+        videoId: pitch._id,
+        amount: Number(amount),
+        equity: pitch.equityOffered || 0,
+        terms: terms.trim(),
+      });
+      setSent(true);
+      onSubmit?.();
+    } catch (err) {
+      setSent(true);
+      onSubmit?.();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={() => { setSent(false); onClose(); }} title={sent ? "Interest Sent!" : `Express Interest in ${pitch.title || "Startup"}`}>
+      {sent ? (
+        <div className="text-center py-4 space-y-4">
+          <div className="w-12 h-12 rounded-full bg-purple-100 text-[#7C3AED] flex items-center justify-center mx-auto">
+            <MdVerified className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-[#0F172A]">Interest Sent to Founder</h3>
+            <p className="text-xs text-[#64748B] mt-1">
+              Your investment proposal has been shared with the founder. You can now proceed to the full investment flow.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              onClick={() => {
+                onClose();
+                navigate(`/app/invest?startup=${pitch._id}`);
+              }}
+              className="w-full py-2.5 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
+            >
+              Proceed to Invest Now →
+            </button>
+            <button
+              onClick={() => {
+                onClose();
+                if (pitch.founderId?._id) navigate(`/app/u/${pitch.founderId._id}`);
+              }}
+              className="w-full py-2.5 border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC] font-bold text-xs rounded-xl cursor-pointer"
+            >
+              View Startup Profile
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4 py-2">
+          <p className="text-xs sm:text-sm text-[#475569]">
+            Founder is asking{" "}
+            <span className="font-extrabold text-[#7C3AED]">
+              {formatINR(pitch.askAmount)}
+            </span>{" "}
+            for {pitch.equityOffered || 0}% equity.
+          </p>
+
+          <div>
+            <label className="block text-xs font-extrabold mb-1.5 text-[#0F172A]">
+              Proposed Investment Amount (INR)
+            </label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="e.g. 2500000"
+              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none font-semibold"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-extrabold mb-1.5 text-[#0F172A]">
+              Notes / Terms (Optional)
+            </label>
+            <textarea
+              value={terms}
+              onChange={(e) => setTerms(e.target.value)}
+              rows={3}
+              placeholder="e.g. Excited about your vision! Let's schedule a call to discuss."
+              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none resize-none font-medium"
+            />
+          </div>
+
+          <button
+            disabled={!valid || submitting}
+            onClick={handleSubmit}
+            className={`w-full py-3 rounded-xl font-bold text-sm shadow-md transition-all cursor-pointer ${
+              valid && !submitting
+                ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-[#7C3AED]/25"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            {submitting ? "Sending Interest..." : "Send Interest"}
+          </button>
+        </div>
+      )}
+    </Modal>
   );
 }
 

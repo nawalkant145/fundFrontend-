@@ -80,24 +80,232 @@ body {
    so the InvestorFeed video overlay (black background) keeps its
    white text intact.
    ─────────────────────────────────────────────────────────── */
-[data-light-app="true"] .text-white {
+[data-light-app="true"] .text-white:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: #0a1f14;
 }
-/* Exempt message buttons and image overlay text from light-theme text-white remap */
-[data-light-app="true"] .btn-message,
-[data-light-app="true"] .btn-message *,
-[data-light-app="true"] .text-white-force,
-[data-light-app="true"] .text-white-force * {
-  color: #ffffff !important;
-}
-[data-light-app="true"] .text-gray-300 {
+[data-light-app="true"] .text-gray-300:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: rgba(10, 31, 20, 0.78);
 }
-[data-light-app="true"] .text-gray-400 {
+[data-light-app="true"] .text-gray-400:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: rgba(10, 31, 20, 0.6);
 }
-[data-light-app="true"] .text-gray-500 {
+[data-light-app="true"] .text-gray-500:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: rgba(10, 31, 20, 0.5);
+}
+
+/* ───────────────────────────────────────────────────────────
+   PITCH REEL OVERLAY SCOPED FORCE-WHITE RULES
+   ─────────────────────────────────────────────────────────── */
+
+.pitch-reel-overlay,
+.pitch-reel-overlay *,
+[data-pitch-reel="true"],
+[data-pitch-reel="true"] * {
+  color: #ffffff !important;
+}
+
+.pitch-reel-overlay .founder-name,
+[data-pitch-reel="true"] .founder-name,
+.pitch-reel-overlay .pitch-title,
+[data-pitch-reel="true"] .pitch-title,
+.pitch-reel-overlay .engagement-count,
+[data-pitch-reel="true"] .engagement-count,
+.pitch-reel-overlay .share-label,
+[data-pitch-reel="true"] .share-label {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+}
+
+.pitch-reel-overlay .founder-username,
+[data-pitch-reel="true"] .founder-username {
+  color: rgba(255, 255, 255, 0.75) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.pitch-reel-overlay .pitch-description,
+[data-pitch-reel="true"] .pitch-description,
+.pitch-reel-overlay .pitch-metadata,
+[data-pitch-reel="true"] .pitch-metadata {
+  color: rgba(255, 255, 255, 0.88) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.pitch-reel-overlay svg:not(.verified-badge):not(.verified-badge *):not(.message-btn):not(.message-btn *):not(.follow-btn):not(.follow-btn *),
+.pitch-reel-overlay svg:not(.verified-badge) path:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+.pitch-reel-overlay svg:not(.verified-badge) circle:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+.pitch-reel-overlay svg:not(.verified-badge) rect:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+.pitch-reel-overlay svg:not(.verified-badge) polygon:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+.pitch-reel-overlay svg:not(.verified-badge) polyline:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+[data-pitch-reel="true"] svg:not(.verified-badge):not(.verified-badge *):not(.message-btn):not(.message-btn *):not(.follow-btn):not(.follow-btn *),
+[data-pitch-reel="true"] svg:not(.verified-badge) path:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+[data-pitch-reel="true"] svg:not(.verified-badge) circle:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+[data-pitch-reel="true"] svg:not(.verified-badge) rect:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+[data-pitch-reel="true"] svg:not(.verified-badge) polygon:not(.verified-badge *):not(.message-btn *):not(.follow-btn *),
+[data-pitch-reel="true"] svg:not(.verified-badge) polyline:not(.verified-badge *):not(.message-btn *):not(.follow-btn *) {
+  color: #ffffff !important;
+  fill: currentColor;
+  filter: drop-shadow(0px 1px 3px rgba(0, 0, 0, 0.85));
+}
+
+/* Unliked heart defaults to pure white */
+.pitch-reel-overlay .pitch-unliked,
+.pitch-reel-overlay .pitch-unliked path,
+[data-pitch-reel="true"] .pitch-unliked,
+[data-pitch-reel="true"] .pitch-unliked path {
+  color: #ffffff !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Liked active state heart forces active red color #EF4444 */
+.pitch-reel-overlay .pitch-like-active,
+.pitch-reel-overlay .pitch-like-active path,
+[data-pitch-reel="true"] .pitch-like-active,
+[data-pitch-reel="true"] .pitch-like-active path,
+.pitch-reel-overlay .active-heart,
+.pitch-reel-overlay .active-heart path,
+[data-pitch-reel="true"] .active-heart,
+[data-pitch-reel="true"] .active-heart path {
+  color: #EF4444 !important;
+  fill: #EF4444 !important;
+  stroke: #EF4444 !important;
+}
+
+/* Saved active state bookmark forces active EXPGLO gold accent color #F5B942 */
+.pitch-reel-overlay .pitch-save-active,
+.pitch-reel-overlay .pitch-save-active path,
+[data-pitch-reel="true"] .pitch-save-active,
+[data-pitch-reel="true"] .pitch-save-active path,
+.pitch-reel-overlay .active-save,
+.pitch-reel-overlay .active-save path,
+[data-pitch-reel="true"] .active-save,
+[data-pitch-reel="true"] .active-save path {
+  color: #F5B942 !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Verified Badge Gold Color & No Square Box Guarantee */
+.pitch-reel-overlay .verified-badge,
+[data-pitch-reel="true"] .verified-badge {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.8)) !important;
+}
+
+.pitch-reel-overlay .verified-badge path,
+[data-pitch-reel="true"] .verified-badge path {
+  fill: #F5B942 !important;
+  color: #F5B942 !important;
+  stroke: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.pitch-reel-overlay .verified-badge path.verified-checkmark,
+[data-pitch-reel="true"] .verified-badge path.verified-checkmark {
+  fill: #0A1F14 !important;
+  color: #0A1F14 !important;
+  stroke: none !important;
+}
+
+.pitch-reel-overlay .category-badge,
+.pitch-reel-overlay .category-badge *,
+[data-pitch-reel="true"] .category-badge,
+[data-pitch-reel="true"] .category-badge * {
+  color: #000000 !important;
+  background-color: rgba(245, 185, 66, 0.95) !important;
+  text-shadow: none !important;
+}
+
+.pitch-reel-overlay .follow-btn:not(.follow-btn-active),
+[data-pitch-reel="true"] .follow-btn:not(.follow-btn-active),
+.pitch-reel-overlay .message-btn,
+[data-pitch-reel="true"] .message-btn {
+  background-color: #f5b942 !important;
+  color: #0a1f14 !important;
+  border-color: #f5b942 !important;
+  text-shadow: none !important;
+}
+
+.pitch-reel-overlay .follow-btn span,
+[data-pitch-reel="true"] .follow-btn span,
+.pitch-reel-overlay .message-btn span,
+[data-pitch-reel="true"] .message-btn span {
+  color: #0a1f14 !important;
+  text-shadow: none !important;
+}
+
+/* Ensure SVG icons inside follow/message buttons have transparent backgrounds and dark green fill */
+.pitch-reel-overlay .follow-btn svg,
+.pitch-reel-overlay .follow-btn svg path,
+.pitch-reel-overlay .message-btn svg,
+.pitch-reel-overlay .message-btn svg path,
+[data-pitch-reel="true"] .follow-btn svg,
+[data-pitch-reel="true"] .follow-btn svg path,
+[data-pitch-reel="true"] .message-btn svg,
+[data-pitch-reel="true"] .message-btn svg path {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  color: #0a1f14 !important;
+  fill: #0a1f14 !important;
+  stroke: none !important;
+}
+
+/* Dropdown popover menu inside Pitch Reel overlay */
+.pitch-reel-overlay [data-dropdown-menu],
+[data-pitch-reel="true"] [data-dropdown-menu] {
+  background-color: #ffffff !important;
+  border-color: rgba(27, 94, 63, 0.15) !important;
+}
+
+.pitch-reel-overlay [data-dropdown-menu] button,
+.pitch-reel-overlay [data-dropdown-menu] span,
+[data-pitch-reel="true"] [data-dropdown-menu] button,
+[data-pitch-reel="true"] [data-dropdown-menu] span {
+  color: #0a1f14 !important;
+  text-shadow: none !important;
+}
+
+.pitch-reel-overlay [data-dropdown-menu] svg,
+.pitch-reel-overlay [data-dropdown-menu] svg path,
+[data-pitch-reel="true"] [data-dropdown-menu] svg,
+[data-pitch-reel="true"] [data-dropdown-menu] svg path {
+  color: rgba(10, 31, 20, 0.65) !important;
+  fill: currentColor !important;
+  filter: none !important;
+}
+
+.pitch-reel-overlay [data-dropdown-menu] button:hover,
+.pitch-reel-overlay [data-dropdown-menu] button:hover span,
+[data-pitch-reel="true"] [data-dropdown-menu] button:hover,
+[data-pitch-reel="true"] [data-dropdown-menu] button:hover span {
+  background-color: #fafaf7 !important;
+  color: #0f4a2e !important;
+}
+
+.pitch-reel-overlay [data-dropdown-menu] .danger-item,
+.pitch-reel-overlay [data-dropdown-menu] .danger-item span,
+.pitch-reel-overlay [data-dropdown-menu] .danger-item svg,
+.pitch-reel-overlay [data-dropdown-menu] .danger-item svg path,
+[data-pitch-reel="true"] [data-dropdown-menu] .danger-item,
+[data-pitch-reel="true"] [data-dropdown-menu] .danger-item span,
+[data-pitch-reel="true"] [data-dropdown-menu] .danger-item svg,
+[data-pitch-reel="true"] [data-dropdown-menu] .danger-item svg path {
+  color: #ef4444 !important;
+  fill: currentColor !important;
 }
 [data-light-app="true"] .placeholder-gray-500::placeholder {
   color: rgba(10, 31, 20, 0.4);
@@ -271,45 +479,24 @@ img {
    On desktop, lock to a fixed-height portrait card.                      */
 
 /* Mobile (< 768): fill parent */
-.shorts-feed-stage {
+.shorts-feed-stage,
+[data-pitch-reel="true"],
+.pitch-reel-overlay {
   position: relative;
   flex: 1 1 auto;
   align-self: stretch;
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  border-width: 0;
-  background: #000;
-  /* Disable pull-to-refresh + bounce on mobile (Instagram does this) */
-  overscroll-behavior: none;
-  /* none — JS handles ALL gestures (both vertical swipes and horizontal).
-     pan-x was previously set here which blocked ALL vertical touch navigation. */
-  touch-action: none;
-}
-
-/* Desktop (>= 768): portrait card driven by viewport height.
-   Width derives from aspect-ratio so the video stays a perfect 9:16
-   shape at any zoom level or window size. */
-@media (min-width: 768px) {
-  .shorts-feed-stage {
-    flex: 0 0 auto;
-    align-self: center;
-    aspect-ratio: 9 / 16;
-    width: min(calc(100vh * 9 / 16), calc(100dvh * 9 / 16), calc(100vw - 200px));
-    height: auto;
-    max-height: 100vh;
-    max-height: 100dvh;
-    border-radius: 0;
-    border-width: 0;
-  }
-}
-
-/* Short laptop screens — same fill behavior */
-@media (max-height: 700px) and (min-width: 768px) {
-  .shorts-feed-stage {
-    height: 100vh;
-    height: 100dvh;
-  }
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border-width: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: #000 !important;
+  touch-action: pan-y !important;
 }
 
 /* ─── Fluid sizing for the feed overlay ───

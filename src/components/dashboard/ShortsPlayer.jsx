@@ -29,54 +29,47 @@ export default function ShortsPlayer({
   const lastTapRef = useRef(0);
   const tapTimerRef = useRef(null);
 
-  // Auto-play when this card becomes active
+  const prevSrcRef = useRef(src);
+
+  // Auto-play when this card becomes active, resetting currentTime ONLY on src change
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (active) {
+
+    if (prevSrcRef.current !== src) {
+      prevSrcRef.current = src;
       v.currentTime = 0;
       setUserPaused(false);
-      const tryPlay = v.play();
-      if (tryPlay?.catch) tryPlay.catch(() => {});
-      setPlaying(true);
+    }
+
+    if (active) {
+      if (!userPaused) {
+        const tryPlay = v.play();
+        if (tryPlay?.catch) tryPlay.catch(() => {});
+        setPlaying(true);
+      }
     } else {
       v.pause();
       setPlaying(false);
     }
-  }, [active, src]);
+  }, [active, src, userPaused]);
 
-  // Pause on tab hidden / window blur
+  // Seamlessly resume playback when returning to visible tab if active & not userPaused
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+
     const onVisibility = () => {
-      if (document.hidden) {
-        v.pause();
-        setPlaying(false);
-      } else if (active && !userPaused) {
+      if (!document.hidden && active && !userPaused && v.paused) {
         const p = v.play();
         if (p?.catch) p.catch(() => {});
         setPlaying(true);
       }
     };
-    const onBlur = () => {
-      v.pause();
-      setPlaying(false);
-    };
-    const onFocus = () => {
-      if (active && !document.hidden && !userPaused) {
-        const p = v.play();
-        if (p?.catch) p.catch(() => {});
-        setPlaying(true);
-      }
-    };
+
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("blur", onBlur);
-    window.addEventListener("focus", onFocus);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("blur", onBlur);
-      window.removeEventListener("focus", onFocus);
     };
   }, [active, userPaused]);
 
@@ -176,7 +169,7 @@ export default function ShortsPlayer({
   };
 
   return (
-    <div ref={containerRef} className="absolute inset-0 select-none">
+    <div ref={containerRef} className="absolute inset-0 w-full h-full min-w-0 min-h-0 select-none p-0 m-0 border-0 rounded-none shadow-none bg-black">
       <video
         ref={videoRef}
         src={src}
@@ -189,7 +182,7 @@ export default function ShortsPlayer({
         onLoadedData={() => setIsReady(true)}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        className="absolute inset-0 w-full h-full object-cover bg-black cursor-pointer"
+        className="absolute inset-0 w-full h-full object-cover bg-black cursor-pointer p-0 m-0 border-0 rounded-none shadow-none"
       />
 
       {/* Loader */}
@@ -246,15 +239,16 @@ export default function ShortsPlayer({
         ))}
       </AnimatePresence>
 
-      {/* Progress bar — red, bottom */}
+      {/* Single EXPGLO Gold Reel Progress Bar */}
       <div
         onClick={handleSeek}
-        className="absolute bottom-0 left-0 right-0 h-1 bg-white/15 cursor-pointer group z-20"
+        className="absolute bottom-2 left-3 right-3 h-1 bg-white/20 rounded-full cursor-pointer group z-20 overflow-hidden"
         style={{ touchAction: "manipulation" }}
+        title="Seek video"
       >
         <div
-          className="h-full bg-red-500 transition-[width] duration-100 ease-linear group-hover:h-1.5"
-          style={{ width: `${progress * 100}%` }}
+          className="h-full bg-[#F5B942] rounded-full transition-[width] duration-100 ease-linear group-hover:bg-[#e0a838]"
+          style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%` }}
         />
       </div>
     </div>

@@ -12,50 +12,72 @@ import { syncSubscriptionFromUser, setAuth } from "../lib/auth";
 const AuthContext = createContext(null);
 
 const TOKEN_KEY = "expglo:accessToken";
+const REFRESH_TOKEN_KEY = "expglo:refreshToken";
 const REMEMBER_KEY = "expglo:remember";
 
 /**
  * Get the token from whichever storage it lives in.
  * - If "remember me" was checked → localStorage
  * - If not → sessionStorage
- * We check both on boot since we don't know yet which was used.
  */
 function getStoredToken() {
   return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
 
+function getStoredRefreshToken() {
+  return (
+    localStorage.getItem(REFRESH_TOKEN_KEY) ||
+    sessionStorage.getItem(REFRESH_TOKEN_KEY)
+  );
+}
+
 /**
- * Store token in the appropriate storage based on remember preference.
+ * Store both access and refresh tokens in appropriate storage based on remember preference.
  */
-function storeToken(token, remember) {
+function storeToken(tokens, remember) {
+  const accessToken = typeof tokens === "string" ? tokens : tokens?.accessToken;
+  const refreshToken = typeof tokens === "object" ? tokens?.refreshToken : null;
+
   if (remember) {
-    localStorage.setItem(TOKEN_KEY, token);
+    if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken);
+    if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     localStorage.setItem(REMEMBER_KEY, "1");
+
     sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
   } else {
-    sessionStorage.setItem(TOKEN_KEY, token);
+    if (accessToken) sessionStorage.setItem(TOKEN_KEY, accessToken);
+    if (refreshToken) sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(REMEMBER_KEY);
   }
 }
 
 /**
- * Clear token from both storages.
+ * Clear tokens from all storages.
  */
 function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(REMEMBER_KEY);
+
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+  sessionStorage.removeItem("expglo:adminToken");
+  sessionStorage.removeItem("expglo:impersonating");
 }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user on mount (if token exists in either storage)
+  // Load user on mount (if token or refresh token exists in either storage)
   useEffect(() => {
     const token = getStoredToken();
-    if (token) {
+    const refreshToken = getStoredRefreshToken();
+    if (token || refreshToken) {
       fetchUser();
     } else {
       setLoading(false);
@@ -85,11 +107,17 @@ export function AuthProvider({ children }) {
     const { remember = true, ...loginData } = credentials;
     const res = await authService.login(loginData);
     const payload = res.data.data; // { user, accessToken, refreshToken }
-    storeToken(payload.accessToken, remember);
+    storeToken(
+      { accessToken: payload.accessToken, refreshToken: payload.refreshToken },
+      remember
+    );
     setUser(payload.user);
     syncSubscriptionFromUser(payload.user);
     // Persist role to localStorage so getRole() fallback always works
-    setAuth({ role: payload.user?.role, identifier: payload.user?.email || payload.user?.username || "" });
+    setAuth({
+      role: payload.user?.role,
+      identifier: payload.user?.email || payload.user?.username || "",
+    });
     return payload;
   };
 
@@ -97,10 +125,16 @@ export function AuthProvider({ children }) {
     const res = await authService.register(formData);
     const payload = res.data.data; // { user, accessToken, refreshToken }
     // Registration always remembers (new user just signed up)
-    storeToken(payload.accessToken, true);
+    storeToken(
+      { accessToken: payload.accessToken, refreshToken: payload.refreshToken },
+      true
+    );
     setUser(payload.user);
     // Persist role to localStorage so getRole() fallback always works
-    setAuth({ role: payload.user?.role, identifier: payload.user?.email || payload.user?.username || "" });
+    setAuth({
+      role: payload.user?.role,
+      identifier: payload.user?.email || payload.user?.username || "",
+    });
     return payload;
   };
 
