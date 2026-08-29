@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   HiSearch,
   HiAdjustments,
@@ -20,7 +20,8 @@ import { ALL_MOCK_PITCHES, generateMockUsersList } from "../../constants/mockDat
 import { INDUSTRIES, FUNDING_STAGES } from "../../constants/options";
 
 const TABS = [
-  { value: "trending", label: "Trending", icon: HiTrendingUp },
+  { value: "startups", label: "Recommended Startups", icon: HiUserGroup },
+  { value: "trending", label: "Trending Pitches", icon: HiTrendingUp },
   { value: "all", label: "All Pitches" },
   { value: "people", label: "People", icon: HiUserGroup },
 ];
@@ -138,11 +139,14 @@ const DEMO_PEOPLE = [
 ];
 
 export default function DiscoverPage() {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || searchParams.get("type") || "startups";
+
   const { searchQuery, setSearchQuery } = useSearch();
   const query = searchQuery;
   const setQuery = setSearchQuery;
 
-  const [tab, setTab] = useState("trending");
+  const [tab, setTab] = useState(initialTab);
   const [industry, setIndustry] = useState("");
   const [stage, setStage] = useState("");
   const [pitches, setPitches] = useState(ALL_MOCK_PITCHES);
@@ -150,9 +154,34 @@ export default function DiscoverPage() {
   const [peopleLoading, setPeopleLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState(""); // "" | "founder" | "investor"
 
+  const [startups, setStartups] = useState([]);
+  const [startupsLoading, setStartupsLoading] = useState(false);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab") || searchParams.get("type");
+    if (requestedTab) {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
+
+  // Fetch recommended startups on startups tab
+  useEffect(() => {
+    if (tab !== "startups") return;
+    setStartupsLoading(true);
+    userService
+      .getRecommendedStartups({ limit: 50 })
+      .then((res) => {
+        const data = res?.data?.data || res?.data;
+        const list = data?.startups || (Array.isArray(data) ? data : []);
+        setStartups(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setStartups([]))
+      .finally(() => setStartupsLoading(false));
+  }, [tab]);
+
   // Fetch pitches on pitch tabs
   useEffect(() => {
-    if (tab === "people") return;
+    if (tab === "people" || tab === "startups") return;
     const params = {};
     if (query) params.q = query;
     if (industry) params.industry = industry;
@@ -338,8 +367,44 @@ export default function DiscoverPage() {
         ))}
       </div>
 
+      {/* ── Startups grid ── */}
+      {tab === "startups" && (
+        startupsLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-10 h-10 rounded-full border-[3px] border-gold/20 border-t-gold animate-spin" />
+          </div>
+        ) : startups.length === 0 ? (
+          <div className="text-center py-16 bg-white border border-[#1B5E3F]/12 rounded-2xl">
+            <HiUserGroup className="w-12 h-12 text-[#1B5E3F]/40 mx-auto mb-3" />
+            <p className="font-bold text-base text-[#0A1F14]">No recommended startups found</p>
+            <p className="text-xs text-[#0A1F14]/60 mt-1 max-w-sm mx-auto">
+              Browse pitches on the feed to discover new startups and train your recommendation engine.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {startups.map((s) => (
+              <PersonCard
+                key={s.startupId || s._id}
+                user={{
+                  _id: s.startupId || s._id,
+                  name: s.founderName || s.name,
+                  companyName: s.companyName || s.name,
+                  avatar: s.avatar,
+                  industry: s.industry,
+                  fundingStage: s.fundingStage,
+                  isVerified: s.isVerified,
+                  bio: s.bio,
+                  role: "founder",
+                }}
+              />
+            ))}
+          </div>
+        )
+      )}
+
       {/* ── Pitch grid ── */}
-      {tab !== "people" && (
+      {tab !== "people" && tab !== "startups" && (
         filteredPitches.length === 0 ? (
           <div className="text-center py-16">
             <HiAdjustments className="w-12 h-12 text-gray-400 mx-auto mb-3" />

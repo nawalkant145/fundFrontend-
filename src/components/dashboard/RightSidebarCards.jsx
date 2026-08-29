@@ -825,19 +825,70 @@ export function UpcomingEventsCard({ events: propEvents }) {
   );
 }
 
-export function TrendingPitchesCard({ pitches = [] }) {
+export function TrendingPitchesCard({ pitches: propPitches }) {
+  const [realPitches, setRealPitches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchTrendingPitches = useCallback(() => {
+    if (propPitches && propPitches.length > 0) {
+      setRealPitches(propPitches);
+      setLoading(false);
+      setError(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(false);
+
+    videoService
+      .getTrending({ limit: 3 })
+      .then((res) => {
+        const data = res?.data?.data || res?.data;
+        const list = data?.videos || (Array.isArray(data) ? data : []);
+        setRealPitches(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        setError(true);
+        setRealPitches([]);
+      })
+      .finally(() => setLoading(false));
+  }, [propPitches]);
+
+  useEffect(() => {
+    fetchTrendingPitches();
+  }, [fetchTrendingPitches]);
+
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between pb-3.5 border-b border-[#E2E8F0]">
         <h3 className="font-extrabold text-sm text-[#0F172A] flex items-center gap-2">
           🔥 Trending Pitches
         </h3>
-        <Link to="/app/pitch" className="text-xs font-bold text-[#7C3AED] hover:underline flex items-center gap-0.5">
+        <Link
+          to="/app/discover"
+          className="text-xs font-bold text-[#7C3AED] hover:underline flex items-center gap-0.5"
+        >
           View all →
         </Link>
       </div>
 
-      {pitches.length === 0 ? (
+      {loading ? (
+        <div className="py-8 text-center text-xs text-[#64748B] flex flex-col items-center justify-center gap-2">
+          <div className="w-5 h-5 rounded-full border-2 border-[#7C3AED]/20 border-t-[#7C3AED] animate-spin" />
+          <span className="font-medium text-[#64748B]">Loading trending pitches...</span>
+        </div>
+      ) : error ? (
+        <div className="py-6 text-center text-xs text-[#64748B] flex flex-col items-center justify-center">
+          <p className="font-bold text-[#0F172A]">Unable to load trending pitches.</p>
+          <button
+            onClick={fetchTrendingPitches}
+            className="mt-2.5 px-3.5 py-1 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-2xs"
+          >
+            Try again
+          </button>
+        </div>
+      ) : realPitches.length === 0 ? (
         <div className="py-6 text-center text-xs text-[#64748B]">
           <p className="font-semibold text-[#0F172A]">No trending pitches yet.</p>
           <p className="text-[11px] text-[#94A3B8] mt-1">
@@ -846,59 +897,140 @@ export function TrendingPitchesCard({ pitches = [] }) {
         </div>
       ) : (
         <div className="space-y-2.5 mt-3.5 max-h-[360px] overflow-y-auto pr-1">
-          {pitches.map((item, idx) => (
-            <Link
-              key={item._id || item.id || idx}
-              to={`/app/pitch?pitch=${item._id || item.id}`}
-              className="flex items-center justify-between p-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl transition-all group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-9 h-9 rounded-full ${item.avatarColor || "bg-[#7C3AED]"} text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-sm`}
-                >
-                  {item.logo || item.founderId?.avatar ? (
-                    <img src={item.logo || item.founderId?.avatar} alt={item.name || item.title} className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    item.initial || (item.name ? item.name[0] : item.title ? item.title[0] : "P")
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-xs text-[#0F172A] group-hover:text-[#7C3AED] transition-colors truncate">
-                    {item.name || item.founderId?.companyName || item.title || "Pitch"}
-                  </p>
-                  <p className="text-[11px] text-[#64748B] font-medium truncate">
-                    {item.industry || "Tech"} · {item.stage || item.fundingStage || "Seed"}
-                  </p>
-                </div>
-              </div>
+          {realPitches.map((item, idx) => {
+            const companyName =
+              item.companyName ||
+              item.founderId?.companyName ||
+              item.name ||
+              item.founderId?.name ||
+              item.title ||
+              "Startup";
 
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-extrabold rounded-md">
-                  ↑ {item.views ? `${item.views} views` : "Trending"}
-                </span>
-                <span className="text-[#94A3B8] text-xs font-bold ml-0.5">›</span>
-              </div>
-            </Link>
-          ))}
+            const avatarUrl =
+              item.logo ||
+              item.avatar ||
+              item.founderId?.avatar ||
+              item.thumbnailUrl;
+
+            const industryStr = item.industry || "Tech";
+            const stageStr = item.fundingStage || item.stage || "Seed";
+
+            const growthBadgeText =
+              typeof item.viewGrowthPercent === "number" && item.viewGrowthPercent > 0
+                ? `↑ ${item.viewGrowthPercent}% views`
+                : item.views > 0
+                ? `↑ ${item.views} views`
+                : "🔥 Trending";
+
+            const targetPitchId = item.pitchId || item._id || item.id;
+
+            return (
+              <Link
+                key={targetPitchId || idx}
+                to={`/app/pitch?pitch=${targetPitchId}`}
+                className="flex items-center justify-between p-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-[#7C3AED] text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={companyName}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span>{companyName[0]?.toUpperCase() || "S"}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-[#0F172A] group-hover:text-[#7C3AED] transition-colors truncate">
+                      {companyName}
+                    </p>
+                    <p className="text-[11px] text-[#64748B] font-medium truncate">
+                      {industryStr} · {stageStr}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-extrabold rounded-md">
+                    {growthBadgeText}
+                  </span>
+                  <span className="text-[#94A3B8] text-xs font-bold ml-0.5">›</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-export function RecommendedStartupsCard({ startups = [] }) {
+export function RecommendedStartupsCard({ startups: propStartups }) {
+  const [realStartups, setRealStartups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchRecommendedStartups = useCallback(() => {
+    if (propStartups && propStartups.length > 0) {
+      setRealStartups(propStartups);
+      setLoading(false);
+      setError(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(false);
+
+    userService
+      .getRecommendedStartups({ limit: 3 })
+      .then((res) => {
+        const data = res?.data?.data || res?.data;
+        const list = data?.startups || (Array.isArray(data) ? data : []);
+        setRealStartups(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        setError(true);
+        setRealStartups([]);
+      })
+      .finally(() => setLoading(false));
+  }, [propStartups]);
+
+  useEffect(() => {
+    fetchRecommendedStartups();
+  }, [fetchRecommendedStartups]);
+
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between pb-3.5 border-b border-[#E2E8F0]">
         <h3 className="font-extrabold text-sm text-[#0F172A] flex items-center gap-2">
           Recommended Startups
         </h3>
-        <Link to="/app/discover" className="text-xs font-bold text-[#7C3AED] hover:underline flex items-center gap-0.5">
+        <Link
+          to="/app/discover?tab=startups"
+          className="text-xs font-bold text-[#7C3AED] hover:underline flex items-center gap-0.5"
+        >
           View all →
         </Link>
       </div>
 
-      {startups.length === 0 ? (
+      {loading ? (
+        <div className="py-8 text-center text-xs text-[#64748B] flex flex-col items-center justify-center gap-2">
+          <div className="w-5 h-5 rounded-full border-2 border-[#7C3AED]/20 border-t-[#7C3AED] animate-spin" />
+          <span className="font-medium text-[#64748B]">Loading recommendations...</span>
+        </div>
+      ) : error ? (
+        <div className="py-6 text-center text-xs text-[#64748B] flex flex-col items-center justify-center">
+          <p className="font-bold text-[#0F172A]">Unable to load recommended startups.</p>
+          <button
+            onClick={fetchRecommendedStartups}
+            className="mt-2.5 px-3.5 py-1 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-2xs"
+          >
+            Try again
+          </button>
+        </div>
+      ) : realStartups.length === 0 ? (
         <div className="py-6 text-center text-xs text-[#64748B]">
           <p className="font-semibold text-[#0F172A]">No recommended startups.</p>
           <p className="text-[11px] text-[#94A3B8] mt-1">
@@ -907,38 +1039,54 @@ export function RecommendedStartupsCard({ startups = [] }) {
         </div>
       ) : (
         <div className="space-y-2.5 mt-3.5 max-h-[360px] overflow-y-auto pr-1">
-          {startups.map((item, idx) => (
-            <div
-              key={item._id || item.id || idx}
-              className="flex items-center justify-between p-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl transition-all"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-9 h-9 rounded-full ${item.avatarColor || "bg-[#10B981]"} text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-sm`}
-                >
-                  {item.logo || item.avatar ? (
-                    <img src={item.logo || item.avatar} alt={item.name || item.companyName} className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    item.initial || (item.name ? item.name[0] : item.companyName ? item.companyName[0] : "S")
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-xs text-[#0F172A] truncate">
-                    {item.name || item.companyName || "Startup"}
-                  </p>
-                  <p className="text-[11px] text-[#64748B] font-medium truncate">
-                    {item.industry || "General"} · {item.stage || item.fundingStage || "Seed"}
-                  </p>
-                </div>
-              </div>
+          {realStartups.map((item, idx) => {
+            const startupId = item.startupId || item._id || item.id;
+            const companyName = item.companyName || item.name || "Startup";
+            const avatarUrl = item.avatar || item.logo;
+            const industryStr = item.industry || "Tech";
+            const stageStr = item.fundingStage || item.stage || "Seed";
 
-              <Link to={`/app/discover`}>
-                <button className="px-3.5 py-1.5 bg-white hover:bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#7C3AED] text-[#0F172A] hover:text-[#7C3AED] text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs">
-                  View
-                </button>
-              </Link>
-            </div>
-          ))}
+            const profileRoute = startupId
+              ? `/app/u/${startupId}`
+              : item.pitchId
+              ? `/app/pitch?pitch=${item.pitchId}`
+              : "/app/discover";
+
+            return (
+              <div
+                key={startupId || idx}
+                className="flex items-center justify-between p-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl transition-all"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-[#10B981] text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={companyName}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span>{companyName[0]?.toUpperCase() || "S"}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-[#0F172A] truncate">
+                      {companyName}
+                    </p>
+                    <p className="text-[11px] text-[#64748B] font-medium truncate">
+                      {industryStr} · {stageStr}
+                    </p>
+                  </div>
+                </div>
+
+                <Link to={profileRoute}>
+                  <button className="px-3.5 py-1.5 bg-white hover:bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#7C3AED] text-[#0F172A] hover:text-[#7C3AED] text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs">
+                    View
+                  </button>
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
