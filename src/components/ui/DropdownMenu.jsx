@@ -87,7 +87,7 @@ export default function DropdownMenu({
               scale: 0.96,
             }}
             transition={{ duration: 0.15 }}
-            data-light-app="true"
+            data-dropdown-menu="true"
             className={`absolute z-[60] min-w-[200px] bg-white border border-[#1B5E3F]/15 rounded-xl shadow-2xl shadow-[#0F4A2E]/15 overflow-hidden ${positionClass} ${
               align === "right" ? "right-0" : "left-0"
             }`}
@@ -107,7 +107,7 @@ export default function DropdownMenu({
                   disabled={item.disabled}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-left transition-colors disabled:opacity-50 ${
                     item.danger
-                      ? "text-red-500 hover:bg-red-50"
+                      ? "text-red-500 hover:bg-red-50 danger-item"
                       : "text-[#0A1F14]/85 hover:bg-[#FAFAF7] hover:text-[#0F4A2E]"
                   }`}
                 >

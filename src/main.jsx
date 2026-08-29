@@ -10,6 +10,7 @@ import { UploadProvider } from "./context/UploadContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
 import { CallProvider } from "./context/CallContext.jsx";
 import { UploadModalProvider } from "./context/UploadModalContext.jsx";
+import { SearchProvider } from "./context/SearchContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -21,7 +22,9 @@ createRoot(document.getElementById("root")).render(
               <UploadProvider>
                 <CallProvider>
                   <UploadModalProvider>
-                    <App />
+                    <SearchProvider>
+                      <App />
+                    </SearchProvider>
                   </UploadModalProvider>
                 </CallProvider>
               </UploadProvider>

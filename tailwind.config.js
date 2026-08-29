@@ -11,6 +11,10 @@ export default {
         "dark-navy": "#0A1628",
         "dark-bg": "#0F1B2D",
         "card-bg": "#1A2332",
+        "investor-purple": "#7C3AED",
+        "investor-purple-hover": "#6D28D9",
+        "investor-purple-light": "#F3E8FF",
+        "investor-purple-dark": "#5B21B6",
       },
       animation: {
         "gradient-shift": "gradientShift 20s ease infinite",
