@@ -165,21 +165,23 @@ export default function InvestorFeed() {
       let targetIdx = 0;
 
       if (activeId) {
-        let foundIdx = merged.findIndex((p) => p._id === activeId);
+        let foundIdx = merged.findIndex((p) => (p.pitchId || p._id) === activeId);
         if (foundIdx >= 0) {
           targetIdx = foundIdx;
         } else {
           // Check ALL_MOCK_PITCHES first
-          const mockMatch = ALL_MOCK_PITCHES.find((p) => p._id === activeId);
+          const mockMatch = ALL_MOCK_PITCHES.find((p) => (p.pitchId || p._id) === activeId);
           if (mockMatch) {
-            merged = [mockMatch, ...merged.filter((p) => p._id !== mockMatch._id)];
+            merged = [mockMatch, ...merged.filter((p) => (p.pitchId || p._id) !== (mockMatch.pitchId || mockMatch._id))];
             targetIdx = 0;
           } else if (/^[a-f0-9]{24}$/i.test(activeId)) {
             try {
               const singleRes = await videoService.getById(activeId);
-              const singleVideo = singleRes?.data?.data;
-              if (singleVideo && isMounted) {
-                merged = [singleVideo, ...merged.filter((p) => p._id !== singleVideo._id)];
+              const dataObj = singleRes?.data?.data || singleRes?.data;
+              const singleVideo = dataObj?.video || dataObj;
+              if (singleVideo && (singleVideo._id || singleVideo.pitchId) && isMounted) {
+                const vidId = singleVideo._id || singleVideo.pitchId;
+                merged = [singleVideo, ...merged.filter((p) => (p.pitchId || p._id) !== vidId)];
                 targetIdx = 0;
               }
             } catch (e) {}
@@ -204,6 +206,11 @@ export default function InvestorFeed() {
       setLiked((prev) => ({ ...likedInit, ...prev }));
       setSaved((prev) => ({ ...savedInit, ...prev }));
       setFeedLoading(false);
+      if (targetIdx > 0) {
+        requestAnimationFrame(() => {
+          scrollToPitchIndex(targetIdx, true);
+        });
+      }
     };
 
     initFeed();
@@ -298,7 +305,7 @@ export default function InvestorFeed() {
 
   const [direction, setDirection] = useState("down"); // 'up' | 'down' for slide animation
 
-  // React to URL ?pitch=<id> — fires when navigating here from a profile card.
+  // React to URL ?pitch=<id> — fires when navigating here from a profile card or sidebar.
   // Finds the pitch, jumps to it, then strips the param so normal scrolling works.
   useEffect(() => {
     const param = searchParams.get("pitch");
@@ -311,24 +318,28 @@ export default function InvestorFeed() {
     next.delete("pitch");
     setSearchParams(next, { replace: true });
 
-    const found = pitches.findIndex((p) => p._id === param);
+    const found = pitches.findIndex((p) => (p.pitchId || p._id) === param);
     if (found >= 0) {
       setDirection(found > idx ? "down" : "up");
       setIdx(found);
+      scrollToPitchIndex(found, true);
       setExpanded(false);
     } else {
       // Pitch not in current list — add it
-      const mockMatch = ALL_MOCK_PITCHES.find((p) => p._id === param);
+      const mockMatch = ALL_MOCK_PITCHES.find((p) => (p.pitchId || p._id) === param);
       if (mockMatch) {
         setPitches((prev) => {
-          const existing = prev.findIndex((p) => p._id === mockMatch._id);
+          const existing = prev.findIndex((p) => (p.pitchId || p._id) === (mockMatch.pitchId || mockMatch._id));
           if (existing >= 0) {
             setDirection(existing > idx ? "down" : "up");
             setIdx(existing);
+            scrollToPitchIndex(existing, true);
             return prev;
           }
           const next2 = [...prev, mockMatch];
-          setIdx(next2.length - 1);
+          const nextIdx = next2.length - 1;
+          setIdx(nextIdx);
+          scrollToPitchIndex(nextIdx, true);
           return next2;
         });
         setExpanded(false);
@@ -336,16 +347,21 @@ export default function InvestorFeed() {
         videoService
           .getById(param)
           .then((res) => {
-            const video = res?.data?.data;
-            if (!video) return;
+            const dataObj = res?.data?.data || res?.data;
+            const video = dataObj?.video || dataObj;
+            if (!video || (!video._id && !video.pitchId)) return;
+            const vidId = video._id || video.pitchId;
             setPitches((prev) => {
-              const existing = prev.findIndex((p) => p._id === video._id);
+              const existing = prev.findIndex((p) => (p.pitchId || p._id) === vidId);
               if (existing >= 0) {
                 setIdx(existing);
+                scrollToPitchIndex(existing, true);
                 return prev;
               }
               const next2 = [...prev, video];
-              setIdx(next2.length - 1);
+              const nextIdx = next2.length - 1;
+              setIdx(nextIdx);
+              scrollToPitchIndex(nextIdx, true);
               return next2;
             });
             setExpanded(false);
@@ -410,14 +426,24 @@ export default function InvestorFeed() {
     return () => clearTimeout(timer);
   }, [pitch?._id]);
 
-  const scrollToPitchIndex = useCallback((targetIndex) => {
+  const isScrollJumpingRef = useRef(false);
+
+  const scrollToPitchIndex = useCallback((targetIndex, immediate = false) => {
     const el = document.getElementById("pitch-feed-wrapper");
     if (!el) return;
-    const h = el.clientHeight;
-    el.scrollTo({
-      top: targetIndex * h,
-      behavior: "smooth",
-    });
+    const h = el.clientHeight || window.innerHeight - 72;
+    isScrollJumpingRef.current = true;
+    if (immediate) {
+      el.scrollTop = targetIndex * h;
+    } else {
+      el.scrollTo({
+        top: targetIndex * h,
+        behavior: "smooth",
+      });
+    }
+    setTimeout(() => {
+      isScrollJumpingRef.current = false;
+    }, 400);
   }, []);
 
   // Stable navigation functions using functional setState so they never capture
@@ -871,6 +897,7 @@ export default function InvestorFeed() {
                 index={itemIdx}
                 isActive={isItemActive}
                 onInView={() => {
+                  if (isScrollJumpingRef.current) return;
                   if (idx !== itemIdx) {
                     setDirection(itemIdx > idx ? "down" : "up");
                     setIdx(itemIdx);
