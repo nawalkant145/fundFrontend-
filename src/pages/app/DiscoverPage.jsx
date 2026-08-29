@@ -15,6 +15,7 @@ import FollowButton from "../../components/monetization/FollowButton";
 import { videoService } from "../../services/videoService";
 import { userService } from "../../services/userService";
 import { useAuth } from "../../context/AuthContext";
+import { useSearch } from "../../context/SearchContext";
 import { ALL_MOCK_PITCHES, generateMockUsersList } from "../../constants/mockData";
 import { INDUSTRIES, FUNDING_STAGES } from "../../constants/options";
 
@@ -137,8 +138,11 @@ const DEMO_PEOPLE = [
 ];
 
 export default function DiscoverPage() {
+  const { searchQuery, setSearchQuery } = useSearch();
+  const query = searchQuery;
+  const setQuery = setSearchQuery;
+
   const [tab, setTab] = useState("trending");
-  const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("");
   const [stage, setStage] = useState("");
   const [pitches, setPitches] = useState(ALL_MOCK_PITCHES);

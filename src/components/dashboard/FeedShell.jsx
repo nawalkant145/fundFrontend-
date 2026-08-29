@@ -1,31 +1,17 @@
-import Sidebar from "./Sidebar";
-import BottomBar from "./BottomBar";
-import UploadProgressBar from "./UploadProgressBar";
-import { useAuth } from "../../context/AuthContext";
+import DashboardShell from "./DashboardShell";
 
 /**
- * Layout for the immersive shorts feed.
- *   - Sidebar + BottomBar are light themed (Sidebar.jsx)
- *   - Feed area itself stays black so vertical videos look premium
+ * Pitch reel shell:
+ * - Passes noScroll to DashboardShell to prevent parent page scrolling
+ * - Preserves TopBar (64px) + Sidebar (280px left) + background (#F3F2EF)
+ * - Renders centered pitch viewer as single vertical scroll owner
  */
 export default function FeedShell({ children, mode }) {
-  const { user } = useAuth();
-  const resolvedMode = mode || user?.role || "founder";
-
   return (
-    <div
-      className="overflow-hidden bg-black relative touch-pan-y"
-      style={{ height: "100dvh" }}
-    >
-      <Sidebar mode={resolvedMode} />
-      <BottomBar mode={resolvedMode} />
-      <UploadProgressBar />
-
-      <div className="absolute inset-0 md:left-[72px] z-10 bg-black text-white touch-pan-y">
-        <main className="relative w-full h-full overflow-visible touch-pan-y">
-          {children}
-        </main>
+    <DashboardShell mode={mode} noPad fullWidth noScroll>
+      <div className="w-full h-full min-w-0 min-h-0 relative overflow-hidden bg-black p-0 m-0 gap-0 space-y-0 flex-1 rounded-none border-0 shadow-none">
+        {children}
       </div>
-    </div>
+    </DashboardShell>
   );
 }

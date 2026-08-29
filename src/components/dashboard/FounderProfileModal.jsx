@@ -154,10 +154,10 @@ export default function FounderProfileModal({
           <motion.button
             onClick={onToggleFollow}
             whileTap={{ scale: 0.97 }}
-            className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+            className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
               isFollowing
-                ? "bg-[#FAFAF7] border-2 border-[#1B5E3F]/30 text-[#0F4A2E]"
-                : "bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force shadow-md"
+                ? "bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A]"
+                : "bg-[#10B981] hover:bg-[#059669] text-white shadow-md"
             }`}
           >
             {isFollowing ? "Following" : "Follow"}
@@ -166,9 +166,21 @@ export default function FounderProfileModal({
             <motion.button
               onClick={handleMessageFounder}
               whileTap={{ scale: 0.97 }}
-              className="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-[#F5B942] border-2 border-[#F5B942] text-black hover:bg-[#e0a838] flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              className="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
             >
-              <HiChatAlt2 className="w-4 h-4 text-black" /> Message
+              <HiChatAlt2 className="w-4 h-4 text-[#0F172A]" /> Message
+            </motion.button>
+          )}
+          {user?.role === "investor" && (
+            <motion.button
+              onClick={() => {
+                onClose?.();
+                navigate(`/app/invest?startup=${founder._id}`);
+              }}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all bg-[#7C3AED] hover:bg-[#6D28D9] text-white flex items-center justify-center gap-1 cursor-pointer shadow-md"
+            >
+              + Invest Now
             </motion.button>
           )}
         </div>
