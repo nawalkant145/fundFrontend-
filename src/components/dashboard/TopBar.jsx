@@ -62,7 +62,7 @@ export default function TopBar({ onMenuClick }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search startups, people, pitches..."
-                className="w-full pl-11 pr-4 h-11 bg-[#F1F5F9] hover:bg-[#E2E8F0]/70 border border-[#E2E8F0] rounded-full text-sm text-[#0F172A] placeholder-[#64748B] focus:border-[#7C3AED] focus:bg-white focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none transition-all font-medium"
+                className="w-full pl-11 pr-4 h-11 bg-[#F1F5F9] hover:bg-[#E2E8F0]/70 border border-[#E2E8F0] rounded-full text-sm text-[#0F172A] placeholder-[#64748B] focus:border-[#1B5E3F] focus:bg-white focus:ring-2 focus:ring-[#1B5E3F]/20 focus:outline-none transition-all font-medium"
               />
             </div>
           </div>
@@ -76,9 +76,9 @@ export default function TopBar({ onMenuClick }) {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-3.5 py-2 rounded-xl text-xs font-black bg-[#7C3AED] text-white hover:bg-[#6D28D9] transition-all flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                className="px-3.5 py-2 rounded-xl text-xs font-black bg-[#1B5E3F] text-white hover:bg-[#0F4A2E] transition-all flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
               >
-                <HiCurrencyDollar className="w-4 h-4 text-[#F59E0B]" />
+                <HiCurrencyDollar className="w-4 h-4 text-[#F5B942]" />
                 <span>Invest Now</span>
               </motion.button>
             </Link>
@@ -86,7 +86,7 @@ export default function TopBar({ onMenuClick }) {
           {/* Messages Icon */}
           <Link to="/app/messages" className="flex items-center">
             <motion.button
-              className="w-10 h-10 text-[#64748B] hover:text-[#7C3AED] hover:bg-[#F3E8FF]/50 rounded-xl transition-colors flex items-center justify-center shrink-0"
+              className="w-10 h-10 text-[#64748B] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 rounded-xl transition-colors flex items-center justify-center shrink-0"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Messages"
@@ -98,7 +98,7 @@ export default function TopBar({ onMenuClick }) {
           {/* Notifications Bell */}
           <Link to="/app/notifications" className="relative flex items-center">
             <motion.button
-              className="relative w-10 h-10 text-[#64748B] hover:text-[#7C3AED] hover:bg-[#F3E8FF]/50 rounded-xl transition-colors flex items-center justify-center shrink-0"
+              className="relative w-10 h-10 text-[#64748B] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 rounded-xl transition-colors flex items-center justify-center shrink-0"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Notifications"
@@ -121,10 +121,10 @@ export default function TopBar({ onMenuClick }) {
               <img
                 src={
                   user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=7C3AED&color=fff&size=80`
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
                 }
                 alt={user?.name || "Profile"}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-[#7C3AED]/20"
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-[#1B5E3F]/20"
               />
               <div className="hidden md:block text-left leading-tight">
                 <p className="font-bold text-xs text-[#0F172A] truncate max-w-[110px]">
@@ -160,7 +160,7 @@ export default function TopBar({ onMenuClick }) {
                   <Link
                     to="/app/profile"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#7C3AED] transition-colors"
+                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#1B5E3F] transition-colors"
                   >
                     <HiUser className="w-4 h-4" /> View Profile
                   </Link>
@@ -168,16 +168,16 @@ export default function TopBar({ onMenuClick }) {
                   <Link
                     to="/app/subscription"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#7C3AED] transition-colors"
+                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#1B5E3F] transition-colors"
                   >
-                    <HiSparkles className="w-4 h-4 text-[#7C3AED]" />
+                    <HiSparkles className="w-4 h-4 text-[#1B5E3F]" />
                     {isInvestor ? "Investor Pro" : "Studio Pro"}
                   </Link>
 
                   <Link
                     to="/app/settings"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#7C3AED] transition-colors"
+                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC] hover:text-[#1B5E3F] transition-colors"
                   >
                     <HiCog className="w-4 h-4" /> Settings
                   </Link>
