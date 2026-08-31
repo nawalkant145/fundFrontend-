@@ -811,9 +811,37 @@ export function UpcomingEventsCard({ events: propEvents }) {
                   <button
                     onClick={(e) => handleRegister(ev._id || ev.id, e)}
                     disabled={registeringId === (ev._id || ev.id)}
-                    className="px-3 py-1 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-lg transition-colors shrink-0 cursor-pointer shadow-2xs disabled:opacity-50"
+                    className="
+                      register-event-btn
+                      px-3 py-1.5
+                      bg-[#0B3D2E]
+                      hover:bg-[#145A42]
+                      !text-white
+                      text-xs font-semibold
+                      rounded-lg
+                      flex items-center gap-1.5
+                      border border-[#D4A017]/40
+                      shadow-2xs
+                      hover:shadow-xs
+                      transition-all duration-300
+                      shrink-0
+                      cursor-pointer
+                      disabled:opacity-50
+                    "
+                    style={{ color: "#ffffff" }}
                   >
-                    {registeringId === (ev._id || ev.id) ? "Registering..." : "Register →"}
+                    {registeringId === (ev._id || ev.id) ? (
+                      <span className="register-event-label !text-white" style={{ color: "#ffffff" }}>
+                        Registering...
+                      </span>
+                    ) : (
+                      <>
+                        <span className="register-event-label !text-white" style={{ color: "#ffffff" }}>
+                          Register
+                        </span>
+                        <HiArrowRight className="w-3.5 h-3.5 !text-[#D4AF37]" style={{ color: "#D4AF37" }} />
+                      </>
+                    )}
                   </button>
                 )}
               </div>

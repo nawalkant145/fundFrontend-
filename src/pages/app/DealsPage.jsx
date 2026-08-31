@@ -162,11 +162,14 @@ export default function DealsPage() {
               Manage investor interests, negotiations and confirmed investments.
             </p>
           </div>
-          <Link to="/app/upload-pitch">
-            <button className="px-5 py-2.5 bg-[#0F4A2E] hover:bg-[#1B5E3F] text-white text-xs font-black rounded-xl shadow transition-colors inline-flex items-center gap-1.5 cursor-pointer">
-              <HiPlus className="w-4 h-4" /> Add New Deal
+          {/* <Link to="/app/upload-pitch">
+            <button
+              className="px-5 py-2.5 bg-[#0F4A2E] hover:bg-[#1B5E3F] !text-white text-xs font-black rounded-xl shadow transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              style={{ color: "#ffffff" }}
+            >
+              <HiPlus className="w-4 h-4 !text-[#D4AF37]" style={{ color: "#D4AF37" }} /> Add New Deal
             </button>
-          </Link>
+          </Link> */}
         </div>
 
         {/* 4 Summary Cards */}

@@ -325,9 +325,10 @@ export default function UploadPitchModal({ open, onClose }) {
                         onClick={() => setData((p) => ({ ...p, visibility: "everyone" }))}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                           data.visibility === "everyone"
-                            ? "bg-[#1B5E3F] text-white-force border-[#1B5E3F] shadow-md"
+                            ? "bg-[#1B5E3F] !text-white border-[#1B5E3F] shadow-md"
                             : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40"
                         }`}
+                        style={data.visibility === "everyone" ? { color: "#ffffff" } : {}}
                       >
                         🌐 Everyone
                       </button>

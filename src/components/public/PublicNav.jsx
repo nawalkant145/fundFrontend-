@@ -66,7 +66,7 @@ export default function PublicNav() {
       <div className="px-3 sm:px-5 py-2 flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <img
-            src="/Logobgremove.jpeg"
+            src="/Expglo fund logo.jpeg"
             alt="EXPGLO FUND"
             className="h-10 w-auto mix-blend-multiply"
           />

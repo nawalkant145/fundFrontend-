@@ -83,6 +83,20 @@ body {
 [data-light-app="true"] .text-white:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: #0a1f14;
 }
+[data-light-app="true"] .profile-edit-button,
+[data-light-app="true"] .profile-edit-button .profile-edit-label,
+[data-light-app="true"] .change-photo-btn,
+[data-light-app="true"] .save-changes-btn,
+[data-light-app="true"] .register-event-btn,
+[data-light-app="true"] .register-event-btn .register-event-label {
+  color: #ffffff !important;
+}
+[data-light-app="true"] .profile-edit-button svg,
+[data-light-app="true"] .change-photo-btn svg,
+[data-light-app="true"] .save-changes-btn svg,
+[data-light-app="true"] .register-event-btn svg {
+  color: #d4af37 !important;
+}
 [data-light-app="true"] .text-gray-300:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: rgba(10, 31, 20, 0.78);
 }

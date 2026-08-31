@@ -7,7 +7,7 @@ export default function PublicFooter() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2">
             <img
-              src="/Logobgremove.jpeg"
+              src="/Expglo fund logo.jpeg"
               alt="EXPGLO"
               className="h-10 mb-3 mix-blend-multiply"
             />

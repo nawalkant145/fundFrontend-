@@ -37,7 +37,7 @@ export default function TopBar({ onMenuClick }) {
         <div className="flex items-center gap-4 sm:gap-6 flex-1 min-w-0 max-w-[760px]">
           <Link to="/app" className="flex items-center gap-2.5 shrink-0">
             <img
-              src="/Logobgremove.jpeg"
+              src="/Expglo fund logo.jpeg"
               alt="EXPGLO"
               className="h-10 w-auto object-contain mix-blend-multiply"
             />

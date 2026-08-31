@@ -12,7 +12,7 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <motion.img
-            src="/Logobgremove.jpeg"
+            src="/Expglo fund logo.jpeg"
             alt="EXPGLO FUND"
             className="h-16 w-auto drop-shadow-[0_0_10px_rgba(245,185,66,0.3)]"
             whileHover={{ scale: 1.05 }}

@@ -24,7 +24,7 @@ export default function PageLoader({ variant = "fullscreen", text }) {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-5">
       {/* Logo */}
       <motion.img
-        src="/Logobgremove.jpeg"
+        src="/Expglo fund logo.jpeg"
         alt="EXPGLO FUND"
         className="h-12 w-auto mix-blend-multiply"
         initial={{ opacity: 0, scale: 0.9 }}

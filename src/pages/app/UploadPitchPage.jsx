@@ -301,9 +301,10 @@ export default function UploadPitchPage() {
               onClick={() => setData((p) => ({ ...p, visibility: "everyone" }))}
               className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
                 data.visibility === "everyone"
-                  ? "bg-[#1B5E3F] text-white border-[#1B5E3F] shadow-md"
+                  ? "bg-[#1B5E3F] !text-white border-[#1B5E3F] shadow-md"
                   : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40"
               }`}
+              style={data.visibility === "everyone" ? { color: "#ffffff" } : {}}
             >
               🌐 Everyone
             </button>
@@ -312,7 +313,7 @@ export default function UploadPitchPage() {
               onClick={() =>
                 setData((p) => ({ ...p, visibility: "investors-only" }))
               }
-              className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+              className={`flex-1 py-3 rounded-xl text-sm font-bold border-[#F5B942] shadow-md ${
                 data.visibility === "investors-only"
                   ? "bg-[#F5B942] text-[#0F4A2E] border-[#F5B942] shadow-md"
                   : "bg-white text-[#0A1F14]/75 border-[#1B5E3F]/15 hover:border-[#F5B942]/60"
