@@ -51,8 +51,8 @@ export default function VerificationStatusCard({ user }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* Left: Shield Icon + Verification Tier Title + LEVEL badge */}
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0F4A2E] text-white-force flex items-center justify-center flex-shrink-0 shadow-xs">
-            <HiShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-white-force" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0F4A2E] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#F5B942]/20">
+            <HiShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-[#F5B942]" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -126,7 +126,7 @@ export default function VerificationStatusCard({ user }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-bold text-[#0F172A] truncate">Identity Verification</p>
-                    <MdVerified className="w-4 h-4 text-blue-500 shrink-0" />
+                    <MdVerified className="w-4 h-4 text-[#F5B942] shrink-0" />
                   </div>
                   <p className="text-xs font-medium text-slate-500 leading-tight">Government ID & Blue Verified Badge</p>
                 </div>

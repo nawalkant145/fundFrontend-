@@ -88,7 +88,9 @@ body {
 [data-light-app="true"] .change-photo-btn,
 [data-light-app="true"] .save-changes-btn,
 [data-light-app="true"] .register-event-btn,
-[data-light-app="true"] .register-event-btn .register-event-label {
+[data-light-app="true"] .register-event-btn .register-event-label,
+.text-white-force,
+[data-light-app="true"] .text-white-force {
   color: #ffffff !important;
 }
 [data-light-app="true"] .profile-edit-button svg,

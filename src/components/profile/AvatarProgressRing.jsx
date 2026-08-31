@@ -96,12 +96,14 @@ export default function AvatarProgressRing({
 
         {/* Percentage Badge Pill overlapping bottom of the ring */}
         {hasPercentage ? (
-          <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E] text-white-force text-[11px] font-bold px-3 py-0.5 rounded-full shadow-md border border-white/20">
-            <span className="text-white-force">{displayPercentage}%</span>
+          <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E] text-white-force text-[11px] font-extrabold px-3 py-0.5 rounded-full shadow-md border border-white/20">
+            <span className="text-white-force" style={{ color: "#ffffff" }}>
+              {displayPercentage}%
+            </span>
           </div>
         ) : (
-          <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E]/40 text-white-force text-[11px] font-bold px-3 py-0.5 rounded-full shadow-md border border-white/10 animate-pulse">
-            <span className="opacity-0">70%</span>
+          <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E]/40 text-white-force text-[11px] font-extrabold px-3 py-0.5 rounded-full shadow-md border border-white/10 animate-pulse">
+            <span className="opacity-0" style={{ color: "#ffffff" }}>70%</span>
           </div>
         )}
       </div>

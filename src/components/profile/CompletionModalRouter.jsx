@@ -14,7 +14,7 @@ export function useCompletionRouter({ onOpenEditProfile }) {
         if (onOpenEditProfile) {
           onOpenEditProfile();
         } else {
-          navigate("/settings");
+          navigate("/app/settings");
         }
         break;
 
