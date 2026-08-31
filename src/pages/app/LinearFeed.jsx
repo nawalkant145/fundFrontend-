@@ -1139,10 +1139,10 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
                 onClose();
                 navigate(`/app/invest?startup=${pitch._id}`);
               }}
-              className="invest-now-btn w-full py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
-              style={{ color: "#ffffff" }}
+              className="invest-now-btn w-full py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
             >
-              Proceed to Invest Now →
+              <HiCurrencyDollar className="w-4.5 h-4.5 text-[#F5B942]" />
+              <span className="text-white-force" style={{ color: "#ffffff" }}>Proceed to Invest Now →</span>
             </button>
             <button
               onClick={() => {
