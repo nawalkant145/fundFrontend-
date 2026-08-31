@@ -1139,7 +1139,8 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
                 onClose();
                 navigate(`/app/invest?startup=${pitch._id}`);
               }}
-              className="w-full py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
+              className="invest-now-btn w-full py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
+              style={{ color: "#ffffff" }}
             >
               Proceed to Invest Now →
             </button>

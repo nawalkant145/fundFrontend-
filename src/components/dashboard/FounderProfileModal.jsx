@@ -178,7 +178,8 @@ export default function FounderProfileModal({
                 navigate(`/app/invest?startup=${founder._id}`);
               }}
               whileTap={{ scale: 0.97 }}
-              className="flex-1 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white flex items-center justify-center gap-1 cursor-pointer shadow-md"
+              className="invest-now-btn flex-1 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force flex items-center justify-center gap-1 cursor-pointer shadow-md"
+              style={{ color: "#ffffff" }}
             >
               + Invest Now
             </motion.button>

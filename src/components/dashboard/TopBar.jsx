@@ -76,10 +76,10 @@ export default function TopBar({ onMenuClick }) {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-3.5 py-2 rounded-xl text-xs font-black bg-[#1B5E3F] text-white hover:bg-[#0F4A2E] transition-all flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                className="invest-now-btn px-3.5 py-2 rounded-xl text-xs font-black bg-[#1B5E3F] text-white-force hover:bg-[#0F4A2E] transition-all flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
               >
                 <HiCurrencyDollar className="w-4 h-4 text-[#F5B942]" />
-                <span>Invest Now</span>
+                <span className="text-white-force" style={{ color: "#ffffff" }}>Invest Now</span>
               </motion.button>
             </Link>
           )}

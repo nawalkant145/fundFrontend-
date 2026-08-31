@@ -90,7 +90,11 @@ body {
 [data-light-app="true"] .register-event-btn,
 [data-light-app="true"] .register-event-btn .register-event-label,
 .text-white-force,
-[data-light-app="true"] .text-white-force {
+[data-light-app="true"] .text-white-force,
+.invest-now-btn,
+.invest-now-btn *,
+[data-light-app="true"] .invest-now-btn,
+[data-light-app="true"] .invest-now-btn * {
   color: #ffffff !important;
 }
 [data-light-app="true"] .profile-edit-button svg,
