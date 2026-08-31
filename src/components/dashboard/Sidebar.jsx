@@ -99,17 +99,17 @@ export default function Sidebar({ mode }) {
           <img
             src={
               user?.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=7C3AED&color=fff&size=80`
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=1B5E3F&color=fff&size=80`
             }
             alt={user?.name || "User"}
-            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#7C3AED]/20"
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-[#1B5E3F]/20"
           />
         </Link>
 
         <div className="min-w-0 flex-1">
           <Link
             to="/app/profile"
-            className="font-extrabold text-sm text-[#0F172A] hover:text-[#7C3AED] transition-colors inline-flex items-center gap-1 truncate max-w-full"
+            className="font-extrabold text-sm text-[#0F172A] hover:text-[#1B5E3F] transition-colors inline-flex items-center gap-1 truncate max-w-full"
           >
             <span className="truncate">{user?.name || "Nawal Kant"}</span>
             <MdVerified className="w-4 h-4 text-[#10B981] flex-shrink-0" />
@@ -117,7 +117,7 @@ export default function Sidebar({ mode }) {
           <p className="text-xs text-[#64748B] capitalize font-medium">
             {role === "investor" ? "Investor" : (role || "Founder")}
           </p>
-          <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 bg-[#F3E8FF] text-[#7C3AED] text-[10px] font-bold rounded-full border border-[#7C3AED]/20">
+          <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 bg-[#E8F5E9] text-[#2E7D32] text-[10px] font-bold rounded-full border border-[#A5D6A7]">
             ✓ Verified {role === "investor" ? "Investor" : "User"}
           </span>
         </div>
@@ -168,16 +168,16 @@ export default function Sidebar({ mode }) {
       {role !== "admin" && (
         <div className="p-3 m-3 rounded-2xl shrink-0 shadow-sm transition-all duration-200">
           {role === "investor" ? (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#5B21B6] text-white shadow-md">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#0F4A2E] via-[#1B5E3F] to-[#2D7A4F] text-white shadow-md">
               <div className="flex items-center gap-2 mb-1.5">
-                <HiSparkles className="w-4.5 h-4.5 text-[#F59E0B] shrink-0" />
+                <HiSparkles className="w-4.5 h-4.5 text-[#F5B942] shrink-0" />
                 <span className="font-extrabold text-xs tracking-wide">Investor Pro</span>
               </div>
               <p className="text-[11px] text-white/90 leading-relaxed mb-3 font-medium">
                 Get advanced insights, early access to deals & exclusive opportunities.
               </p>
               <Link to="/app/subscription">
-                <button className="w-full py-2 bg-white hover:bg-slate-50 text-[#5B21B6] text-xs font-black rounded-xl shadow-sm transition-all cursor-pointer">
+                <button className="w-full py-2 bg-white hover:bg-slate-50 text-[#0F4A2E] text-xs font-black rounded-xl shadow-sm transition-all cursor-pointer">
                   Upgrade Now
                 </button>
               </Link>
@@ -212,26 +212,20 @@ function NavLink({ to, label, icon: Icon, active, role, badge, onClick }) {
     }
   };
 
-  const isInvestor = role === "investor";
-
   return (
     <Link
       to={to}
       onClick={handleClick}
       className={`flex items-center h-10 px-3 rounded-xl transition-all relative ${
         active
-          ? isInvestor
-            ? "bg-[#F3E8FF] text-[#7C3AED] font-extrabold shadow-none"
-            : "bg-[#1B5E3F]/10 text-[#1B5E3F] font-black"
+          ? "bg-[#1B5E3F]/10 text-[#1B5E3F] font-black"
           : "text-[#475569] font-semibold hover:bg-[#F8FAFC] hover:text-[#0F172A]"
       }`}
     >
       <Icon
         className={`w-4.5 h-4.5 mr-3 shrink-0 ${
           active
-            ? isInvestor
-              ? "text-[#7C3AED]"
-              : "text-[#1B5E3F]"
+            ? "text-[#1B5E3F]"
             : "text-[#64748B]"
         }`}
       />

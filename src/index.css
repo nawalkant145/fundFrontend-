@@ -90,14 +90,20 @@ body {
 [data-light-app="true"] .register-event-btn,
 [data-light-app="true"] .register-event-btn .register-event-label,
 .text-white-force,
-[data-light-app="true"] .text-white-force {
+[data-light-app="true"] .text-white-force,
+.invest-now-btn,
+.invest-now-btn span,
+[data-light-app="true"] .invest-now-btn,
+[data-light-app="true"] .invest-now-btn span {
   color: #ffffff !important;
 }
 [data-light-app="true"] .profile-edit-button svg,
 [data-light-app="true"] .change-photo-btn svg,
 [data-light-app="true"] .save-changes-btn svg,
-[data-light-app="true"] .register-event-btn svg {
-  color: #d4af37 !important;
+[data-light-app="true"] .register-event-btn svg,
+.invest-now-btn svg,
+[data-light-app="true"] .invest-now-btn svg {
+  color: #F5B942 !important;
 }
 [data-light-app="true"] .text-gray-300:not(.pitch-reel-overlay *):not([data-pitch-reel="true"] *) {
   color: rgba(10, 31, 20, 0.78);

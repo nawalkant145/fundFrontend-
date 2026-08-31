@@ -9,6 +9,7 @@ import {
   HiVideoCamera,
   HiUsers,
   HiChatAlt2,
+  HiCurrencyDollar,
 } from "react-icons/hi";
 import { MdVerified } from "react-icons/md";
 import Modal from "../ui/Modal";
@@ -178,9 +179,10 @@ export default function FounderProfileModal({
                 navigate(`/app/invest?startup=${founder._id}`);
               }}
               whileTap={{ scale: 0.97 }}
-              className="flex-1 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all bg-[#7C3AED] hover:bg-[#6D28D9] text-white flex items-center justify-center gap-1 cursor-pointer shadow-md"
+              className="invest-now-btn flex-1 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
             >
-              + Invest Now
+              <HiCurrencyDollar className="w-4.5 h-4.5 text-[#F5B942]" />
+              <span className="text-white-force" style={{ color: "#ffffff" }}>Invest Now</span>
             </motion.button>
           )}
         </div>

@@ -312,9 +312,9 @@ export default function LinearFeed() {
             <button
               type="button"
               onClick={() => openPostModal("text")}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#7C3AED] hover:bg-[#F3E8FF] transition-all duration-200 cursor-pointer group"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 transition-all duration-200 cursor-pointer group"
             >
-              <HiAnnotation className="w-4.5 h-4.5 text-[#7C3AED] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+              <HiAnnotation className="w-4.5 h-4.5 text-[#1B5E3F] group-hover:scale-110 transition-transform duration-200 shrink-0" />
               <span className="truncate">Thoughts</span>
             </button>
           </div>
@@ -324,7 +324,7 @@ export default function LinearFeed() {
           <FeedSkeleton count={3} />
         ) : filteredItems.length === 0 ? (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-10 text-center shadow-sm my-4">
-            <div className="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#7C3AED] flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-full bg-[#1B5E3F]/10 text-[#1B5E3F] flex items-center justify-center mx-auto mb-3">
               <HiSearch className="w-6 h-6" />
             </div>
             <h3 className="font-extrabold text-base text-[#0F172A]">
@@ -336,7 +336,7 @@ export default function LinearFeed() {
             {searchQuery && (
               <button
                 onClick={clearSearch}
-                className="mt-4 px-4 py-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
+                className="mt-4 px-4 py-2 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
               >
                 Clear Search
               </button>
@@ -1124,7 +1124,7 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
     <Modal open={open} onClose={() => { setSent(false); onClose(); }} title={sent ? "Interest Sent!" : `Express Interest in ${pitch.title || "Startup"}`}>
       {sent ? (
         <div className="text-center py-4 space-y-4">
-          <div className="w-12 h-12 rounded-full bg-purple-100 text-[#7C3AED] flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-full bg-[#E8F5E9] text-[#2E7D32] flex items-center justify-center mx-auto">
             <MdVerified className="w-8 h-8" />
           </div>
           <div>
@@ -1139,9 +1139,10 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
                 onClose();
                 navigate(`/app/invest?startup=${pitch._id}`);
               }}
-              className="w-full py-2.5 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
+              className="invest-now-btn w-full py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white-force font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
             >
-              Proceed to Invest Now →
+              <HiCurrencyDollar className="w-4.5 h-4.5 text-[#F5B942]" />
+              <span className="text-white-force" style={{ color: "#ffffff" }}>Proceed to Invest Now →</span>
             </button>
             <button
               onClick={() => {
@@ -1158,7 +1159,7 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
         <div className="space-y-4 py-2">
           <p className="text-xs sm:text-sm text-[#475569]">
             Founder is asking{" "}
-            <span className="font-extrabold text-[#7C3AED]">
+            <span className="font-extrabold text-[#1B5E3F]">
               {formatINR(pitch.askAmount)}
             </span>{" "}
             for {pitch.equityOffered || 0}% equity.
@@ -1173,7 +1174,7 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="e.g. 2500000"
-              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none font-semibold"
+              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:border-[#1B5E3F] focus:ring-2 focus:ring-[#1B5E3F]/20 focus:outline-none font-semibold"
             />
           </div>
 
@@ -1186,7 +1187,7 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
               onChange={(e) => setTerms(e.target.value)}
               rows={3}
               placeholder="e.g. Excited about your vision! Let's schedule a call to discuss."
-              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none resize-none font-medium"
+              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#94A3B8] focus:border-[#1B5E3F] focus:ring-2 focus:ring-[#1B5E3F]/20 focus:outline-none resize-none font-medium"
             />
           </div>
 
@@ -1195,7 +1196,7 @@ function InvestModal({ open, onClose, pitch, onSubmit }) {
             onClick={handleSubmit}
             className={`w-full py-3 rounded-xl font-bold text-sm shadow-md transition-all cursor-pointer ${
               valid && !submitting
-                ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-[#7C3AED]/25"
+                ? "bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white shadow-[#1B5E3F]/25"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >

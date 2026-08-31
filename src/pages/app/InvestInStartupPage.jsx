@@ -269,7 +269,7 @@ export default function InvestInStartupPage() {
                         isDone
                           ? "bg-[#10B981] text-white"
                           : isCurrent
-                          ? "bg-[#7C3AED] text-white ring-4 ring-[#7C3AED]/15"
+                          ? "bg-[#1B5E3F] text-white ring-4 ring-[#1B5E3F]/15"
                           : "bg-[#F1F5F9] text-[#94A3B8]"
                       }`}
                     >
@@ -278,7 +278,7 @@ export default function InvestInStartupPage() {
                     <div className="hidden md:block">
                       <p
                         className={`text-xs font-bold leading-tight ${
-                          isCurrent ? "text-[#7C3AED]" : isDone ? "text-[#10B981]" : "text-[#64748B]"
+                          isCurrent ? "text-[#1B5E3F]" : isDone ? "text-[#10B981]" : "text-[#64748B]"
                         }`}
                       >
                         {s.label}
@@ -302,7 +302,7 @@ export default function InvestInStartupPage() {
         {/* ─── LOADING STATE ─── */}
         {loading && (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center space-y-4">
-            <div className="w-10 h-10 border-4 border-[#7C3AED]/20 border-t-[#7C3AED] rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-[#1B5E3F]/20 border-t-[#1B5E3F] rounded-full animate-spin" />
             <p className="text-sm font-extrabold text-[#0F172A]">Loading startups for investment...</p>
             <p className="text-xs text-[#64748B]">Fetching real startup records from the backend server.</p>
           </div>
@@ -320,7 +320,7 @@ export default function InvestInStartupPage() {
             </div>
             <button
               onClick={fetchStartups}
-              className="px-5 py-2.5 bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer inline-flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer inline-flex items-center gap-1.5"
             >
               <HiRefresh className="w-4 h-4" /> Try Again
             </button>
@@ -330,7 +330,7 @@ export default function InvestInStartupPage() {
         {/* ─── EMPTY STATE (NO REAL STARTUPS RETURNED FROM DATABASE) ─── */}
         {!loading && !error && startups.length === 0 && (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-12 text-center shadow-sm space-y-4">
-            <div className="w-16 h-16 rounded-full bg-purple-50 text-[#7C3AED] flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#1B5E3F] flex items-center justify-center mx-auto">
               <HiOfficeBuilding className="w-9 h-9" />
             </div>
             <div>
@@ -371,11 +371,11 @@ export default function InvestInStartupPage() {
                       }}
                       className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
                         isSel
-                          ? "border-[#7C3AED] bg-[#F3E8FF]/40 ring-2 ring-[#7C3AED]/20"
-                          : "border-[#E2E8F0] bg-[#F8FAFC] hover:border-[#7C3AED]/50"
+                          ? "border-[#1B5E3F] bg-[#1B5E3F]/10 ring-2 ring-[#1B5E3F]/20"
+                          : "border-[#E2E8F0] bg-[#F8FAFC] hover:border-[#1B5E3F]/50"
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#7C3AED] text-white font-extrabold text-xs flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-[#1B5E3F] text-white font-extrabold text-xs flex items-center justify-center shrink-0">
                         {item.founderId?.avatar ? (
                           <img src={item.founderId.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                         ) : (
@@ -399,7 +399,7 @@ export default function InvestInStartupPage() {
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E2E8F0]">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-[#7C3AED] text-white font-black text-xl flex items-center justify-center shrink-0 shadow-md">
+                    <div className="w-16 h-16 rounded-2xl bg-[#1B5E3F] text-white font-black text-xl flex items-center justify-center shrink-0 shadow-md">
                       {selectedStartup.founderId?.avatar ? (
                         <img
                           src={selectedStartup.founderId.avatar}
@@ -427,7 +427,7 @@ export default function InvestInStartupPage() {
                   </div>
 
                   <Link to={`/app/pitch?pitch=${selectedStartup._id}`}>
-                    <button className="px-4 py-2 border border-[#E2E8F0] hover:border-[#7C3AED] text-[#0F172A] hover:text-[#7C3AED] text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <button className="px-4 py-2 border border-[#E2E8F0] hover:border-[#1B5E3F] text-[#0F172A] hover:text-[#1B5E3F] text-xs font-bold rounded-xl transition-all cursor-pointer">
                       View Pitch ↗
                     </button>
                   </Link>
@@ -443,7 +443,7 @@ export default function InvestInStartupPage() {
                   </div>
                   <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
                     <p className="text-[11px] text-[#64748B] font-medium">Equity Offered</p>
-                    <p className="text-lg font-black text-[#7C3AED]">
+                    <p className="text-lg font-black text-[#1B5E3F]">
                       {selectedStartup.equityOffered ? `${selectedStartup.equityOffered}%` : "Negotiable"}
                     </p>
                   </div>
@@ -486,7 +486,7 @@ export default function InvestInStartupPage() {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-extrabold text-[#0F172A] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none"
+                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-extrabold text-[#0F172A] focus:border-[#1B5E3F] focus:ring-2 focus:ring-[#1B5E3F]/20 focus:outline-none"
                 />
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {[1000000, 2500000, 5000000, 10000000].map((val) => (
@@ -495,8 +495,8 @@ export default function InvestInStartupPage() {
                       onClick={() => setAmount(val)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                         amount === val
-                          ? "bg-[#7C3AED] text-white border-[#7C3AED]"
-                          : "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:border-[#7C3AED]"
+                          ? "bg-[#1B5E3F] text-white border-[#1B5E3F]"
+                          : "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:border-[#1B5E3F]"
                       }`}
                     >
                       {formatINR(val)}
@@ -515,7 +515,7 @@ export default function InvestInStartupPage() {
                   step="0.1"
                   value={equity}
                   onChange={(e) => setEquity(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-extrabold text-[#0F172A] focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 focus:outline-none"
+                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-extrabold text-[#0F172A] focus:border-[#1B5E3F] focus:ring-2 focus:ring-[#1B5E3F]/20 focus:outline-none font-semibold"
                 />
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {[1, 2.5, 5, 10].map((val) => (
@@ -542,7 +542,7 @@ export default function InvestInStartupPage() {
                 <select
                   value={instrument}
                   onChange={(e) => setInstrument(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-bold text-[#0F172A] focus:border-[#7C3AED] focus:outline-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-bold text-[#0F172A] focus:border-[#1B5E3F] focus:outline-none cursor-pointer"
                 >
                   <option value="Equity">Equity</option>
                   <option value="SAFE">SAFE Note</option>
@@ -558,7 +558,7 @@ export default function InvestInStartupPage() {
                 <select
                   value={round}
                   onChange={(e) => setRound(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-bold text-[#0F172A] focus:border-[#7C3AED] focus:outline-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm font-bold text-[#0F172A] focus:border-[#1B5E3F] focus:outline-none cursor-pointer"
                 >
                   <option value="Pre-Seed">Pre-Seed</option>
                   <option value="Seed">Seed</option>
@@ -578,7 +578,7 @@ export default function InvestInStartupPage() {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Share any special conditions or notes with the founder..."
-                className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs sm:text-sm text-[#0F172A] focus:border-[#7C3AED] focus:outline-none resize-none font-medium"
+                className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs sm:text-sm text-[#0F172A] focus:border-[#1B5E3F] focus:outline-none resize-none font-medium"
               />
             </div>
 
@@ -756,7 +756,7 @@ export default function InvestInStartupPage() {
               </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-[#64748B]">Transaction ID</span>
-                <span className="font-bold text-[#7C3AED] font-mono text-xs">{txDetails.txId}</span>
+                <span className="font-bold text-[#1B5E3F] font-mono text-xs">{txDetails.txId}</span>
               </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-[#64748B]">Date & Time</span>
@@ -778,7 +778,7 @@ export default function InvestInStartupPage() {
               </button>
               <button
                 onClick={() => setShowCertificate(true)}
-                className="w-full sm:flex-1 py-3 border border-[#7C3AED] text-[#7C3AED] hover:bg-[#F3E8FF] font-extrabold text-sm rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
+                className="w-full sm:flex-1 py-3 border border-[#1B5E3F] text-[#1B5E3F] hover:bg-[#1B5E3F]/10 font-extrabold text-sm rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
               >
                 <HiDocumentText className="w-4 h-4" /> Certificate
               </button>
@@ -825,7 +825,7 @@ function CertificateModal({ open, onClose, tx, userName }) {
             Certificate of Investment
           </h2>
           <p className="text-xs text-[#64748B] mt-1 font-medium">This is to certify that</p>
-          <p className="text-xl font-bold text-[#7C3AED] mt-2">{userName}</p>
+          <p className="text-xl font-bold text-[#1B5E3F] mt-2">{userName}</p>
           <p className="text-xs text-[#475569] mt-1 font-medium">has successfully invested in</p>
           <p className="text-lg font-black text-[#0F172A] mt-1">{tx.startupName} Private Limited</p>
           <p className="text-xs text-[#64748B]">{tx.round || "Series A"}</p>
