@@ -1,6 +1,7 @@
 import { useState } from "react";
 import TopBar from "./TopBar";
 import Sidebar from "./Sidebar";
+import BottomBar from "./BottomBar";
 import UploadProgressBar from "./UploadProgressBar";
 import { useAuth } from "../../context/AuthContext";
 import { useUploadModal } from "../../context/UploadModalContext";
@@ -32,14 +33,14 @@ export default function DashboardShell({
   return (
     <div
       data-light-app="true"
-      className="bg-[#F8FAFC] text-[#0F172A] h-screen max-h-screen w-screen max-w-full overflow-hidden flex flex-col relative antialiased"
+      className="bg-[#F8FAFC] text-[#0F172A] h-dvh max-h-dvh w-screen max-w-full overflow-hidden flex flex-col relative antialiased"
     >
       {/* 1. Fixed Header (TopBar ~72px) */}
       <TopBar onMenuClick={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       {/* 2. Main Body Container (Below 72px Header) */}
       <div
-        className={`flex-1 min-h-0 h-[calc(100vh-72px)] w-full flex relative overflow-hidden ${
+        className={`flex-1 min-h-0 h-[calc(100dvh-72px)] w-full flex relative overflow-hidden ${
           fullWidth
             ? "max-w-full p-0 m-0 gap-0"
             : "max-w-[1440px] mx-auto w-full gap-5 xl:gap-6 px-4 sm:px-6"
@@ -77,7 +78,7 @@ export default function DashboardShell({
           {noPad ? (
             children
           ) : (
-            <main className="w-full py-5 sm:py-6">
+            <main className="w-full pt-4 sm:pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-6">
               {(title || subtitle) && (
                 <div className="mb-5">
                   {title && (
@@ -104,6 +105,9 @@ export default function DashboardShell({
           </div>
         )}
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <BottomBar mode={resolvedMode} />
 
       {/* Global Modals */}
       <UploadPitchModal open={pitchOpen} onClose={closePitchModal} />

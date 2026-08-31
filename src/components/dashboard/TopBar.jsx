@@ -11,6 +11,7 @@ import {
   HiLogout,
   HiSparkles,
   HiCurrencyDollar,
+  HiMenu,
 } from "react-icons/hi";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
@@ -32,14 +33,23 @@ export default function TopBar({ onMenuClick }) {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#E2E8F0] shadow-sm">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-4 sm:gap-6">
-        {/* LEFT: Logo + Search Bar */}
-        <div className="flex items-center gap-4 sm:gap-6 flex-1 min-w-0 max-w-[760px]">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 h-[72px] flex items-center justify-between gap-2.5 sm:gap-6">
+        {/* LEFT: Mobile Menu Toggle + Logo + Search Bar */}
+        <div className="flex items-center gap-2 sm:gap-6 flex-1 min-w-0 max-w-[760px]">
+          {onMenuClick && (
+            <button
+              onClick={onMenuClick}
+              className="md:hidden p-2 rounded-xl text-[#64748B] hover:text-[#7C3AED] hover:bg-[#F1F5F9] transition-colors shrink-0"
+              aria-label="Open sidebar menu"
+            >
+              <HiMenu className="w-6 h-6" />
+            </button>
+          )}
           <Link to="/app" className="flex items-center gap-2.5 shrink-0">
             <img
               src="/Expglo fund logo.jpeg"
               alt="EXPGLO"
-              className="h-10 w-auto object-contain mix-blend-multiply"
+              className="h-9 sm:h-10 w-auto object-contain mix-blend-multiply"
             />
           </Link>
 

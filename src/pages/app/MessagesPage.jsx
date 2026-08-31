@@ -731,7 +731,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
   const { startCall } = useCall();
   const other = getOtherUser(chat, user);
   const handleStartCall = (type = "meeting") => {
-    if (!canStartCall(user)) {
+    if (!canStartCall(user?.role).allowed) {
       setCallPaywall(true);
       return;
     }
