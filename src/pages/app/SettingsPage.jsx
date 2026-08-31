@@ -108,7 +108,7 @@ function AccountTab() {
         <div>
           <button
             onClick={() => avatarRef.current?.click()}
-            className="px-4 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force text-xs font-bold rounded-full shadow-md"
+            className="change-photo-btn px-4 py-2 bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-xs font-bold rounded-full shadow-md"
           >
             Change photo
           </button>
@@ -218,7 +218,7 @@ function AccountTab() {
             setSaving(false);
           }
         }}
-        className={`px-6 py-3 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] text-white-force shadow-md shadow-[#1B5E3F]/25 ${saving ? "opacity-60" : ""}`}
+        className={`save-changes-btn px-6 py-3 rounded-full font-bold bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] shadow-md shadow-[#1B5E3F]/25 ${saving ? "opacity-60" : ""}`}
       >
         {saving ? "Saving…" : "Save changes"}
       </motion.button>

@@ -203,15 +203,16 @@ export default function MyStudioPage() {
         <div className="flex gap-2">
           <button
             onClick={openPitchModal}
-            className="px-4 py-2 rounded-full font-bold text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] text-white-force shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 rounded-full font-bold text-xs bg-gradient-to-br from-[#1B5E3F] to-[#0F4A2E] hover:from-[#2D7A4F] hover:to-[#1B5E3F] !text-white shadow-md shadow-[#1B5E3F]/25 inline-flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{ color: "#ffffff" }}
           >
-            <HiVideoCamera className="w-4 h-4" /> New Pitch
+            <HiVideoCamera className="w-4 h-4 !text-[#D4AF37]" style={{ color: "#D4AF37" }} /> New Pitch
           </button>
           <button
             onClick={openPostModal}
-            className="px-4 py-2 rounded-full font-bold text-xs bg-white border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40 text-[#0F4A2E] inline-flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 rounded-full font-bold text-xs bg-white border border-[#1B5E3F]/15 hover:border-[#1B5E3F]/40 text-[#0F4A2E] inline-flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <HiPhotograph className="w-4 h-4" /> New Post
+            <HiPhotograph className="w-4 h-4 text-[#1B5E3F]" /> New Post
           </button>
         </div>
       </div>

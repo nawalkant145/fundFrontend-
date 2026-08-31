@@ -237,12 +237,12 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Edit Profile Button (Dark Green Pill) */}
+            {/* Edit Profile Button */}
             <div className="w-full sm:w-auto self-stretch sm:self-center">
               <Link to="/app/settings" className="block w-full sm:w-auto">
-                <button className="w-full sm:w-auto h-10 sm:h-11 px-5 sm:px-6 bg-[#0F4A2E] hover:bg-[#166534] text-white-force text-xs sm:text-sm font-semibold rounded-full flex items-center justify-center gap-2 shadow-xs transition-all">
-                  <HiPencilAlt className="w-4 h-4 text-white-force" />
-                  <span className="text-white-force">Edit profile</span>
+                <button className="profile-edit-button w-full sm:w-auto h-10 sm:h-11 px-5 sm:px-6 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-xs sm:text-sm font-bold rounded-full flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer">
+                  <HiPencilAlt className="w-4 h-4 text-[#D4AF37]" />
+                  <span className="profile-edit-label text-white">Edit profile</span>
                 </button>
               </Link>
             </div>

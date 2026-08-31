@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { HiCalendar, HiLocationMarker, HiUsers, HiCheckCircle } from "react-icons/hi";
+import { HiCalendar, HiLocationMarker, HiUsers, HiCheckCircle, HiArrowRight } from "react-icons/hi";
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { useToast } from "../../components/ui/Toast";
 import { eventService } from "../../services/eventService";
@@ -165,9 +165,39 @@ export default function AppEventsPage() {
                       <button
                         onClick={(e) => handleRegister(ev._id, e)}
                         disabled={registeringId === ev._id}
-                        className="px-4 py-2 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                        className="
+    register-event-btn
+    px-5 py-2.5
+    bg-[#0B3D2E]
+    hover:bg-[#145A42]
+    !text-white
+    text-xs font-semibold
+    rounded-xl
+    flex items-center gap-2
+    border border-[#D4A017]/40
+    shadow-sm
+    hover:shadow-md
+    hover:-translate-y-0.5
+    transition-all duration-300
+    cursor-pointer
+    disabled:opacity-50
+    disabled:cursor-not-allowed
+  "
+                        style={{ color: "#ffffff" }}
                       >
-                        {registeringId === ev._id ? "Registering..." : "Register →"}
+                        {registeringId === ev._id ? (
+                          <span className="register-event-label !text-white" style={{ color: "#ffffff" }}>
+                            Registering...
+                          </span>
+                        ) : (
+                          <>
+                            <span className="register-event-label !text-white" style={{ color: "#ffffff" }}>
+                              Register
+                            </span>
+
+                            <HiArrowRight className="w-4 h-4 !text-[#D4AF37]" style={{ color: "#D4AF37" }} />
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
