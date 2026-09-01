@@ -565,11 +565,15 @@ img {
   }
 }
 
-/* Hide scrollbar inside sidebar nav (Insta does this) */
-.sidebar-scroll::-webkit-scrollbar {
+/* Hide scrollbar inside sidebar nav & pill tabs */
+.sidebar-scroll::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.sidebar-scroll {
+.sidebar-scroll,
+.scrollbar-none,
+.no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

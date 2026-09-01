@@ -301,14 +301,6 @@ export default function PitchCard({ pitch }) {
             onClick={(e) => e.stopPropagation()}
           >
             <FollowButton userId={founderId} variant="compact" />
-            {founderId && founderId.toString() !== userId?.toString() && (
-              <button
-                onClick={handleMessageClick}
-                className="px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-extrabold rounded-full inline-flex items-center gap-1 transition-all bg-[#F5B942] text-black border border-[#F5B942] hover:bg-[#e0a838] active:scale-95 shrink-0 shadow-sm"
-              >
-                <HiChatAlt2 className="w-3 h-3 text-black" /> <span className="hidden sm:inline">Message</span>
-              </button>
-            )}
           </div>
         </div>
       </div>

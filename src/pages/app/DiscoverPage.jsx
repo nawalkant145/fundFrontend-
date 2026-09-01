@@ -272,9 +272,9 @@ export default function DiscoverPage() {
       subtitle="Find pitches and people that match your thesis."
     >
       {/* Search + filters */}
-      <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 mb-6">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 mb-5 shadow-2xs">
         <div className="relative mb-3">
-          <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#64748B] pointer-events-none" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -283,17 +283,17 @@ export default function DiscoverPage() {
                 ? "Search by name, company, bio…"
                 : "Search by title, founder, company…"
             }
-            className="w-full pl-12 pr-4 py-3 bg-dark-bg/60 border border-gold/15 rounded-xl text-[#0A1F14] placeholder-gray-500 focus:border-gold focus:outline-none"
+            className="w-full pl-11 pr-4 py-2.5 sm:py-3 bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder-[#64748B] focus:border-[#1B5E3F] focus:bg-white focus:ring-2 focus:ring-[#1B5E3F]/20 focus:outline-none transition-all font-medium"
           />
         </div>
 
         {/* Pitch filters — only visible on pitch tabs */}
         {tab !== "people" && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
-              className="px-3 py-2 bg-dark-bg/60 border border-gold/20 rounded-lg text-sm focus:border-gold focus:outline-none text-[#0A1F14]"
+              className="px-3 py-2 bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl text-xs sm:text-sm font-semibold text-[#0F172A] focus:border-[#1B5E3F] focus:bg-white focus:outline-none transition-all cursor-pointer"
             >
               <option value="">All industries</option>
               {INDUSTRIES.map((i) => (
@@ -303,7 +303,7 @@ export default function DiscoverPage() {
             <select
               value={stage}
               onChange={(e) => setStage(e.target.value)}
-              className="px-3 py-2 bg-dark-bg/60 border border-gold/20 rounded-lg text-sm focus:border-gold focus:outline-none text-[#0A1F14]"
+              className="px-3 py-2 bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl text-xs sm:text-sm font-semibold text-[#0F172A] focus:border-[#1B5E3F] focus:bg-white focus:outline-none transition-all cursor-pointer"
             >
               <option value="">All stages</option>
               {FUNDING_STAGES.map((s) => (
@@ -313,7 +313,7 @@ export default function DiscoverPage() {
             {(industry || stage || query) && (
               <button
                 onClick={() => { setQuery(""); setIndustry(""); setStage(""); }}
-                className="text-sm text-gold hover:text-bright-gold font-semibold"
+                className="text-xs sm:text-sm text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors cursor-pointer ml-auto"
               >
                 Clear
               </button>
@@ -323,15 +323,15 @@ export default function DiscoverPage() {
 
         {/* People filters — only visible on People tab */}
         {tab === "people" && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {["", "founder", "investor"].map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all capitalize ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all capitalize cursor-pointer ${
                   roleFilter === r
-                    ? "bg-primary-green text-white"
-                    : "border border-gold/20 text-gray-500 hover:border-gold/50"
+                    ? "bg-[#1B5E3F] text-white shadow-2xs"
+                    : "bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0]"
                 }`}
               >
                 {r === "" ? "All" : r === "founder" ? "🚀 Founders" : "💼 Investors"}
@@ -340,7 +340,7 @@ export default function DiscoverPage() {
             {(query || roleFilter) && (
               <button
                 onClick={() => { setQuery(""); setRoleFilter(""); }}
-                className="text-sm text-gold hover:text-bright-gold font-semibold ml-auto"
+                className="text-xs sm:text-sm text-[#1B5E3F] hover:text-[#0F4A2E] font-bold transition-colors cursor-pointer ml-auto"
               >
                 Clear
               </button>
@@ -349,16 +349,16 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+      {/* Tabs - Smooth Mobile Horizontal Scrollable Pills with No Overflow or Bold Line */}
+      <div className="w-full max-w-full flex items-center gap-2 mb-6 overflow-x-auto scrollbar-none py-1 whitespace-nowrap">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => { setTab(t.value); setQuery(""); }}
-            className={`px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+            className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 sm:gap-2 shrink-0 transition-all cursor-pointer ${
               tab === t.value
-                ? "bg-gold text-dark-navy shadow-md"
-                : "bg-card-bg/60 text-gray-500 border border-gold/15 hover:border-gold/40"
+                ? "bg-[#F5B942] text-[#0F172A] shadow-sm font-black border border-[#F5B942]"
+                : "bg-white text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] hover:border-[#F5B942]/40"
             }`}
           >
             {t.icon && <t.icon className="w-4 h-4" />}
@@ -382,7 +382,7 @@ export default function DiscoverPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {startups.map((s) => (
               <PersonCard
                 key={s.startupId || s._id}
@@ -411,7 +411,7 @@ export default function DiscoverPage() {
             <p className="text-gray-500">No pitches match your filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {filteredPitches.map((p) => (
               <PitchCard key={p._id} pitch={p} />
             ))}
@@ -431,7 +431,7 @@ export default function DiscoverPage() {
             <p className="text-gray-500">No people found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {filteredPeople.map((u) => (
               <PersonCard key={u._id} user={u} />
             ))}
