@@ -265,47 +265,49 @@ export default function LinearFeed() {
   return (
     <DashboardShell rightSidebar={rightSidebarContent}>
       <div className="w-full max-w-[680px] mx-auto space-y-5">
-        {/* Mobile / Tablet ONLY (< lg screens): Sticky Dynamic Funding Summary Bar + Navigation Tabs */}
-        <div className="lg:hidden sticky top-0 z-20 bg-[#F8FAFC] pt-3 pb-2 -mt-2 space-y-3">
-          <FundingSummaryBar />
+        {/* Mobile / Tablet ONLY (< lg screens) for Investors: Dynamic Funding Summary Bar + Navigation Tabs */}
+        {!isFounder && (
+          <div className="lg:hidden sticky top-0 z-20 bg-[#F8FAFC] pt-3 pb-2 -mt-2 space-y-3">
+            <FundingSummaryBar />
 
-          {/* Navigation Tabs Bar */}
-          <div className="w-full bg-[#F1F5F9] p-1 sm:p-1.5 rounded-2xl border border-[#E2E8F0] flex items-center justify-between text-xs font-bold gap-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab("all")}
-              className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
-                activeTab === "all"
-                  ? "bg-white text-[#0F172A] shadow-sm font-black"
-                  : "text-[#64748B] hover:text-[#0F172A] font-semibold"
-              }`}
-            >
-              All Posts
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("discover")}
-              className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
-                activeTab === "discover"
-                  ? "bg-white text-[#0F172A] shadow-sm font-black"
-                  : "text-[#64748B] hover:text-[#0F172A] font-semibold"
-              }`}
-            >
-              Discover & Events
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("impact")}
-              className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
-                activeTab === "impact"
-                  ? "bg-white text-[#0F172A] shadow-sm font-black"
-                  : "text-[#64748B] hover:text-[#0F172A] font-semibold"
-              }`}
-            >
-              Funding Impact
-            </button>
+            {/* Navigation Tabs Bar */}
+            <div className="w-full bg-[#F1F5F9] p-1 sm:p-1.5 rounded-2xl border border-[#E2E8F0] flex items-center justify-between text-xs font-bold gap-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("all")}
+                className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
+                  activeTab === "all"
+                    ? "bg-white text-[#0F172A] shadow-sm font-black"
+                    : "text-[#64748B] hover:text-[#0F172A] font-semibold"
+                }`}
+              >
+                All Posts
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("discover")}
+                className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
+                  activeTab === "discover"
+                    ? "bg-white text-[#0F172A] shadow-sm font-black"
+                    : "text-[#64748B] hover:text-[#0F172A] font-semibold"
+                }`}
+              >
+                Discover & Events
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("impact")}
+                className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
+                  activeTab === "impact"
+                    ? "bg-white text-[#0F172A] shadow-sm font-black"
+                    : "text-[#64748B] hover:text-[#0F172A] font-semibold"
+                }`}
+              >
+                Funding Impact
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* TAB 1: ALL POSTS (Shown when activeTab is "all" on mobile, or ALWAYS on desktop) */}
         {(activeTab === "all" || window.innerWidth >= 1024) && (

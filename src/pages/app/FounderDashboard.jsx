@@ -111,9 +111,6 @@ export default function FounderDashboard() {
       subtitle="Here's what's happening with your startup today."
       rightSidebar={rightSidebarContent}
     >
-      {/* Dynamic Funding Summary Bar */}
-      <FundingSummaryBar className="mb-5" />
-
       {/* Top Stats Overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard

@@ -234,12 +234,6 @@ export function ActiveFundingOpportunitiesCard({
           <HiSparkles className="w-4 h-4 text-[#F5B942]" />
           Active Funding Opportunities
         </h3>
-        <Link
-          to="/app/pitch"
-          className="text-xs font-bold text-[#1B5E3F] hover:underline flex items-center gap-0.5 cursor-pointer"
-        >
-          View all →
-        </Link>
       </div>
 
       {loading ? (
@@ -894,7 +888,7 @@ export function TrendingPitchesCard({ pitches: propPitches }) {
           🔥 Trending Pitches
         </h3>
         <Link
-          to="/app/discover"
+          to="/app/discover?tab=trending"
           className="text-xs font-bold text-[#7C3AED] hover:underline flex items-center gap-0.5"
         >
           View all →

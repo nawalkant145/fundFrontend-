@@ -858,7 +858,7 @@ export default function InvestorFeed() {
       {/* Outer wrapper / Reels viewport with CSS Scroll Snap */}
       <div
         id="pitch-feed-wrapper"
-        className="w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] relative p-0 m-0 gap-0 space-y-0 overscroll-contain bg-black flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth sidebar-scroll border-0 rounded-none shadow-none"
+        className="w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] relative p-0 m-0 gap-0 space-y-0 overscroll-contain bg-black flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth sidebar-scroll border-0 rounded-none shadow-none"
       >
         {feedLoading ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-black gap-3 z-30">
@@ -1333,7 +1333,7 @@ function ReelSnapItem({
   return (
     <div
       ref={itemRef}
-      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black overflow-hidden flex items-center justify-center"
+      className="relative w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black overflow-hidden flex items-center justify-center"
     >
       {/* 9:16 Portrait Reel Stage centered on desktop */}
       <div
@@ -1540,7 +1540,7 @@ function ReelLoadingItem({ onInView }) {
   return (
     <div
       ref={itemRef}
-      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white"
+      className="relative w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white"
     >
       <div className="w-10 h-10 rounded-full border-4 border-gold/30 border-t-gold animate-spin" />
       <span className="text-xs font-bold text-gold tracking-wider uppercase">
@@ -1571,7 +1571,7 @@ function ReelRetryItem({ onInView, onRetry }) {
   return (
     <div
       ref={itemRef}
-      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white px-4 text-center z-10"
+      className="relative w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white px-4 text-center z-10"
     >
       <p className="text-sm font-bold !text-gray-200 drop-shadow-sm">
         Failed to load more pitches
@@ -1607,7 +1607,7 @@ function ReelCaughtUpItem({ onInView }) {
   return (
     <div
       ref={itemRef}
-      className="relative w-full h-[calc(100dvh-72px)] min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white px-4 text-center z-10"
+      className="relative w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black flex flex-col items-center justify-center gap-3 text-white px-4 text-center z-10"
     >
       <div className="w-14 h-14 rounded-full bg-gold/15 border-2 border-gold/60 flex items-center justify-center mb-1 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
         <HiSparkles className="w-7 h-7 text-gold drop-shadow-md" style={{ color: "#EAB308" }} />
