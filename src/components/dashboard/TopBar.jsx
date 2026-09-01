@@ -113,7 +113,7 @@ export default function TopBar({ onMenuClick }) {
           </Link>
 
           {/* User Profile Chip & Dropdown */}
-          <div className="relative">
+          <div className="relative hidden md:block">
             <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-2 p-1.5 hover:bg-[#F8FAFC] rounded-xl transition-colors text-left cursor-pointer"
