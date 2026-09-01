@@ -16,6 +16,7 @@ import {
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
+import FundingSummaryBar from "../../components/dashboard/FundingSummaryBar";
 import StatCard from "../../components/dashboard/StatCard";
 import FundingImpactCard from "../../components/dashboard/FundingImpactCard";
 import {
@@ -110,6 +111,9 @@ export default function FounderDashboard() {
       subtitle="Here's what's happening with your startup today."
       rightSidebar={rightSidebarContent}
     >
+      {/* Dynamic Funding Summary Bar */}
+      <FundingSummaryBar className="mb-5" />
+
       {/* Top Stats Overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard
@@ -323,14 +327,6 @@ export default function FounderDashboard() {
             <VerifyRow done={verificationLevel >= 2} label="Phone verified" />
             <VerifyRow done={verificationLevel >= 3} label="KYC & Business approved" />
           </div>
-        </div>
-
-        {/* Mobile / Tablet fallback for right sidebar content */}
-        <div className="lg:hidden space-y-6 pt-4">
-          <FundingImpactCard />
-          <ActiveFundingOpportunitiesCard />
-          <InvestorActivityCard activities={formattedActivity} />
-          <UpcomingEventsCard />
         </div>
       </div>
     </DashboardShell>

@@ -37,7 +37,7 @@ const FOUNDER_TABS = [
 const INVESTOR_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
-  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
+  { to: "/app/saved", label: "Saved", icon: HiBookmark },
   { to: "/app/messages", label: "Messages", icon: HiChatAlt2, center: true },
 ];
 

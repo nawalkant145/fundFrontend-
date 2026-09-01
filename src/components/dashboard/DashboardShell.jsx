@@ -1,8 +1,18 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { HiX, HiCurrencyDollar } from "react-icons/hi";
 import TopBar from "./TopBar";
 import Sidebar from "./Sidebar";
 import BottomBar from "./BottomBar";
 import UploadProgressBar from "./UploadProgressBar";
+import FundingImpactCard from "./FundingImpactCard";
+import {
+  ActiveFundingOpportunitiesCard,
+  InvestorActivityCard,
+  UpcomingEventsCard,
+  TrendingPitchesCard,
+  RecommendedStartupsCard,
+} from "./RightSidebarCards";
 import { useAuth } from "../../context/AuthContext";
 import { useUploadModal } from "../../context/UploadModalContext";
 import UploadPitchModal from "./UploadPitchModal";
@@ -12,8 +22,8 @@ import UploadPostModal from "./UploadPostModal";
  * Standard EXPGLO FUND Dashboard Shell matching Figma specification.
  * - Header: Fixed at top (h-16 / 64px)
  * - Left Sidebar: Stationary (~280px), height calc(100vh - 64px)
- * - Right Sidebar: Stationary (~360-380px), height calc(100vh - 64px)
- * - Main Center: Scrollable container (or overflow-hidden if noScroll is true for Pitch route)
+ * - Right Sidebar: Stationary (~360-380px) on desktop (lg:block), Slide-in drawer on mobile (lg:hidden) via Dollar ($) icon button
+ * - Main Center: Scrollable container
  */
 export default function DashboardShell({
   children,
@@ -27,8 +37,30 @@ export default function DashboardShell({
 }) {
   const { user } = useAuth();
   const resolvedMode = mode || user?.role || "founder";
+  const isFounder = resolvedMode === "founder";
   const { pitchOpen, closePitchModal, postOpen, closePostModal } = useUploadModal();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileRightSidebarOpen, setMobileRightSidebarOpen] = useState(false);
+
+  const defaultRightSidebar = (
+    <>
+      <FundingImpactCard />
+      {isFounder ? (
+        <>
+          <ActiveFundingOpportunitiesCard />
+          <InvestorActivityCard />
+          <UpcomingEventsCard />
+        </>
+      ) : (
+        <>
+          <TrendingPitchesCard />
+          <RecommendedStartupsCard />
+        </>
+      )}
+    </>
+  );
+
+  const effectiveRightSidebar = rightSidebar || defaultRightSidebar;
 
   return (
     <div
@@ -36,7 +68,10 @@ export default function DashboardShell({
       className="bg-[#F8FAFC] text-[#0F172A] h-dvh max-h-dvh w-screen max-w-full overflow-hidden flex flex-col relative antialiased"
     >
       {/* 1. Fixed Header (TopBar ~72px) */}
-      <TopBar onMenuClick={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+      <TopBar
+        onMenuClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        onRightSidebarClick={() => setMobileRightSidebarOpen(!mobileRightSidebarOpen)}
+      />
 
       {/* 2. Main Body Container (Below 72px Header) */}
       <div
@@ -51,7 +86,7 @@ export default function DashboardShell({
           <Sidebar mode={resolvedMode} />
         </div>
 
-        {/* Mobile Sidebar Overlay Drawer */}
+        {/* Mobile Left Sidebar Overlay Drawer */}
         {mobileSidebarOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
             <div
@@ -98,13 +133,64 @@ export default function DashboardShell({
           )}
         </div>
 
-        {/* Desktop Right Sidebar (Stationary, rendered if provided) */}
-        {rightSidebar && (
-          <div className="hidden lg:block w-[340px] xl:w-[350px] shrink-0 h-full overflow-y-auto sidebar-scroll py-5 space-y-5">
-            {rightSidebar}
+        {/* Desktop Right Sidebar (Stationary, visible on lg screens and above) */}
+        <div className="hidden lg:block w-[340px] xl:w-[350px] shrink-0 h-full overflow-y-auto sidebar-scroll py-5 space-y-5">
+          {effectiveRightSidebar}
+        </div>
+      </div>
+
+      {/* Mobile Right Sidebar Overlay Slide-in Drawer (< lg screens) */}
+      <AnimatePresence>
+        {mobileRightSidebarOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 flex justify-end">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs cursor-pointer"
+              onClick={() => setMobileRightSidebarOpen(false)}
+            />
+
+            {/* Drawer Container */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className="relative w-[340px] sm:w-[380px] max-w-[90vw] bg-[#F8FAFC] h-full shadow-2xl z-50 flex flex-col border-l border-[#E2E8F0]"
+            >
+              {/* Header with Title + Close (X) Button */}
+              <div className="p-4 bg-white border-b border-[#E2E8F0] flex items-center justify-between shrink-0 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <HiCurrencyDollar className="w-6.5 h-6.5 text-[#F4C45E] shrink-0" />
+                  <div>
+                    <h3 className="font-extrabold text-sm text-[#0F172A] tracking-tight">
+                      Right Sidebar Panels
+                    </h3>
+                    <p className="text-[11px] font-medium text-[#64748B]">
+                      Funding, activity & opportunities
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileRightSidebarOpen(false)}
+                  className="w-8.5 h-8.5 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Close Right Sidebar"
+                >
+                  <HiX className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Right Sidebar Content */}
+              <div className="flex-1 overflow-y-auto sidebar-scroll p-4 space-y-5 overscroll-contain">
+                {effectiveRightSidebar}
+              </div>
+            </motion.div>
           </div>
         )}
-      </div>
+      </AnimatePresence>
 
       {/* Mobile Bottom Navigation Bar */}
       <BottomBar mode={resolvedMode} />

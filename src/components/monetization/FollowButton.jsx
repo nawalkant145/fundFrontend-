@@ -72,8 +72,8 @@ export default function FollowButton({
 
   const stateClasses = following
     ? variant === "outline"
-      ? "bg-[#E8F5EF] border-[#1B5E3F]/40 text-[#1B5E3F] hover:bg-red-50 hover:border-red-300 hover:text-red-500"
-      : "bg-white/15 text-white border border-white/40 backdrop-blur-sm"
+      ? "bg-[#1B5E3F] border-[#1B5E3F] text-white-force text-white shadow-2xs hover:bg-red-600 hover:border-red-600"
+      : "bg-[#1B5E3F]/85 text-white-force text-white border border-white/40 backdrop-blur-sm"
     : variant === "outline"
       ? "bg-[#F5B942] border-transparent text-[#0F4A2E] shadow-sm hover:bg-[#FFD166] hover:shadow-md"
       : "bg-[#F5B942] text-[#0F4A2E]";
@@ -85,12 +85,12 @@ export default function FollowButton({
       className={`${baseClasses} ${stateClasses} ${className}`}
     >
       {following ? (
-        <>
-          <HiCheck className="w-3.5 h-3.5" /> Following
-        </>
+        <span className="inline-flex items-center gap-1 text-white-force text-white">
+          <HiCheck className="w-3.5 h-3.5 text-white-force text-white shrink-0" /> Following
+        </span>
       ) : (
         <>
-          <HiPlus className="w-3.5 h-3.5" /> Follow
+          <HiPlus className="w-3.5 h-3.5 shrink-0" /> Follow
         </>
       )}
     </motion.button>

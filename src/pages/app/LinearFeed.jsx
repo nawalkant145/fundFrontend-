@@ -32,6 +32,7 @@ import {
 import { MdVerified } from "react-icons/md";
 
 import DashboardShell from "../../components/dashboard/DashboardShell";
+import FundingSummaryBar from "../../components/dashboard/FundingSummaryBar";
 import FundingImpactCard from "../../components/dashboard/FundingImpactCard";
 import {
   ActiveFundingOpportunitiesCard,
@@ -79,6 +80,7 @@ export default function LinearFeed() {
   const [realPitches, setRealPitches] = useState(null);
   const [realPosts, setRealPosts] = useState(null);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
 
   const toast = useToast();
 
@@ -263,130 +265,179 @@ export default function LinearFeed() {
   return (
     <DashboardShell rightSidebar={rightSidebarContent}>
       <div className="w-full max-w-[680px] mx-auto space-y-5">
-        {/* Composer for founders and investors */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
-          {/* Top row: Avatar + Pill input link */}
-          <div className="flex items-center gap-3 pb-3 border-b border-[#E2E8F0]">
-            <Link to="/app/profile" className="flex-shrink-0">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=7C3AED&color=fff`
-                }
-                alt={user?.name || "User"}
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#7C3AED]/20 hover:ring-[#7C3AED]/40 transition-all duration-200"
-              />
-            </Link>
-            <button
-              onClick={() => openPostModal()}
-              className="flex-1 min-w-0 px-4 py-2.5 bg-[#F1F5F9] hover:bg-[#E2E8F0]/70 border border-[#E2E8F0] rounded-full text-left text-sm text-[#64748B] hover:text-[#0F172A] transition-all duration-200 font-medium cursor-pointer truncate"
-            >
-              <span className="block truncate">
-                Share a thought or insight...
-              </span>
-            </button>
-          </div>
+        {/* Mobile / Tablet ONLY (< lg screens): Sticky Dynamic Funding Summary Bar + Navigation Tabs */}
+        <div className="lg:hidden sticky top-0 z-20 bg-[#F8FAFC] pt-3 pb-2 -mt-2 space-y-3">
+          <FundingSummaryBar />
 
-          {/* Bottom row: Quick action links */}
-          <div className="flex items-center gap-1 sm:gap-2 pt-2.5">
+          {/* Navigation Tabs Bar */}
+          <div className="w-full bg-[#F1F5F9] p-1 sm:p-1.5 rounded-2xl border border-[#E2E8F0] flex items-center justify-between text-xs font-bold gap-1 shadow-2xs">
             <button
               type="button"
-              onClick={() => openPostModal("images")}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#10B981] hover:bg-emerald-50 transition-all duration-200 cursor-pointer group"
+              onClick={() => setActiveTab("all")}
+              className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
+                activeTab === "all"
+                  ? "bg-white text-[#0F172A] shadow-sm font-black"
+                  : "text-[#64748B] hover:text-[#0F172A] font-semibold"
+              }`}
             >
-              <HiPhotograph className="w-4.5 h-4.5 text-[#10B981] group-hover:scale-110 transition-transform duration-200 shrink-0" />
-              <span className="truncate">Photo / Post</span>
+              All Posts
             </button>
-
-            {isFounder && (
-              <button
-                type="button"
-                onClick={openPitchModal}
-                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#F59E0B] hover:bg-amber-50 transition-all duration-200 cursor-pointer group"
-              >
-                <HiUpload className="w-4.5 h-4.5 text-[#F59E0B] group-hover:scale-110 transition-transform duration-200 shrink-0" />
-                <span className="truncate">Upload Pitch</span>
-              </button>
-            )}
-
             <button
               type="button"
-              onClick={() => openPostModal("text")}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 transition-all duration-200 cursor-pointer group"
+              onClick={() => setActiveTab("discover")}
+              className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
+                activeTab === "discover"
+                  ? "bg-white text-[#0F172A] shadow-sm font-black"
+                  : "text-[#64748B] hover:text-[#0F172A] font-semibold"
+              }`}
             >
-              <HiAnnotation className="w-4.5 h-4.5 text-[#1B5E3F] group-hover:scale-110 transition-transform duration-200 shrink-0" />
-              <span className="truncate">Thoughts</span>
+              Discover & Events
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("impact")}
+              className={`flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-200 text-center cursor-pointer truncate ${
+                activeTab === "impact"
+                  ? "bg-white text-[#0F172A] shadow-sm font-black"
+                  : "text-[#64748B] hover:text-[#0F172A] font-semibold"
+              }`}
+            >
+              Funding Impact
             </button>
           </div>
         </div>
 
-        {feedLoading ? (
-          <FeedSkeleton count={3} />
-        ) : filteredItems.length === 0 ? (
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-10 text-center shadow-sm my-4">
-            <div className="w-12 h-12 rounded-full bg-[#1B5E3F]/10 text-[#1B5E3F] flex items-center justify-center mx-auto mb-3">
-              <HiSearch className="w-6 h-6" />
+        {/* TAB 1: ALL POSTS (Shown when activeTab is "all" on mobile, or ALWAYS on desktop) */}
+        {(activeTab === "all" || window.innerWidth >= 1024) && (
+          <div className={activeTab !== "all" ? "hidden lg:block space-y-5" : "space-y-5"}>
+          <>
+            {/* Composer for founders and investors */}
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+              {/* Top row: Avatar + Pill input link */}
+              <div className="flex items-center gap-3 pb-3 border-b border-[#E2E8F0]">
+                <Link to="/app/profile" className="flex-shrink-0">
+                  <img
+                    src={
+                      user?.avatar ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=7C3AED&color=fff`
+                    }
+                    alt={user?.name || "User"}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-[#7C3AED]/20 hover:ring-[#7C3AED]/40 transition-all duration-200"
+                  />
+                </Link>
+                <button
+                  onClick={() => openPostModal()}
+                  className="flex-1 min-w-0 px-4 py-2.5 bg-[#F1F5F9] hover:bg-[#E2E8F0]/70 border border-[#E2E8F0] rounded-full text-left text-sm text-[#64748B] hover:text-[#0F172A] transition-all duration-200 font-medium cursor-pointer truncate"
+                >
+                  <span className="block truncate">
+                    Share a thought or insight...
+                  </span>
+                </button>
+              </div>
+
+              {/* Bottom row: Quick action links */}
+              <div className="flex items-center gap-1 sm:gap-2 pt-2.5">
+                <button
+                  type="button"
+                  onClick={() => openPostModal("images")}
+                  className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#10B981] hover:bg-emerald-50 transition-all duration-200 cursor-pointer group"
+                >
+                  <HiPhotograph className="w-4.5 h-4.5 text-[#10B981] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+                  <span className="truncate">Photo / Post</span>
+                </button>
+
+                {isFounder && (
+                  <button
+                    type="button"
+                    onClick={openPitchModal}
+                    className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#F59E0B] hover:bg-amber-50 transition-all duration-200 cursor-pointer group"
+                  >
+                    <HiUpload className="w-4.5 h-4.5 text-[#F59E0B] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+                    <span className="truncate">Upload Pitch</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => openPostModal("text")}
+                  className="flex-1 min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#475569] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 transition-all duration-200 cursor-pointer group"
+                >
+                  <HiAnnotation className="w-4.5 h-4.5 text-[#1B5E3F] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+                  <span className="truncate">Thoughts</span>
+                </button>
+              </div>
             </div>
-            <h3 className="font-extrabold text-base text-[#0F172A]">
-              No results found
-            </h3>
-            <p className="text-xs text-[#64748B] mt-1 max-w-sm mx-auto font-medium">
-              Try searching for another startup, person, or pitch.
-            </p>
-            {searchQuery && (
-              <button
-                onClick={clearSearch}
-                className="mt-4 px-4 py-2 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
-              >
-                Clear Search
-              </button>
+
+            {feedLoading ? (
+              <FeedSkeleton count={3} />
+            ) : filteredItems.length === 0 ? (
+              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-10 text-center shadow-sm my-4">
+                <div className="w-12 h-12 rounded-full bg-[#1B5E3F]/10 text-[#1B5E3F] flex items-center justify-center mx-auto mb-3">
+                  <HiSearch className="w-6 h-6" />
+                </div>
+                <h3 className="font-extrabold text-base text-[#0F172A]">
+                  No results found
+                </h3>
+                <p className="text-xs text-[#64748B] mt-1 max-w-sm mx-auto font-medium">
+                  Try searching for another startup, person, or pitch.
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="mt-4 px-4 py-2 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
+                  >
+                    Clear Search
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4 sm:space-y-5">
+                <AnimatePresence>
+                  {filteredItems.map((item, idx) =>
+                    item.kind === "pitch" ? (
+                      <PitchFeedCard
+                        key={item.id}
+                        pitch={item.data}
+                        boosted={item.boosted}
+                        isFounder={isFounder}
+                        userId={userId}
+                        muted={muted}
+                        onToggleMuted={() => setMutedPersistent(!muted)}
+                        onChatBlocked={() => setPaywall(true)}
+                      />
+                    ) : (
+                      <PostFeedCard
+                        key={item.id}
+                        post={item.data}
+                        isFounder={isFounder}
+                        userId={userId}
+                        onChatBlocked={() => setPaywall(true)}
+                      />
+                    ),
+                  )}
+                </AnimatePresence>
+              </div>
             )}
-          </div>
-        ) : (
-          <div className="space-y-4 sm:space-y-5">
-            <AnimatePresence>
-              {filteredItems.map((item, idx) =>
-                item.kind === "pitch" ? (
-                  <PitchFeedCard
-                    key={item.id}
-                    pitch={item.data}
-                    boosted={item.boosted}
-                    isFounder={isFounder}
-                    userId={userId}
-                    muted={muted}
-                    onToggleMuted={() => setMutedPersistent(!muted)}
-                    onChatBlocked={() => setPaywall(true)}
-                  />
-                ) : (
-                  <PostFeedCard
-                    key={item.id}
-                    post={item.data}
-                    isFounder={isFounder}
-                    userId={userId}
-                    onChatBlocked={() => setPaywall(true)}
-                  />
-                ),
-              )}
-            </AnimatePresence>
+          </>
           </div>
         )}
 
-        {/* Mobile / Tablet fallback for right sidebar content */}
-        <div className="lg:hidden space-y-5 pt-3">
-          <FundingImpactCard />
-          {isFounder ? (
-            <>
-              <ActiveFundingOpportunitiesCard />
-              <InvestorActivityCard />
-              <UpcomingEventsCard />
-            </>
-          ) : (
-            <>
-              <TrendingPitchesCard />
-              <RecommendedStartupsCard />
-            </>
-          )}
-        </div>
+        {/* TAB 2: DISCOVER & EVENTS */}
+        {activeTab === "discover" && (
+          <div className="space-y-5">
+            <TrendingPitchesCard />
+            <RecommendedStartupsCard />
+            <ActiveFundingOpportunitiesCard />
+            <UpcomingEventsCard />
+          </div>
+        )}
+
+        {/* TAB 3: FUNDING IMPACT */}
+        {activeTab === "impact" && (
+          <div className="space-y-5">
+            <FundingImpactCard />
+          </div>
+        )}
       </div>
 
       <ProUpgradeModal
