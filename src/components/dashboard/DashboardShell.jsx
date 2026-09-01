@@ -60,7 +60,10 @@ export default function DashboardShell({
     </>
   );
 
-  const effectiveRightSidebar = rightSidebar || defaultRightSidebar;
+  const effectiveRightSidebar =
+    rightSidebar === null || rightSidebar === false
+      ? null
+      : rightSidebar || defaultRightSidebar;
 
   return (
     <div
@@ -133,10 +136,12 @@ export default function DashboardShell({
           )}
         </div>
 
-        {/* Desktop Right Sidebar (Stationary, visible on lg screens and above) */}
-        <div className="hidden lg:block w-[340px] xl:w-[350px] shrink-0 h-full overflow-y-auto sidebar-scroll py-5 space-y-5">
-          {effectiveRightSidebar}
-        </div>
+        {/* Desktop Right Sidebar (Stationary, visible on lg screens and above when present) */}
+        {effectiveRightSidebar && (
+          <div className="hidden lg:block w-[340px] xl:w-[350px] shrink-0 h-full overflow-y-auto sidebar-scroll py-5 space-y-5">
+            {effectiveRightSidebar}
+          </div>
+        )}
       </div>
 
       {/* Mobile Right Sidebar Overlay Slide-in Drawer (< lg screens) */}
@@ -164,10 +169,10 @@ export default function DashboardShell({
               {/* Header with Title + Close (X) Button */}
               <div className="p-4 bg-white border-b border-[#E2E8F0] flex items-center justify-between shrink-0 shadow-xs">
                 <div className="flex items-center gap-2.5">
-                  <HiCurrencyDollar className="w-6.5 h-6.5 text-[#F4C45E] shrink-0" />
+                  <span className="text-xl leading-none shrink-0">💰</span>
                   <div>
                     <h3 className="font-extrabold text-sm text-[#0F172A] tracking-tight">
-                      Right Sidebar Panels
+                      Funding Overview
                     </h3>
                     <p className="text-[11px] font-medium text-[#64748B]">
                       Funding, activity & opportunities
