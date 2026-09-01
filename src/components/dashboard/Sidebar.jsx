@@ -34,6 +34,7 @@ const founderNav = [
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
   { to: "/app/upload", label: "Upload Pitch", icon: HiUpload },
   { to: "/app/studio", label: "My Studio", icon: HiCollection },
+  { to: "/app/courses", label: "Courses", icon: HiAcademicCap },
   { to: "/app/analytics", label: "Analytics", icon: HiChartBar },
   { to: "/app/deals", label: "Deals", icon: HiCurrencyDollar },
   { to: "/app/events", label: "Events", icon: HiCalendar },
