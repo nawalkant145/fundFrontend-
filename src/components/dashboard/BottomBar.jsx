@@ -98,7 +98,7 @@ export default function BottomBar({ mode }) {
       data-bottombar
       className={`md:hidden fixed bottom-0 left-0 right-0 z-50 w-full max-w-full ${
         immersive
-          ? "bg-gradient-to-t from-black/85 to-transparent border-0"
+          ? "bg-black border-t border-white/10 shadow-2xl"
           : "bg-white/90 backdrop-blur-xl border-t border-[#1B5E3F]/8 shadow-[0_-4px_24px_rgba(15,74,46,0.04)]"
       }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}
