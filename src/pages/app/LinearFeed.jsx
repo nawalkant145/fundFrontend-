@@ -708,9 +708,11 @@ function PitchFeedCard({
 
           {/* Ask + equity pill */}
           {!isFounder && pitch.askAmount && (
-            <span className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/70 backdrop-blur-md text-white text-xs font-bold rounded-full shadow-md inline-flex items-center gap-1">
-              <HiCurrencyDollar className="w-3.5 h-3.5 text-[#F59E0B]" />
-              {formatINR(pitch.askAmount)} · {pitch.equityOffered || 0}%
+            <span className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/80 backdrop-blur-md text-white-force text-white text-xs font-bold rounded-full shadow-md inline-flex items-center gap-1" style={{ color: "#ffffff" }}>
+              <HiCurrencyDollar className="w-3.5 h-3.5 text-[#F5B942] shrink-0" style={{ color: "#F5B942" }} />
+              <span className="text-white-force text-white font-bold" style={{ color: "#ffffff" }}>
+                {formatINR(pitch.askAmount)} · {pitch.equityOffered || 0}%
+              </span>
             </span>
           )}
         </div>
