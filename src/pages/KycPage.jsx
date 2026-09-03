@@ -28,6 +28,7 @@ import AuthShell from "../components/auth/AuthShell";
 import FileDropzone from "../components/auth/FileDropzone";
 import kycService from "../services/kycService";
 import { authService } from "../services/authService";
+import { uploadFileDirectlyToS3 } from "../services/uploadService";
 import { useToast } from "../components/ui/Toast";
 import { useAuth } from "../context/AuthContext";
 
@@ -36,17 +37,6 @@ const TABS = [
   { value: "company", label: "Level 3: Founder & Startup", icon: HiOfficeBuilding },
   { value: "investment", label: "Level 4: Investor Transaction", icon: HiCreditCard },
 ];
-
-const readFileAsBase64 = (file) => {
-  if (!file) return Promise.resolve("");
-  if (typeof file === "string") return Promise.resolve(file);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (err) => reject(err);
-    reader.readAsDataURL(file);
-  });
-};
 
 export default function KycPage() {
   const navigate = useNavigate();
@@ -218,19 +208,31 @@ export default function KycPage() {
     }
     setSubmitting(true);
     try {
-      const frontUrl = await readFileAsBase64(personalDocs.documentFront);
-      const backUrl = await readFileAsBase64(personalDocs.documentBack);
-      const selfieUrl = await readFileAsBase64(personalDocs.selfie);
+      console.log("📤 Starting Direct S3 Uploads for Personal KYC...");
+
+      // Step 1: Upload native File objects directly to S3 bucket via presigned URLs
+      const documentFrontKey = await uploadFileDirectlyToS3(personalDocs.documentFront, "kyc");
+      const documentBackKey = personalDocs.documentBack
+        ? await uploadFileDirectlyToS3(personalDocs.documentBack, "kyc")
+        : "";
+      const selfieKey = await uploadFileDirectlyToS3(personalDocs.selfie, "kyc");
+
+      console.log("✅ S3 Keys generated for Personal KYC:", {
+        documentFront: documentFrontKey,
+        documentBack: documentBackKey,
+        selfie: selfieKey,
+      });
 
       const isRejected = status?.statusCard?.identityVerified?.status === "rejected";
       const apiCall = isRejected ? kycService.resubmitPersonalKyc : kycService.submitPersonalKyc;
 
+      // Step 2: Submit ONLY S3 keys to backend API
       const res = await apiCall({
         documentType: personalDocs.documentType,
         documentNumber: personalDocs.documentNumber,
-        documentFront: frontUrl,
-        documentBack: backUrl,
-        selfie: selfieUrl,
+        documentFront: documentFrontKey,
+        documentBack: documentBackKey,
+        selfie: selfieKey,
       });
 
       const data = res?.data?.data || res?.data;
@@ -239,7 +241,8 @@ export default function KycPage() {
       if (refreshUser) refreshUser();
       toast.success(isRejected ? "Personal KYC resubmitted successfully!" : "Personal KYC submitted successfully!");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Submission failed");
+      console.error("❌ Personal KYC submission error:", err);
+      toast.error(err.response?.data?.message || err.message || "Submission failed");
     } finally {
       setSubmitting(false);
     }
@@ -253,25 +256,25 @@ export default function KycPage() {
     }
     setSubmitting(true);
     try {
-      const regCertUrl = await readFileAsBase64(companyDocs.registrationCertificate);
-      const panCertUrl = await readFileAsBase64(companyDocs.companyPAN);
-      const startupCertUrl = await readFileAsBase64(companyDocs.startupIndiaCert);
+      console.log("Submitting Company KYC:", {
+        companyName: companyDocs.companyName,
+        CIN: companyDocs.CIN,
+        registrationCertificate: companyDocs.registrationCertificate?.name || companyDocs.registrationCertificate,
+      });
+
+      const regCertKey = await uploadFileDirectlyToS3(companyDocs.registrationCertificate, "document");
 
       await kycService.submitCompanyKyc({
         companyName: companyDocs.companyName,
         CIN: companyDocs.CIN,
-        GST: companyDocs.GST,
-        companyPAN: companyDocs.companyPAN || "ABCDE1234F",
-        businessEmail: companyDocs.businessEmail || "founder@company.com",
-        registrationCertificate: regCertUrl,
-        companyPanUrl: panCertUrl,
-        startupIndiaCert: startupCertUrl,
+        registrationCertificate: regCertKey,
       });
       setSubmitted(true);
       if (refreshUser) refreshUser();
       toast.success("Company verification submitted!");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Submission failed");
+      console.error("❌ Company KYC submission error:", err);
+      toast.error(err.response?.data?.message || err.message || "Submission failed");
     } finally {
       setSubmitting(false);
     }
@@ -285,17 +288,21 @@ export default function KycPage() {
     }
     setSubmitting(true);
     try {
-      const addressUrl = await readFileAsBase64(investorDocs.addressProofUrl);
-      const bankProofUrl = await readFileAsBase64(investorDocs.bankProofUrl);
+      console.log("📤 Starting Direct S3 Uploads for Investor KYC...");
+
+      const addressKey = investorDocs.addressProofUrl
+        ? await uploadFileDirectlyToS3(investorDocs.addressProofUrl, "document")
+        : "";
+      const bankProofKey = await uploadFileDirectlyToS3(investorDocs.bankProofUrl, "document");
 
       await kycService.submitInvestmentKyc({
         addressProofType: investorDocs.addressProofType,
-        addressProofUrl: addressUrl,
+        addressProofUrl: addressKey,
         bankAccountDetails: {
           accountNumber: investorDocs.accountNumber,
           ifscCode: investorDocs.ifscCode,
           bankName: investorDocs.bankName || "HDFC Bank",
-          proofUrl: bankProofUrl,
+          proofUrl: bankProofKey,
         },
         declaredNetWorth: Number(investorDocs.declaredNetWorth) || 5000000,
       });
@@ -303,7 +310,8 @@ export default function KycPage() {
       if (refreshUser) refreshUser();
       toast.success("Investment transaction verification submitted!");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Submission failed");
+      console.error("❌ Investor KYC submission error:", err);
+      toast.error(err.response?.data?.message || err.message || "Submission failed");
     } finally {
       setSubmitting(false);
     }
