@@ -1505,9 +1505,11 @@ function ReelSnapItem({
           </div>
 
           <div className="flex items-center gap-2 mt-1.5 flex-wrap pointer-events-auto">
-            <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-xs font-bold !text-white flex items-center gap-1.5 shadow-sm pitch-metadata">
-              <HiCurrencyDollar className="w-3.5 h-3.5 text-white" />
-              {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+            <span className="px-3 py-1 bg-black/70 backdrop-blur-md border border-white/20 rounded-full text-xs font-bold !text-white text-white flex items-center gap-1.5 shadow-sm pitch-metadata" style={{ color: "#ffffff" }}>
+              <HiCurrencyDollar className="w-3.5 h-3.5 text-[#F5B942] shrink-0" style={{ color: "#F5B942" }} />
+              <span className="!text-white text-white font-bold" style={{ color: "#ffffff" }}>
+                {formatINR(pitch.askAmount)} · {pitch.equityOffered}%
+              </span>
             </span>
             <span className="text-xs !text-white/80 capitalize drop-shadow-sm font-medium">
               {pitch.fundingStage}

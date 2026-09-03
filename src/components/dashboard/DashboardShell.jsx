@@ -60,10 +60,7 @@ export default function DashboardShell({
     </>
   );
 
-  const effectiveRightSidebar =
-    rightSidebar === null || rightSidebar === false
-      ? null
-      : rightSidebar || defaultRightSidebar;
+  const effectiveRightSidebar = rightSidebar || null;
 
   return (
     <div
