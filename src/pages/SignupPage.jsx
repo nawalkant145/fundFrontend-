@@ -53,12 +53,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
    const [otpSentEmail, setOtpSentEmail] = useState("");
 
-  // Check if role is passed from navigation state (e.g., from Home page)
+                                                                         
   useEffect(() => {
     const preSelectedRole = location.state?.role;
     if (preSelectedRole && (preSelectedRole === "founder" || preSelectedRole === "investor")) {
       setUserType(preSelectedRole);
-      setStep(1); // Skip role selection, go directly to Account Details
+      setStep(1);                                                       
     }
   }, [location.state]);
   const [data, setData] = useState({
@@ -82,24 +82,24 @@ export default function SignupPage() {
     investmentThesis: "",
   });
  const update = (key, value) => {
-    // For email: trim and lowercase before storing
+                                                   
     if (key === "email" && typeof value === "string") {
       value = value.trim().toLowerCase();
     }
     setData((prev) => ({ ...prev, [key]: value }));
   };
 
-  // ─── Live availability checks (username / email / phone) ─────────────
-  // 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+                                                                          
+                                                            
   const [usernameStatus, setUsernameStatus] = useState("idle");
   const [emailStatus, setEmailStatus] = useState("idle");
   const [phoneStatus, setPhoneStatus] = useState("idle");
   const debounceRef = useRef({});
 
   const usernameValidFmt = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
-  // Stricter email regex — mirrors the backend pattern (requires 2+ char TLD)
+                                                                              
   const emailValidFmt = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(data.email);
-  // Country-aware phone validation using the shared helper from FormField
+                                                                          
   const phoneValidFmt = getPhoneIsValid(data.phone);
 
   useEffect(() => {
@@ -161,14 +161,14 @@ export default function SignupPage() {
     update(e.target.name, value);
   };
 
-  // ─── Derived validation state ─────────────────────────────────────────────
+                                                                               
   const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(data.username);
-  // Same stricter email regex — no separate variable needed vs emailValidFmt
+                                                                             
   const emailValid = emailValidFmt;
   const passwordValid = data.password.length >= 8;
   const passwordsMatch =
     data.password === data.confirmPassword && data.confirmPassword.length > 0;
-  // Reuse the shared helper — single source of truth for phone validity
+                                                                        
   const phoneValid = phoneValidFmt;
 
   const accountStepValid =
@@ -202,7 +202,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Convert the selected investment-range key → { min, max } for the API
+                                                                             
       const rangeOpt = INVESTMENT_RANGES.find(
         (r) => r.value === data.investmentRange,
       );
@@ -213,7 +213,7 @@ export default function SignupPage() {
       const isFounder = userType === "founder";
 
       const signupPayload = {
-        // Common
+                 
         name: data.fullName,
         username: data.username,
         email: data.email,
@@ -222,7 +222,7 @@ export default function SignupPage() {
         phone: data.phone || undefined,
         country: data.country || undefined,
         linkedIn: data.linkedIn || undefined,
-        // Founder-only
+                       
         ...(isFounder
           ? {
               companyName: data.companyName || undefined,
@@ -231,7 +231,7 @@ export default function SignupPage() {
               website: data.website || undefined,
             }
           : {
-              // Investor-only
+                              
               investorType: data.investorType || undefined,
               investmentRange,
               investmentThesis: data.investmentThesis || undefined,
@@ -244,7 +244,7 @@ export default function SignupPage() {
             }),
       };
 
-      // Step 1: Create temporary signup session in Redis — NO account created, NO JWT issued
+                                                                                             
       const res = await authService.initiateSignup(signupPayload);
       const { signupSessionId } = res?.data?.data || res?.data || {};
 
@@ -252,10 +252,10 @@ export default function SignupPage() {
         throw new Error("Failed to create signup session. Please try again.");
       }
 
-      // Store signupSessionId for KycPage to use when calling DigiLocker
+                                                                         
       sessionStorage.setItem("signupSessionId", signupSessionId);
 
-      // Step 2: Navigate to Identity Verification — account does NOT exist yet
+                                                                               
       navigate(`/kyc?session=${signupSessionId}`);
     } catch (err) {
       console.error("Signup error:", err);
@@ -289,7 +289,7 @@ export default function SignupPage() {
       {step > 0 && <Stepper steps={STEPS} current={step} />}
 
       <AnimatePresence mode="wait">
-        {/* ─── STEP 1: ROLE ──────────────────────── */}
+        {                                               }
         {step === 0 && (
           <motion.div
             key="step-role"
@@ -339,7 +339,7 @@ export default function SignupPage() {
           </motion.div>
         )}
 
-        {/* ─── STEP 2: ACCOUNT BASICS ─────────────── */}
+        {                                                }
         {step === 1 && (
           <motion.form
             key="step-account"
@@ -519,7 +519,7 @@ export default function SignupPage() {
           </motion.form>
         )}
 
-        {/* ─── STEP 3: ROLE-SPECIFIC PROFILE ──────── */}
+        {                                                }
         {step === 2 && (
           <motion.form
             key="step-profile"
@@ -696,7 +696,7 @@ export default function SignupPage() {
   );
 }
 
-// ─── Sub-components ──────────────────────────
+                                                
 
 function RoleCard({ title, icon, description, bullets, accent, onClick }) {
   const isGold = accent === "gold";

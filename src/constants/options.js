@@ -1,4 +1,4 @@
-// Shared constants for forms across the app
+                                            
 
 export const INDUSTRIES = [
   "Fintech",

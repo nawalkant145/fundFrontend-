@@ -25,8 +25,8 @@ export default function UploadPitchPage() {
   const [videoUrl, setVideoUrl] = useState("");
   const [videoDuration, setVideoDuration] = useState(0);
   const [coverFile, setCoverFile] = useState(null);
-  const [coverUrl, setCoverUrl] = useState(""); // either user upload or auto-grabbed frame
-  const [coverSource, setCoverSource] = useState(null); // 'upload' | 'frame'
+  const [coverUrl, setCoverUrl] = useState("");                                            
+  const [coverSource, setCoverSource] = useState(null);                      
   const [data, setData] = useState({
     title: "",
     description: "",
@@ -34,11 +34,11 @@ export default function UploadPitchPage() {
     fundingStage: "",
     askAmount: "",
     equityOffered: "",
-    visibility: "everyone", // "everyone" | "investors-only"
+    visibility: "everyone",                                 
   });
   const [submitted, setSubmitted] = useState(false);
 
-  // Build object URL for video preview + auto-grab default frame as cover
+                                                                          
   useEffect(() => {
     if (!videoFile) {
       setVideoUrl("");
@@ -50,7 +50,7 @@ export default function UploadPitchPage() {
     return () => URL.revokeObjectURL(url);
   }, [videoFile]);
 
-  // Build object URL for uploaded cover
+                                        
   useEffect(() => {
     if (!coverFile) return;
     const url = URL.createObjectURL(coverFile);
@@ -73,7 +73,7 @@ export default function UploadPitchPage() {
     e.preventDefault();
     if (!valid) return;
 
-    // Hand off to global upload context — user can navigate away freely
+                                                                        
     const success = await startUpload(videoFile, {
       title: data.title,
       description: data.description,
@@ -89,7 +89,7 @@ export default function UploadPitchPage() {
     }
   };
 
-  // Check if another upload is already running
+                                               
   const isUploadingOrProcessing =
     uploadState?.status === "uploading" || uploadState?.status === "processing";
 
@@ -140,7 +140,7 @@ export default function UploadPitchPage() {
       subtitle="10–120 seconds. Vertical video works best."
     >
       <form onSubmit={submit} className="max-w-3xl space-y-6">
-        {/* Tips */}
+        {          }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-5 flex gap-3">
           <HiInformationCircle className="w-6 h-6 text-gold flex-shrink-0 mt-0.5" />
           <div>
@@ -157,7 +157,7 @@ export default function UploadPitchPage() {
           </div>
         </div>
 
-        {/* Video */}
+        {           }
         <div>
           <label className="block text-sm font-semibold mb-2 text-gray-300">
             Pitch video <span className="text-gold">*</span>
@@ -210,7 +210,7 @@ export default function UploadPitchPage() {
           )}
         </div>
 
-        {/* Cover image — Instagram-style picker */}
+        {                                          }
         {videoFile && (
           <CoverPicker
             videoUrl={videoUrl}
@@ -290,7 +290,7 @@ export default function UploadPitchPage() {
           />
         </div>
 
-        {/* Visibility toggle */}
+        {                       }
         <div>
           <label className="block text-sm font-semibold mb-2 text-[#0A1F14]/85">
             Who can see this pitch?
@@ -372,11 +372,7 @@ export default function UploadPitchPage() {
   );
 }
 
-/**
- * Instagram-style cover picker:
- * - Auto-grabs 6 frames from the video as thumbnail options
- * - Lets the user upload a custom image instead
- */
+                                                                                                                                                          
 function CoverPicker({
   videoUrl,
   coverUrl,
@@ -395,13 +391,13 @@ function CoverPicker({
       .then((urls) => {
         setFrames(urls);
         setLoading(false);
-        // Auto-select the middle frame as default cover if none chosen yet
+                                                                           
         if (urls.length && !coverUrl) {
           onPickFrame(urls[Math.floor(urls.length / 2)], "frame");
         }
       })
       .catch(() => setLoading(false));
-    // eslint-disable-next-line
+                               
   }, [videoUrl]);
 
   const onFileChange = (e) => {
@@ -423,7 +419,7 @@ function CoverPicker({
       </div>
 
       <div className="grid grid-cols-[1fr_auto] gap-4">
-        {/* Preview */}
+        {             }
         <div className="relative aspect-[9/16] max-h-72 rounded-xl overflow-hidden bg-black border border-gold/15">
           {coverUrl ? (
             <img
@@ -443,7 +439,7 @@ function CoverPicker({
           )}
         </div>
 
-        {/* Frame strip + upload */}
+        {                          }
         <div className="flex flex-col items-stretch gap-2 max-h-72 overflow-y-auto pr-1">
           <button
             type="button"
@@ -488,10 +484,7 @@ function CoverPicker({
   );
 }
 
-/**
- * Extract `count` evenly-spaced frames from a video file as data URLs.
- * Runs entirely client-side using a hidden <video> + <canvas>.
- */
+                                                                                                                                                  
 function extractFrames(videoUrl, count = 6) {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -510,7 +503,7 @@ function extractFrames(videoUrl, count = 6) {
           const canvas = document.createElement("canvas");
           const w = video.videoWidth || 360;
           const h = video.videoHeight || 640;
-          // Cap dimension for memory safety
+                                            
           const scale = Math.min(1, 480 / Math.max(w, h));
           canvas.width = w * scale;
           canvas.height = h * scale;
@@ -541,7 +534,7 @@ function extractFrames(videoUrl, count = 6) {
         }
         for (i = 0; i < count; i++) {
           const t = (total / (count + 1)) * (i + 1);
-          // eslint-disable-next-line no-await-in-loop
+                                                      
           const url = await grabAt(t);
           if (url) frames.push(url);
         }

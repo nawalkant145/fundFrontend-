@@ -22,7 +22,7 @@ export default function AdminSettingsPage() {
       })
       .catch(() => toast.error("Failed to load settings"))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line
+                               
   }, []);
 
   const upd = (k, v) => setS((p) => ({ ...p, [k]: v }));
@@ -73,7 +73,7 @@ export default function AdminSettingsPage() {
       subtitle="Feature flags, limits and content moderation."
     >
       <div className="max-w-3xl space-y-6">
-        {/* Feature flags */}
+        {                   }
         <Section title="Feature flags">
           <Toggle
             label="Signups enabled"
@@ -115,7 +115,7 @@ export default function AdminSettingsPage() {
           )}
         </Section>
 
-        {/* Limits */}
+        {            }
         <Section title="Limits">
           <NumberField
             label="Max active pitches per founder"
@@ -134,7 +134,7 @@ export default function AdminSettingsPage() {
           />
         </Section>
 
-        {/* Moderation */}
+        {                }
         <Section title="Content moderation">
           <Toggle
             label="Profanity filter enabled"
@@ -189,7 +189,7 @@ export default function AdminSettingsPage() {
           </div>
         </Section>
 
-        {/* Save */}
+        {          }
         <motion.button
           onClick={save}
           disabled={saving}

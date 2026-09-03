@@ -113,7 +113,7 @@ export default function AdminAuditPage() {
       title="Audit log"
       subtitle="Every admin action is recorded here."
     >
-      {/* Filters */}
+      {             }
       <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 mb-5">
         <div className="flex items-center gap-2 mb-3 text-sm font-bold text-gray-300">
           <HiFilter className="w-4 h-4 text-gold" /> Filters

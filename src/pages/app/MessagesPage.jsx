@@ -47,9 +47,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { MOCK_CHATS } from "../../constants/mockData";
 
-/**
- * Helper to reliably resolve avatar image URL with fallback to ui-avatars.com
- */
+                                                                                        
 function getAvatar(userObj) {
   if (userObj && typeof userObj === "object" && userObj.avatar) {
     return userObj.avatar;
@@ -99,11 +97,7 @@ function formatDateSeparator(dateString) {
   });
 }
 
-/**
- * Instagram-style split-view inbox.
- * Desktop: chat list on the left, active chat on the right.
- * Mobile: only one of the two visible at a time, route-based.
- */
+                                                                                                                                                                            
 function getOtherUser(chat, currentUser) {
   if (!chat) return { name: "User", avatar: null };
   const currentUid = (currentUser?._id || currentUser?.id || "").toString();
@@ -139,7 +133,7 @@ function getOtherUser(chat, currentUser) {
   return { name: "User", username: "user", avatar: null };
 }
 
-// WhatsApp-style Call Log Card Component (Screenshot 1)
+                                                        
 function CallLogMessageItem({ message, isMe }) {
   const text = message.text || message.message || "";
   const lower = text.toLowerCase();
@@ -201,7 +195,7 @@ function CallLogMessageItem({ message, isMe }) {
   );
 }
 
-// WhatsApp-style Voice Note Component (Screenshot 2)
+                                                     
 function VoiceNoteMessageItem({ audioUrl, senderAvatar, senderName, isMe }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -340,7 +334,7 @@ export default function MessagesPage() {
   const [confirming, setConfirming] = useState(null);
   const searchInputRef = useRef(null);
 
-  // Fetch chats on mount and whenever the active chat changes (so new chats appear)
+                                                                                    
   const refreshChats = () => {
     if (chats.length === 0) {
       setChatsLoading(true);
@@ -358,9 +352,9 @@ export default function MessagesPage() {
 
   useEffect(() => {
     refreshChats();
-  }, [chatId]); // re-fetch when switching chats (covers new chat being opened)
+  }, [chatId]);                                                                
 
-  // Search registered users in backend when typing
+                                                   
   useEffect(() => {
     const q = query.trim().replace(/^@/, "");
     if (!q || q.length < 1) {
@@ -451,13 +445,13 @@ export default function MessagesPage() {
   return (
     <DashboardShell title={null} noPad fullWidth hideMobileHeader>
       <div className="flex flex-col md:flex-row h-full min-h-0 overflow-hidden max-w-none m-0 p-0 flex-1 w-full">
-        {/* ─── Chat list (Message User List fixed column) ─────────────── */}
+        {                                                                    }
         <section
           className={`md:border-r md:border-[#1B5E3F]/10 w-full md:w-[380px] lg:w-[420px] md:min-w-[380px] md:max-w-[420px] shrink-0 flex-none h-full min-h-0 bg-white
                      ${chatId ? "hidden md:flex" : "flex"}
                      flex-col overflow-hidden`}
         >
-          {/* Header */}
+          {            }
           <div className="px-4 sm:px-5 pt-4 pb-3 border-b border-[#1B5E3F]/10 flex items-center justify-between flex-shrink-0">
             <h2 className="text-lg font-black flex items-center gap-1 text-[#0A1F14]">
               {user?.username ? `@${user.username}` : "messages"}
@@ -471,7 +465,7 @@ export default function MessagesPage() {
             </button>
           </div>
 
-          {/* Search */}
+          {            }
           <div className="p-3 flex-shrink-0">
             <div className="relative">
               <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0A1F14]/40" />
@@ -485,16 +479,16 @@ export default function MessagesPage() {
             </div>
           </div>
 
-          {/* Section label */}
+          {                   }
           <div className="px-4 py-2 flex items-center justify-between flex-shrink-0">
             <span className="font-bold text-xs uppercase tracking-wider text-[#0A1F14]/60">
               {qClean ? "Search Results" : "Messages"}
             </span>
           </div>
 
-          {/* Chat list & search results */}
+          {                                }
           <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[#1B5E3F]/5 sidebar-scroll">
-            {/* 0. Skeleton loader while fetching chats initially */}
+            {                                                       }
             {chatsLoading && chats.length === 0 && !qClean && (
               <div className="p-4 space-y-4">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -509,7 +503,7 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {/* 1. Filtered existing conversations */}
+            {                                        }
             {filteredChats.map((c) => {
               const other = getOtherUser(c, user);
               const isActive = chatId === c._id;
@@ -567,7 +561,7 @@ export default function MessagesPage() {
               );
             })}
 
-            {/* 2. Global User Search Results */}
+            {                                   }
             {qClean && searchResults.length > 0 && (
               <div className="pt-2">
                 <div className="px-4 py-1.5 bg-dark-bg/40 text-xs font-extrabold text-gold uppercase tracking-wider">
@@ -614,7 +608,7 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {/* Empty state when searching */}
+            {                                }
             {qClean &&
               filteredChats.length === 0 &&
               searchResults.length === 0 &&
@@ -635,7 +629,7 @@ export default function MessagesPage() {
               </div>
             )}
 
-            {/* Empty state — ONLY shown when chatsLoading is completely finished */}
+            {                                                                       }
             {!chatsLoading && !qClean && chats.length === 0 && (
               <div className="text-center text-gray-500 py-12 px-4 text-sm">
                 <p className="font-semibold text-[#0A1F14] mb-1">
@@ -649,7 +643,7 @@ export default function MessagesPage() {
           </div>
         </section>
 
-        {/* ─── Active chat (right column) ─────────────── */}
+        {                                                    }
         <main
           className={`flex-1 min-w-0 w-auto min-h-0 ${
             chatId ? "flex" : "hidden md:flex"
@@ -667,7 +661,7 @@ export default function MessagesPage() {
               onBack={() => navigate("/app/messages")}
               onConfirmDelete={() => setConfirming(activeChat)}
               onMessageSent={(lastMsg) => {
-                // Update sidebar lastMessage instantly without a full re-fetch
+                                                                               
                 setChats((prev) =>
                   prev.map((c) =>
                     c._id === activeChat._id
@@ -722,7 +716,7 @@ function EmptyState() {
   );
 }
 
-// ─── ACTIVE CHAT (right side) ─────────────────
+                                                 
 function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }) {
   const toast = useToast();
   const navigate = useNavigate();
@@ -766,7 +760,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
 
   const touchTimer = useRef(null);
 
-  // Outside click listener to dismiss context menu
+                                                   
   useEffect(() => {
     const handleCloseMenu = () => setContextMenu(null);
     window.addEventListener("click", handleCloseMenu);
@@ -955,7 +949,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  // Outside click listener to dismiss emoji picker
+                                                   
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -987,7 +981,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     }
   };
 
-  // Fetch real messages on mount / chat change
+                                               
   useEffect(() => {
     setLoadingMsgs(true);
     chatService
@@ -995,14 +989,14 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       .then((res) => {
         const data = res?.data?.data || res?.data;
         const msgs = data?.messages || data || [];
-        // Backend getMessages already returns messages in chronological order (oldest to newest)
+                                                                                                 
         setMessages(msgs);
       })
       .catch(() => setMessages([]))
       .finally(() => setLoadingMsgs(false));
   }, [chat._id]);
 
-  // Join socket room for real-time messages
+                                            
   useEffect(() => {
     if (!socket || !chat._id) return;
     socket.emit("join_chat", { chatId: chat._id });
@@ -1019,7 +1013,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
       const msgText = msg.text || "";
 
       setMessages((prev) => {
-        // 1. If message with exact same ID already exists, do nothing
+                                                                      
         if (
           msgIdStr &&
           prev.some((m) => (m._id?._id || m._id || "").toString() === msgIdStr)
@@ -1027,7 +1021,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           return prev;
         }
 
-        // 2. If an optimistic message matches text and sender, replace it
+                                                                          
         const optIndex = prev.findIndex(
           (m) =>
             typeof m._id === "string" &&
@@ -1042,11 +1036,11 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           return next;
         }
 
-        // 3. Otherwise append new message
+                                          
         return [...prev, msg];
       });
 
-      // Update sidebar lastMessage for incoming messages
+                                                         
       onMessageSent?.(msg.text || `[${msg.type || "message"}]`);
     };
     const handleTyping = ({ userId }) => {
@@ -1098,12 +1092,12 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     };
   }, [socket, chat._id, user?._id]);
 
-  // Mark messages as read
+                          
   useEffect(() => {
     if (chat._id) chatService.markRead(chat._id).catch(() => {});
   }, [chat._id, messages.length]);
 
-  // Auto scroll ONLY the messages container without scrolling window/body
+                                                                          
   useEffect(() => {
     if (messagesListRef.current) {
       messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight;
@@ -1119,7 +1113,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     setReplyingTo(null);
     if (socket && socket.connected) socket.emit("stop_typing", { chatId: chat._id });
 
-    // Optimistic UI — add the message locally right away
+                                                         
     const optimistic = {
       _id: `opt_${Date.now()}`,
       chatId: chat._id,
@@ -1150,7 +1144,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           if (res?.ok && res?.message) {
             handleNewMsg(res.message);
           } else if (!res?.ok) {
-            // Fallback: use REST API
+                                     
             chatService
               .sendMessage(chat._id, {
                 text: trimmed,
@@ -1167,7 +1161,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         },
       );
     } else {
-      // Socket not connected — use REST API directly
+                                                     
       chatService
         .sendMessage(chat._id, {
           text: trimmed,
@@ -1183,7 +1177,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
     }
   };
 
-  // Typing indicator
+                     
   const handleTextChange = (e) => {
     setText(e.target.value);
     if (socket && e.target.value.trim()) {
@@ -1308,7 +1302,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden max-w-full">
-      {/* Header */}
+      {            }
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#1B5E3F]/10 flex-shrink-0 bg-white/95 backdrop-blur z-20 text-[#0A1F14] h-16 sm:h-18">
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -1370,7 +1364,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       </div>
 
-      {/* Avatar + name centered intro card (ONLY when 0 messages exist) */}
+      {                                                                    }
       {messages.length === 0 && (
         <div className="text-center py-6 border-b border-gold/5 flex-shrink-0">
           <img
@@ -1392,7 +1386,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       )}
 
-      {/* Messages */}
+      {              }
       <div
         ref={messagesListRef}
         className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden max-w-full px-4 sm:px-6 py-6 space-y-2 min-h-0"
@@ -1475,7 +1469,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     isMe ? "rounded-tr-none" : "rounded-tl-none border border-gray-100"
                   }`}
                 >
-                  {/* Context Menu Chevron Button */}
+                  {                                 }
                   <button
                     onClick={(e) => handleContextMenu(e, m)}
                     style={{ color: isMe ? "#ffffff" : "#111827" }}
@@ -1485,7 +1479,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
                     <HiChevronDown className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Reply Quote Preview inside bubble (only if message itself is NOT deleted) */}
+                  {                                                                               }
                   {!m.deletedEveryone && m.replyTo && (
                     <div
                       style={{
@@ -1616,7 +1610,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         <div ref={endRef} />
       </div>
 
-      {/* Reply Preview Banner */}
+      {                          }
       {replyingTo && (
         <div className="px-4 py-2 bg-[#1f2c34] border-t border-gold/15 flex items-center justify-between animate-fadeIn flex-shrink-0">
           <div className="border-l-4 border-[#00a884] pl-3 min-w-0 flex-1">
@@ -1639,7 +1633,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       )}
 
-      {/* Composer */}
+      {              }
       <form
         onSubmit={send}
         className="flex-shrink-0 w-full min-h-[72px] border-t border-[#1B5E3F]/10 px-3.5 sm:px-5 py-3 flex items-center gap-2.5 sm:gap-3 bg-white shadow-sm z-20"
@@ -1658,7 +1652,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           onChange={(e) => sendFile(e.target.files?.[0], "image")}
         />
 
-        {/* Emoji Button */}
+        {                  }
         <button
           type="button"
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -1668,7 +1662,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           <HiEmojiHappy className="w-6 h-6" />
         </button>
 
-        {/* Attachment Dropdown Button */}
+        {                                }
         <DropdownMenu
           align="left"
           placement="top"
@@ -1688,7 +1682,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           ]}
         />
 
-        {/* Emoji Picker Popup */}
+        {                        }
         {showEmojiPicker && (
           <div
             className="absolute bottom-16 left-3 z-50 shadow-2xl rounded-xl overflow-hidden border border-gold/20"
@@ -1732,7 +1726,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           </div>
         ) : (
           <>
-            {/* Rounded Input Field */}
+            {                         }
             <div className="flex-1 flex items-center bg-card-bg/80 border border-gold/15 rounded-full px-4 py-1.5 focus-within:border-gold">
               <input
                 ref={inputRef}
@@ -1743,7 +1737,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
               />
             </div>
 
-            {/* Send or Voice Button */}
+            {                          }
             {text.trim() ? (
               <button
                 type="submit"
@@ -1766,7 +1760,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         )}
       </form>
 
-      {/* Floating Context Menu */}
+      {                           }
       {contextMenu && (
         <div
           style={{
@@ -1776,7 +1770,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
           className="fixed z-[100] w-56 bg-white border border-[#1B5E3F]/15 rounded-2xl shadow-xl shadow-black/10 py-1.5 text-sm text-[#0A1F14] overflow-hidden animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 1. Reply */}
+          {              }
           <button
             onClick={() => {
               setReplyingTo(contextMenu.message);
@@ -1789,7 +1783,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             <span>Reply</span>
           </button>
 
-          {/* 2. Forward */}
+          {                }
           <button
             onClick={() => {
               setForwardingMsg(contextMenu.message);
@@ -1801,7 +1795,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             <span>Forward</span>
           </button>
 
-          {/* 3. Copy */}
+          {             }
           <button
             onClick={() => {
               const textToCopy = contextMenu.message.text || contextMenu.message.message || "";
@@ -1815,7 +1809,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             <span>Copy</span>
           </button>
 
-          {/* 4. Star */}
+          {             }
           <button
             onClick={() => {
               const mId = contextMenu.message._id;
@@ -1831,7 +1825,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             <span>{starredMsgs[contextMenu.message._id] ? "Unstar" : "Star"}</span>
           </button>
 
-          {/* 5. Edit (only sender) */}
+          {                           }
           {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === user?._id?.toString() && !contextMenu.message.deletedEveryone && (
             <button
               onClick={() => {
@@ -1850,7 +1844,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
 
           <div className="my-1 border-t border-gray-100" />
 
-          {/* 6. Delete for Me */}
+          {                      }
           <button
             onClick={() => {
               handleDeleteMsg(contextMenu.message._id, false);
@@ -1862,7 +1856,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
             <span>Delete for Me</span>
           </button>
 
-          {/* 7. Delete for Everyone (only sender) */}
+          {                                          }
           {(contextMenu.message.senderId?._id || contextMenu.message.senderId || "").toString() === user?._id?.toString() && !contextMenu.message.deletedEveryone && (
             <button
               onClick={() => {
@@ -1878,7 +1872,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
 
           <div className="my-1 border-t border-gray-100" />
 
-          {/* 8. Message Info */}
+          {                     }
           <button
             onClick={() => {
               setMsgInfoModal(contextMenu.message);
@@ -1892,7 +1886,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       )}
 
-      {/* Forward Modal */}
+      {                   }
       <Modal open={!!forwardingMsg} onClose={() => setForwardingMsg(null)} title="Forward message to...">
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {chats.map((c) => {
@@ -1914,7 +1908,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       </Modal>
 
-      {/* Edit Message Modal */}
+      {                        }
       <Modal open={!!editingMsg} onClose={() => setEditingMsg(null)} title="Edit Message">
         {editingMsg && (
           <div className="space-y-3">
@@ -1942,7 +1936,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         )}
       </Modal>
 
-      {/* Message Info Modal */}
+      {                        }
       <Modal open={!!msgInfoModal} onClose={() => setMsgInfoModal(null)} title="Message Info">
         {msgInfoModal && (
           <div className="space-y-4 text-sm">
@@ -1969,7 +1963,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         )}
       </Modal>
 
-      {/* Profile modal */}
+      {                   }
       <Modal
         open={showProfile}
         onClose={() => setShowProfile(false)}
@@ -2006,7 +2000,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       </Modal>
 
-      {/* Report modal */}
+      {                  }
       <Modal
         open={reporting}
         onClose={() => setReporting(false)}
@@ -2037,7 +2031,7 @@ function ActiveChat({ chat, chats = [], onBack, onConfirmDelete, onMessageSent }
         </div>
       </Modal>
 
-      {/* Pro paywall — calls */}
+      {                         }
       <ProUpgradeModal
         open={callPaywall}
         onClose={() => setCallPaywall(false)}

@@ -71,7 +71,7 @@ export default function DealsPage() {
     fetchDeals();
   }, []);
 
-  // Sync auto-open for specific deal from URL query param e.g. /app/deals?dealId=...
+                                                                                     
   useEffect(() => {
     const requestedId = searchParams.get("dealId");
     if (requestedId && deals.length > 0) {
@@ -82,7 +82,7 @@ export default function DealsPage() {
     }
   }, [searchParams, deals]);
 
-  // Listen to realtime notification for auto-refresh
+                                                     
   useEffect(() => {
     if (!socket) return;
     const onNotif = (notif) => {
@@ -113,7 +113,7 @@ export default function DealsPage() {
       .catch(() => toast.error("Could not start chat"));
   };
 
-  // Real Database Summary Calculations
+                                       
   const fundedDeals = useMemo(
     () => deals.filter((d) => d.status === "paid" || d.stage === "completed"),
     [deals]
@@ -141,7 +141,7 @@ export default function DealsPage() {
     [fundedDeals]
   );
 
-  // Tab Filtering strictly based on backend fields
+                                                   
   const filteredDeals = deals.filter((d) => {
     if (activeTab === "all") return true;
     if (activeTab === "funded") return d.status === "paid" || d.stage === "completed";
@@ -154,7 +154,7 @@ export default function DealsPage() {
   return (
     <DashboardShell fullWidth={false}>
       <div className="max-w-[1150px] mx-auto py-4 px-2 sm:px-4 space-y-6">
-        {/* Page Header */}
+        {                 }
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#0A1F14] tracking-tight">Deals</h1>
@@ -162,17 +162,10 @@ export default function DealsPage() {
               Manage investor interests, negotiations and confirmed investments.
             </p>
           </div>
-          {/* <Link to="/app/upload-pitch">
-            <button
-              className="px-5 py-2.5 bg-[#0F4A2E] hover:bg-[#1B5E3F] !text-white text-xs font-black rounded-xl shadow transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-              style={{ color: "#ffffff" }}
-            >
-              <HiPlus className="w-4 h-4 !text-[#D4AF37]" style={{ color: "#D4AF37" }} /> Add New Deal
-            </button>
-          </Link> */}
+          {                                                                                                                                                                                                                                                                                                                                                                                                                                                               }
         </div>
 
-        {/* 4 Summary Cards */}
+        {                     }
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-4 sm:p-5 shadow-xs space-y-1">
             <p className="text-[11px] font-bold text-[#0A1F14]/60">Total Investments</p>
@@ -203,7 +196,7 @@ export default function DealsPage() {
           </div>
         </div>
 
-        {/* 5 Filter Tabs with Green Underline */}
+        {                                        }
         <div className="border-b border-[#1B5E3F]/15 flex items-center gap-6 overflow-x-auto">
           {TABS.map((t) => {
             const isActive = activeTab === t.id;
@@ -226,7 +219,7 @@ export default function DealsPage() {
           })}
         </div>
 
-        {/* Loading State Skeletons */}
+        {                             }
         {loading && (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -246,7 +239,7 @@ export default function DealsPage() {
           </div>
         )}
 
-        {/* Error State */}
+        {                 }
         {!loading && error && (
           <div className="bg-white border border-red-200 rounded-2xl p-8 text-center shadow-sm space-y-3">
             <HiExclamationCircle className="w-10 h-10 text-red-500 mx-auto" />
@@ -261,7 +254,7 @@ export default function DealsPage() {
           </div>
         )}
 
-        {/* Empty State */}
+        {                 }
         {!loading && !error && filteredDeals.length === 0 && (
           <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-12 text-center shadow-sm space-y-3">
             <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-[#0F4A2E] flex items-center justify-center mx-auto">
@@ -280,7 +273,7 @@ export default function DealsPage() {
           </div>
         )}
 
-        {/* Deals List */}
+        {                }
         {!loading && !error && filteredDeals.length > 0 && (
           <div className="space-y-4">
             {filteredDeals.map((d) => (
@@ -296,7 +289,7 @@ export default function DealsPage() {
         )}
       </div>
 
-      {/* Stage Update Modal */}
+      {                        }
       <Modal open={!!stageDeal} onClose={() => setStageDeal(null)} title="Update Deal Stage">
         {stageDeal && (
           <div className="space-y-3 p-1">
@@ -337,9 +330,9 @@ function DealCard({ deal, onView, onUpdateStage, onStartChat }) {
       className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-5 shadow-xs hover:shadow-sm transition-all space-y-4"
       whileHover={{ y: -1 }}
     >
-      {/* Top Part */}
+      {              }
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Left: Investor Info */}
+        {                         }
         <div className="flex items-center gap-3.5 min-w-0">
           <img
             src={
@@ -369,7 +362,7 @@ function DealCard({ deal, onView, onUpdateStage, onStartChat }) {
           </div>
         </div>
 
-        {/* Middle: Investment Metrics */}
+        {                                }
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-left md:text-left border-t md:border-t-0 border-[#1B5E3F]/8 pt-3 md:pt-0">
           <div>
             <p className="text-[10px] uppercase font-bold text-[#0A1F14]/50">Investment Amount</p>
@@ -389,7 +382,7 @@ function DealCard({ deal, onView, onUpdateStage, onStartChat }) {
           </div>
         </div>
 
-        {/* Right: Status Badge */}
+        {                         }
         <div className="shrink-0 flex md:flex-col items-end justify-between">
           <span
             className={`px-3 py-1 text-xs font-extrabold rounded-full border inline-flex items-center gap-1.5 ${
@@ -405,7 +398,7 @@ function DealCard({ deal, onView, onUpdateStage, onStartChat }) {
         </div>
       </div>
 
-      {/* Bottom Sub-row: Transaction Metadata & View Details */}
+      {                                                         }
       <div className="pt-3 border-t border-[#1B5E3F]/8 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#0A1F14]/60 gap-3 font-medium">
         <div className="flex items-center gap-4 flex-wrap text-[11px]">
           <span className="flex items-center gap-1">

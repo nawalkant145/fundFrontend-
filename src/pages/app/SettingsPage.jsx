@@ -30,7 +30,7 @@ export default function SettingsPage() {
   return (
     <DashboardShell title="Settings" subtitle="Manage your account.">
       <div className="grid lg:grid-cols-[200px_1fr] gap-6">
-        {/* Sidebar tabs */}
+        {                  }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-2 h-fit overflow-x-auto">
           <div className="flex lg:flex-col gap-1">
             {TABS.map((t) => (
@@ -50,7 +50,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Panel */}
+        {           }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6">
           {tab === "account" && <AccountTab />}
           {tab === "security" && <SecurityTab />}
@@ -95,7 +95,7 @@ function AccountTab() {
     <div className="space-y-5">
       <h3 className="text-lg font-bold text-[#0A1F14]">Account information</h3>
 
-      {/* Avatar upload */}
+      {                   }
       <div className="flex items-center gap-4">
         <img
           src={
@@ -130,7 +130,7 @@ function AccountTab() {
         value={data.name}
         onChange={handle}
       />
-      {/* Username & email are read-only (unique, verified) */}
+      {                                                       }
       <div>
         <label className="block text-sm font-semibold mb-1.5 text-gray-300">
           Username
@@ -259,7 +259,7 @@ function SecurityTab() {
         newPassword: pw.new,
       });
       toast.success("Password changed. Please log in again.");
-      // Server clears the session cookies → force re-login
+                                                           
       setTimeout(async () => {
         await logout();
         navigate("/login", { replace: true });
@@ -322,7 +322,7 @@ function SecurityTab() {
   );
 }
 
-// Parse a friendly "Browser on OS" label from the user agent.
+                                                              
 function getCurrentDevice() {
   if (typeof navigator === "undefined") return "This device";
   const ua = navigator.userAgent;

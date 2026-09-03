@@ -67,7 +67,7 @@ export default function FounderDashboard() {
       .catch(() => setRecentDeals([]));
   }, []);
 
-  // Aggregate stats across all the founder's pitches
+                                                     
   const totals = pitches.reduce(
     (acc, p) => {
       acc.views += p.views || 0;
@@ -78,7 +78,7 @@ export default function FounderDashboard() {
     { views: 0, likes: 0, saves: 0 },
   );
 
-  // Active pitches count and primary active pitch
+                                                  
   const activePitches = pitches.filter((p) => p.status === "active");
   const activePitch = activePitches[0] || pitches[0] || null;
 
@@ -91,16 +91,16 @@ export default function FounderDashboard() {
 
   const rightSidebarContent = (
     <>
-      {/* 1. Expglo Funding Impact Card */}
+      {                                   }
       <FundingImpactCard />
 
-      {/* 2. Active Funding Opportunities */}
+      {                                     }
       <ActiveFundingOpportunitiesCard />
 
-      {/* 3. Investor Activity */}
+      {                          }
       <InvestorActivityCard activities={activity} />
 
-      {/* 4. Upcoming Events */}
+      {                        }
       <UpcomingEventsCard />
     </>
   );
@@ -111,7 +111,7 @@ export default function FounderDashboard() {
       subtitle="Here's what's happening with your startup today."
       rightSidebar={rightSidebarContent}
     >
-      {/* Top Stats Overview */}
+      {                        }
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <StatCard
           icon={HiEye}
@@ -140,9 +140,9 @@ export default function FounderDashboard() {
         />
       </div>
 
-      {/* Main Content Column */}
+      {                         }
       <div className="space-y-6">
-        {/* Active pitch card */}
+        {                       }
         <motion.div
           className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm"
           whileHover={{ y: -2 }}
@@ -216,7 +216,7 @@ export default function FounderDashboard() {
           )}
         </motion.div>
 
-        {/* Recent Investors & Funded Deals Summary Widget */}
+        {                                                    }
         <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-[#0A1F14] flex items-center gap-2">
@@ -277,7 +277,7 @@ export default function FounderDashboard() {
           )}
         </div>
 
-        {/* Quick actions */}
+        {                   }
         <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm">
           <h3 className="text-base font-bold text-[#0A1F14] mb-4">Quick Actions</h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -308,7 +308,7 @@ export default function FounderDashboard() {
           </div>
         </div>
 
-        {/* Verification Badge & Progress */}
+        {                                   }
         <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-bold text-[#0A1F14] flex items-center gap-2">

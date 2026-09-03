@@ -75,7 +75,7 @@ export default function InvestmentDetailPage() {
   const investor = deal?.investorId || {};
   const founder = deal?.founderId || {};
 
-  // Extract real documents from MongoDB document if available
+                                                              
   const realDocs = Array.isArray(deal?.documents)
     ? deal.documents
     : [
@@ -87,7 +87,7 @@ export default function InvestmentDetailPage() {
   return (
     <DashboardShell title="Investment Details" subtitle="Full deal overview and transaction breakdown.">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Back Link */}
+        {               }
         <button
           onClick={() => navigate("/app/deals")}
           className="inline-flex items-center gap-2 text-xs font-extrabold text-[#1B5E3F] hover:underline cursor-pointer"
@@ -113,7 +113,7 @@ export default function InvestmentDetailPage() {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {/* Top Summary Banner */}
+            {                        }
             <div className="bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white p-6 rounded-3xl shadow-lg">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <span
@@ -147,7 +147,7 @@ export default function InvestmentDetailPage() {
               </div>
             </div>
 
-            {/* SECTION 1 — INVESTMENT OVERVIEW */}
+            {                                     }
             <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-base font-extrabold text-[#0A1F14] border-b border-[#1B5E3F]/10 pb-3 flex items-center gap-2">
                 <HiCurrencyDollar className="w-5 h-5 text-[#1B5E3F]" /> Section 1 — Investment Overview
@@ -170,7 +170,7 @@ export default function InvestmentDetailPage() {
               </div>
             </div>
 
-            {/* SECTION 2 — INVESTOR INFORMATION */}
+            {                                      }
             <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-base font-extrabold text-[#0A1F14] border-b border-[#1B5E3F]/10 pb-3 flex items-center gap-2">
                 <HiUser className="w-5 h-5 text-[#1B5E3F]" /> Section 2 — Investor Information
@@ -213,7 +213,7 @@ export default function InvestmentDetailPage() {
               </div>
             </div>
 
-            {/* SECTION 3 — PAYMENT DETAILS & VERIFICATION */}
+            {                                                }
             <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-base font-extrabold text-[#0A1F14] border-b border-[#1B5E3F]/10 pb-3 flex items-center gap-2">
                 <HiCreditCard className="w-5 h-5 text-[#1B5E3F]" /> Section 3 — Payment Verification & Details
@@ -235,7 +235,7 @@ export default function InvestmentDetailPage() {
               </div>
             </div>
 
-            {/* SECTION 4 — VERIFIED INVESTMENT DOCUMENTS */}
+            {                                               }
             <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-base font-extrabold text-[#0A1F14] border-b border-[#1B5E3F]/10 pb-3 flex items-center gap-2">
                 <HiDocumentText className="w-5 h-5 text-[#1B5E3F]" /> Section 4 — Verified Investment Documents
@@ -281,7 +281,7 @@ export default function InvestmentDetailPage() {
               )}
             </div>
 
-            {/* SECTION 5 — INVESTMENT LIFECYCLE TIMELINE */}
+            {                                               }
             <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-base font-extrabold text-[#0A1F14] border-b border-[#1B5E3F]/10 pb-3 flex items-center gap-2">
                 <HiClock className="w-5 h-5 text-[#1B5E3F]" /> Section 5 — Investment Lifecycle Timeline
@@ -323,7 +323,7 @@ export default function InvestmentDetailPage() {
         )}
       </div>
 
-      {/* Document Modal */}
+      {                    }
       <Modal open={!!activeDoc} onClose={() => setActiveDoc(null)} title={activeDoc?.title || "Document View"}>
         {activeDoc && (
           <div className="p-4 text-center space-y-4">

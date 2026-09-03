@@ -26,7 +26,7 @@ const TABS = [
   { value: "people", label: "People", icon: HiUserGroup },
 ];
 
-// Static demo people catalog (founders + investors)
+                                                    
 const DEMO_PEOPLE = [
   {
     _id: "p_aisha",
@@ -134,7 +134,7 @@ const DEMO_PEOPLE = [
   },
   ...generateMockUsersList(12, "disc_person").map((u, i) => ({
     ...u,
-    isOnline: i % 4 === 0, // only 1 in 4 generated users is online
+    isOnline: i % 4 === 0,                                         
   })),
 ];
 
@@ -152,7 +152,7 @@ export default function DiscoverPage() {
   const [pitches, setPitches] = useState(ALL_MOCK_PITCHES);
   const [people, setPeople] = useState(DEMO_PEOPLE);
   const [peopleLoading, setPeopleLoading] = useState(false);
-  const [roleFilter, setRoleFilter] = useState(""); // "" | "founder" | "investor"
+  const [roleFilter, setRoleFilter] = useState("");                               
 
   const [startups, setStartups] = useState([]);
   const [startupsLoading, setStartupsLoading] = useState(false);
@@ -164,7 +164,7 @@ export default function DiscoverPage() {
     }
   }, [searchParams]);
 
-  // Fetch recommended startups on startups tab
+                                               
   useEffect(() => {
     if (tab !== "startups") return;
     setStartupsLoading(true);
@@ -179,7 +179,7 @@ export default function DiscoverPage() {
       .finally(() => setStartupsLoading(false));
   }, [tab]);
 
-  // Fetch pitches on pitch tabs
+                                
   useEffect(() => {
     if (tab === "people" || tab === "startups") return;
     const params = {};
@@ -205,7 +205,7 @@ export default function DiscoverPage() {
       .catch(() => setPitches(ALL_MOCK_PITCHES));
   }, [query, industry, stage, tab]);
 
-  // Fetch people on people tab
+                               
   useEffect(() => {
     if (tab !== "people") return;
     setPeopleLoading(true);
@@ -219,7 +219,7 @@ export default function DiscoverPage() {
         const data = res?.data?.data;
         const apiUsers = data?.users || data || [];
         if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-          // Merge API users with demo, deduplicate by _id
+                                                          
           const mergedMap = new Map();
           apiUsers.forEach((u) => { if (u?._id) mergedMap.set(String(u._id), u); });
           DEMO_PEOPLE.forEach((u) => {
@@ -271,7 +271,7 @@ export default function DiscoverPage() {
       title="Discover"
       subtitle="Find pitches and people that match your thesis."
     >
-      {/* Search + filters */}
+      {                      }
       <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 mb-5 shadow-2xs">
         <div className="relative mb-3">
           <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#64748B] pointer-events-none" />
@@ -287,7 +287,7 @@ export default function DiscoverPage() {
           />
         </div>
 
-        {/* Pitch filters — only visible on pitch tabs */}
+        {                                                }
         {tab !== "people" && (
           <div className="flex items-center gap-2 flex-wrap">
             <select
@@ -321,7 +321,7 @@ export default function DiscoverPage() {
           </div>
         )}
 
-        {/* People filters — only visible on People tab */}
+        {                                                 }
         {tab === "people" && (
           <div className="flex items-center gap-2 flex-wrap">
             {["", "founder", "investor"].map((r) => (
@@ -349,7 +349,7 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      {/* Tabs - Smooth Mobile Horizontal Scrollable Pills with No Overflow or Bold Line */}
+      {                                                                                    }
       <div className="w-full max-w-full flex items-center gap-2 mb-6 overflow-x-auto scrollbar-none py-1 whitespace-nowrap">
         {TABS.map((t) => (
           <button
@@ -367,7 +367,7 @@ export default function DiscoverPage() {
         ))}
       </div>
 
-      {/* ── Startups grid ── */}
+      {                         }
       {tab === "startups" && (
         startupsLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -403,7 +403,7 @@ export default function DiscoverPage() {
         )
       )}
 
-      {/* ── Pitch grid ── */}
+      {                      }
       {tab !== "people" && tab !== "startups" && (
         filteredPitches.length === 0 ? (
           <div className="text-center py-16">
@@ -419,7 +419,7 @@ export default function DiscoverPage() {
         )
       )}
 
-      {/* ── People grid ── */}
+      {                       }
       {tab === "people" && (
         peopleLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -442,21 +442,21 @@ export default function DiscoverPage() {
   );
 }
 
-/* ── Avatar Initials Fallback ── */
+                                    
 function AvatarInitials({ name, size = 80 }) {
   const initials = (name || "U")
     .split(" ")
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() || "")
     .join("");
-  // Pick one of several brand-harmonious colors based on name char code
+                                                                        
   const palettes = [
-    { bg: "#1B5E3F", fg: "#FFFFFF" }, // brand green
-    { bg: "#0F4A2E", fg: "#F5B942" }, // dark green + gold
-    { bg: "#2D7A4F", fg: "#FFFFFF" }, // mid green
-    { bg: "#5C3D1E", fg: "#F5D97A" }, // warm brown + gold
-    { bg: "#1A3A5C", fg: "#A0C4E8" }, // navy blue
-    { bg: "#4A1B5E", fg: "#DFB3F5" }, // purple
+    { bg: "#1B5E3F", fg: "#FFFFFF" },               
+    { bg: "#0F4A2E", fg: "#F5B942" },                     
+    { bg: "#2D7A4F", fg: "#FFFFFF" },             
+    { bg: "#5C3D1E", fg: "#F5D97A" },                     
+    { bg: "#1A3A5C", fg: "#A0C4E8" },             
+    { bg: "#4A1B5E", fg: "#DFB3F5" },          
   ];
   const idx = (name?.charCodeAt(0) || 0) % palettes.length;
   const { bg, fg } = palettes[idx];
@@ -482,14 +482,14 @@ function AvatarInitials({ name, size = 80 }) {
   );
 }
 
-/* ── Person Card ── */
+                       
 function PersonCard({ user }) {
   const { user: authUser } = useAuth();
   const [imgError, setImgError] = useState(false);
   const showInitials = !user.avatar || imgError;
   const isFounder = user.role === "founder";
 
-  // Check if card belongs to the currently logged in user viewing the app
+                                                                          
   const isSelf = Boolean(
     authUser &&
       ((user._id && authUser._id && String(user._id) === String(authUser._id)) ||
@@ -510,7 +510,7 @@ function PersonCard({ user }) {
       className="bg-[#FEFCF7] border border-[#E8E0D0] rounded-2xl overflow-hidden flex flex-col items-center text-center shadow-sm"
       style={{ minWidth: 0 }}
     >
-      {/* Avatar area — warm gradient top strip */}
+      {                                           }
       <div className="w-full pt-6 pb-3 px-5 flex flex-col items-center bg-gradient-to-b from-[#FFF8EC] to-[#FEFCF7]">
         <Link to={`/app/u/${user._id}`}>
           <div className="relative">
@@ -529,7 +529,7 @@ function PersonCard({ user }) {
                 />
               )}
             </div>
-            {/* Green online dot indicator — renders when user is online or isSelf */}
+            {                                                                        }
             {isOnlineNow && (
               <span
                 className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm ring-1 ring-emerald-500/30"
@@ -540,9 +540,9 @@ function PersonCard({ user }) {
         </Link>
       </div>
 
-      {/* Info area */}
+      {               }
       <div className="w-full px-5 pb-5 flex flex-col items-center gap-0.5">
-        {/* Name + verified */}
+        {                     }
         <Link
           to={`/app/u/${user._id}`}
           className="flex items-center justify-center gap-1.5 mt-1"
@@ -555,14 +555,14 @@ function PersonCard({ user }) {
           )}
         </Link>
 
-        {/* Company / org */}
+        {                   }
         {user.companyName && (
           <p className="text-[12px] text-[#6B6B6B] font-medium mt-0.5 truncate w-full">
             {user.companyName}
           </p>
         )}
 
-        {/* Role pill + industry tag */}
+        {                              }
         <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
           <span
             className={`text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-[3px] rounded-full ${
@@ -581,14 +581,14 @@ function PersonCard({ user }) {
           )}
         </div>
 
-        {/* Bio */}
+        {         }
         {user.bio && (
           <p className="text-[12px] text-[#555] leading-relaxed line-clamp-2 mt-2.5 text-left w-full">
             {user.bio}
           </p>
         )}
 
-        {/* Follower count */}
+        {                    }
         {user.followersCount > 0 && (
           <p className="text-[11px] text-[#888] mt-1.5">
             <span className="font-bold text-[#333]">
@@ -600,7 +600,7 @@ function PersonCard({ user }) {
           </p>
         )}
 
-        {/* Follow button — centered gold pill button matching reference image */}
+        {                                                                        }
         <div className="w-full mt-4 flex justify-center">
           <FollowButton userId={user._id} variant="outline" />
         </div>

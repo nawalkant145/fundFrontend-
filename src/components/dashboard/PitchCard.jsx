@@ -20,11 +20,7 @@ import { videoService } from "../../services/videoService";
 import { chatService } from "../../services/chatService";
 import FollowButton from "../monetization/FollowButton";
 
-/**
- * Grid pitch card. Clicking the card redirects to the feed with this pitch
- * pre-selected — same pattern Instagram uses on its profile/explore grids.
- * No inline video player here; the feed handles playback.
- */
+                                                                                                                                                                                                                              
 export default function PitchCard({ pitch }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -94,7 +90,7 @@ export default function PitchCard({ pitch }) {
 
   if (!pitch) return null;
 
-  // Handle founderId being an object, a string ID, or null/undefined
+                                                                     
   const f =
     typeof pitch.founderId === "object" && pitch.founderId !== null
       ? pitch.founderId
@@ -139,7 +135,7 @@ export default function PitchCard({ pitch }) {
   };
 
   const openInFeed = () => {
-    // Navigate to /app/pitch?pitch=<id> — the feed reads ?pitch and jumps to it
+                                                                                
     navigate(`/app/pitch?pitch=${pitch._id}`);
   };
 
@@ -226,7 +222,7 @@ export default function PitchCard({ pitch }) {
       className="group relative text-left bg-card-bg border-2 border-gold/10 rounded-2xl overflow-visible hover:border-gold/40 transition-all w-full cursor-pointer"
       whileHover={{ y: -6 }}
     >
-      {/* 3-dot menu — outside overflow-hidden so dropdown isn't clipped */}
+      {                                                                    }
       <div
         className="absolute top-3 right-3 z-20 flex items-center gap-1"
         onClick={(e) => e.stopPropagation()}
@@ -260,14 +256,14 @@ export default function PitchCard({ pitch }) {
           </div>
         )}
 
-        {/* Hover play indicator */}
+        {                          }
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
           <div className="w-16 h-16 rounded-full bg-gold/90 flex items-center justify-center shadow-2xl">
             <HiPlay className="w-7 h-7 text-dark-navy ml-1" />
           </div>
         </div>
 
-        {/* Founder avatar, info, and action buttons on image overlay */}
+        {                                                               }
         <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex items-center justify-between gap-1.5 sm:gap-2 z-20 text-white-force min-w-0">
           <div
             onClick={handleProfileClick}

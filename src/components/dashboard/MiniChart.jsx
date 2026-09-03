@@ -1,11 +1,6 @@
 import { motion } from "framer-motion";
 
-/**
- * Lightweight SVG charts — no external dependency.
- *  - <BarChart> for counts over time
- *  - <LineChart> for trends
- * data: [{ label, value }]
- */
+                                                                                                                                                               
 
 export function BarChart({ data = [], color = "#F5B942", height = 160 }) {
   if (!data.length)

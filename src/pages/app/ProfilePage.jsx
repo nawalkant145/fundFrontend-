@@ -74,18 +74,18 @@ export default function ProfilePage() {
   const menu = role === "investor" ? INVESTOR_MENU : FOUNDER_MENU;
   const isFounder = role === "founder";
 
-  // Single Source of Truth Completion Hook
+                                           
   const { completion } = useProfileCompletion();
 
   const [pitches, setPitches] = useState([]);
   const [posts, setPosts] = useState([]);
   const [tab, setTab] = useState("pitches");
-  const [followModal, setFollowModal] = useState(null); // "followers" | "following"
+  const [followModal, setFollowModal] = useState(null);                             
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [previewPitch, setPreviewPitch] = useState(null);
   const [previewPost, setPreviewPost] = useState(null);
 
-  // Founders show their own pitches + posts
+                                            
   useEffect(() => {
     if (!isFounder) return;
     videoService
@@ -114,7 +114,7 @@ export default function ProfilePage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Real-time socket sync for pitch metrics
+                                            
   useEffect(() => {
     if (!socket) return;
     const onEngagement = (data) => {
@@ -135,7 +135,7 @@ export default function ProfilePage() {
     return () => socket.off("pitch:engagement", onEngagement);
   }, [socket]);
 
-  // Real-time socket sync for post metrics
+                                           
   useEffect(() => {
     if (!socket) return;
     const onPostEngagement = (data) => {
@@ -160,14 +160,14 @@ export default function ProfilePage() {
 
   return (
     <DashboardShell title="My profile">
-      {/* 1. Cover Header Card matching User Reference Image */}
+      {                                                        }
       <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl overflow-hidden mb-6 shadow-xs max-w-full">
-        {/* Soft Warm Gradient Banner Top */}
+        {                                   }
         <div className="h-24 sm:h-32 bg-gradient-to-r from-emerald-50/80 via-amber-50/40 to-slate-50" />
 
         <div className="px-3.5 sm:px-6 pb-4 sm:pb-6 -mt-10 sm:-mt-16 space-y-4 sm:space-y-5 max-w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Avatar + User Details Block */}
+            {                                 }
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 w-full sm:w-auto min-w-0">
               <div className="flex items-center gap-3 w-full sm:w-auto min-w-0">
                 <AvatarProgressRing
@@ -190,7 +190,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Responsive Stats Bar */}
+              {                          }
               <div className="flex items-center justify-around sm:justify-start w-full sm:w-auto gap-2 sm:gap-6 py-2.5 sm:py-0 my-1 sm:my-0 border-y border-slate-100 sm:border-0 sm:mt-3">
                 {isFounder && (
                   <>
@@ -237,7 +237,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Edit Profile Button */}
+            {                         }
             <div className="w-full sm:w-auto self-stretch sm:self-center">
               <Link to="/app/settings" className="block w-full sm:w-auto">
                 <button className="profile-edit-button w-full sm:w-auto h-10 sm:h-11 px-5 sm:px-6 bg-[#1B5E3F] hover:bg-[#0F4A2E] text-xs sm:text-sm font-bold rounded-full flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer">
@@ -248,14 +248,14 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Bio text if provided */}
+          {                          }
           {user.bio && (
             <p className="text-xs sm:text-sm font-normal text-slate-600 max-w-2xl leading-relaxed">
               {user.bio}
             </p>
           )}
 
-          {/* Chips Row */}
+          {               }
           <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
             {user.companyName && (
               <Chip icon={HiOfficeBuilding}>{user.companyName}</Chip>
@@ -270,15 +270,15 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 2. Synchronized Verification & Profile Status Workspace */}
+      {                                                             }
       <div className="mb-6">
         <VerificationStatusCard user={user} />
       </div>
 
-      {/* 3. Pitches & Posts Content Grid — Underline Tabs */}
+      {                                                      }
       {isFounder && (
         <div className="mb-6">
-          {/* Underline Tab Navigation Header */}
+          {                                     }
           <div className="border-b border-slate-200/80 mb-6 flex gap-4 sm:gap-8 overflow-x-auto">
             <UnderlineTabBtn
               active={tab === "pitches"}
@@ -361,7 +361,7 @@ export default function ProfilePage() {
                       </span>
                     </div>
                   )}
-                  {/* Hover Overlay */}
+                  {                   }
                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-xs font-bold">
                     <span className="inline-flex items-center gap-1">
                       <HiHeart className="w-4 h-4 text-red-400" />
@@ -387,7 +387,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Mobile-Only Navigation Menu */}
+      {                                 }
       <div className="md:hidden mt-8">
         <h3 className="text-lg font-semibold mb-3 text-[#0F172A]">Menu</h3>
         <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden divide-y divide-[#E5E7EB]">
@@ -429,7 +429,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Profile Completion Drawer (Naukri Inspired) */}
+      {                                                 }
       <ProfileCompletionDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -437,7 +437,7 @@ export default function ProfilePage() {
         onOpenEditProfile={() => navigate("/app/settings")}
       />
 
-      {/* Followers / Following Modal */}
+      {                                 }
       <FollowListModal
         open={!!followModal}
         onClose={() => setFollowModal(null)}
@@ -445,7 +445,7 @@ export default function ProfilePage() {
         mode={followModal}
       />
 
-      {/* Pitch preview modal */}
+      {                         }
       {previewPitch && (
         <PitchPreviewModal
           pitch={previewPitch}
@@ -458,7 +458,7 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* Post preview modal */}
+      {                        }
       {previewPost && (
         <PostPreviewModal
           post={previewPost}

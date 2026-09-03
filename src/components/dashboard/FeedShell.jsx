@@ -1,11 +1,6 @@
 import DashboardShell from "./DashboardShell";
 
-/**
- * Pitch reel shell:
- * - Passes noScroll to DashboardShell to prevent parent page scrolling
- * - Preserves TopBar (64px) + Sidebar (280px left) + background (#F3F2EF)
- * - Renders centered pitch viewer as single vertical scroll owner
- */
+                                                                                                                                                                                                                                                       
 export default function FeedShell({ children, mode }) {
   return (
     <DashboardShell mode={mode} noPad fullWidth noScroll rightSidebar={null}>

@@ -24,10 +24,7 @@ import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 
-/**
- * Instagram-style post detail page.
- * Carousel + caption + real like / save / comment / share.
- */
+                                                                                                           
 export default function PostDetailPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
@@ -78,7 +75,7 @@ export default function PostDetailPage() {
     return () => socket.off("post:engagement", onEngagement);
   }, [socket, postId]);
 
-  // Fetch the post — fall back to MOCK_POSTS if API returns nothing (demo mode)
+                                                                                
   useEffect(() => {
     setLoading(true);
     setImgIdx(0);
@@ -90,23 +87,23 @@ export default function PostDetailPage() {
         if (p) {
           applyPost(p);
         } else {
-          // API returned nothing — check MOCK_POSTS
+                                                    
           const mock = MOCK_POSTS.find((m) => m._id === postId) || null;
           applyPost(mock);
           if (!mock) setPost(null);
         }
       })
       .catch(() => {
-        // API error — fall back to MOCK_POSTS
+                                              
         const mock = MOCK_POSTS.find((m) => m._id === postId) || null;
         applyPost(mock);
         if (!mock) setPost(null);
       })
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+                                                         
   }, [postId]);
 
-  // Keyboard nav for image carousel
+                                    
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") navigate(-1);
@@ -149,7 +146,7 @@ export default function PostDetailPage() {
         await navigator.share({ title: "Check out this post", url });
         return;
       } catch {
-        /* fall through to copy */
+                                  
       }
     }
     navigator.clipboard?.writeText(url);
@@ -189,7 +186,7 @@ export default function PostDetailPage() {
           </button>
 
           <div className="bg-white border border-[#1B5E3F]/12 rounded-3xl shadow-sm overflow-hidden grid lg:grid-cols-[1.2fr_1fr]">
-            {/* LEFT — image / text canvas */}
+            {                                }
             <div className="relative bg-black aspect-square lg:aspect-auto flex items-center justify-center">
               {!isText ? (
                 <>
@@ -252,7 +249,7 @@ export default function PostDetailPage() {
               )}
             </div>
 
-            {/* RIGHT — author + caption + actions */}
+            {                                        }
             <div className="flex flex-col">
               <div className="flex items-center gap-3 p-5 border-b border-[#1B5E3F]/10">
                 <img
@@ -299,7 +296,7 @@ export default function PostDetailPage() {
                 </div>
               )}
 
-              {/* Actions */}
+              {             }
               <div className="p-5 border-b border-[#1B5E3F]/10 flex items-center gap-3">
                 <button
                   onClick={toggleLike}
@@ -343,7 +340,7 @@ export default function PostDetailPage() {
                 </button>
               </div>
 
-              {/* Stats */}
+              {           }
               <div className="px-5 py-3 text-sm">
                 <p className="font-bold text-[#0A1F14]">
                   {likeCount.toLocaleString()} likes ·{" "}
@@ -363,7 +360,7 @@ export default function PostDetailPage() {
                 </p>
               </div>
 
-              {/* Open comments */}
+              {                   }
               <div className="mt-auto p-4 border-t border-[#1B5E3F]/10">
                 <button
                   onClick={() => setShowComments(true)}

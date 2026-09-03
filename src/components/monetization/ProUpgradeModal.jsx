@@ -10,10 +10,7 @@ import Modal from "../ui/Modal";
 import { getPlanForRole } from "../../constants/mockData";
 import { getRole } from "../../lib/auth";
 
-/**
- * Modal that pops up when a free user tries to do something Pro-gated.
- * Plan auto-resolves from the current user's role.
- */
+                                                                                                                                      
 export default function ProUpgradeModal({
   open,
   onClose,
@@ -37,7 +34,7 @@ export default function ProUpgradeModal({
 
   const Icon = copy.icon;
 
-  // Pull short bullets — strings only or labels of true features
+                                                                 
   const bullets = plan.features
     .map((f) =>
       typeof f.pro === "string"

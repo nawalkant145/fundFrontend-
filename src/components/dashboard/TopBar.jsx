@@ -36,7 +36,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
   return (
     <header className="h-[72px] min-h-[72px] bg-white border-b border-[#E2E8F0] px-4 sm:px-6 flex items-center justify-between z-30 shrink-0 shadow-2xs">
       <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
-        {/* Left: Mobile Drawer Hamburger Toggle (< 768px) */}
+        {                                                    }
         <button
           onClick={onMenuClick}
           className="md:hidden w-10 h-10 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition-colors cursor-pointer shrink-0"
@@ -45,7 +45,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           <HiMenu className="w-5.5 h-5.5 text-[#0F172A]" />
         </button>
 
-        {/* Brand Logo */}
+        {                }
         <Link to="/app" className="flex items-center gap-2 shrink-0">
           <img
             src="/Expglo fund logo.jpeg"
@@ -54,7 +54,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           />
         </Link>
 
-        {/* Search Bar (Stable 600-650px desktop width, responsive on smaller screens) */}
+        {                                                                                }
         <div className="flex-1 min-w-0 max-w-[620px]">
           <div className="relative w-full">
             <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#64748B] pointer-events-none" />
@@ -69,9 +69,9 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
         </div>
       </div>
 
-      {/* RIGHT: Invest Now (Investor) + Messages / Dollar Icon + Notifications + Profile */}
+      {                                                                                     }
       <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 ml-auto">
-        {/* Invest Now Button (Investor ONLY) */}
+        {                                       }
         {isInvestor && (
           <Link to="/app/invest" className="hidden sm:flex items-center">
             <motion.button
@@ -85,7 +85,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           </Link>
         )}
 
-        {/* Desktop: Messages Icon (Visible on lg screens and above) */}
+        {                                                              }
         <Link to="/app/messages" className="hidden lg:flex items-center">
           <motion.button
             className="w-10 h-10 text-[#64748B] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 rounded-xl transition-colors flex items-center justify-center shrink-0"
@@ -97,7 +97,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           </motion.button>
         </Link>
 
-        {/* Mobile / Tablet: Soft Golden Dollar ($) Icon Button (< lg screens - Non-Investor Feed Page Only) */}
+        {                                                                                                      }
         {!isInvestor && isFeedPage && (
           <motion.button
             onClick={onRightSidebarClick}
@@ -111,7 +111,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           </motion.button>
         )}
 
-        {/* Notifications Bell */}
+        {                        }
         <Link to="/app/notifications" className="relative flex items-center">
           <motion.button
             className="relative w-10 h-10 text-[#64748B] hover:text-[#1B5E3F] hover:bg-[#1B5E3F]/10 rounded-xl transition-colors flex items-center justify-center shrink-0"
@@ -128,7 +128,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           </motion.button>
         </Link>
 
-        {/* User Profile Chip & Dropdown */}
+        {                                  }
         <div className="relative hidden md:block">
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
@@ -153,7 +153,7 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
             <HiChevronDown className="w-4 h-4 text-[#64748B] hidden md:block" />
           </button>
 
-          {/* Dropdown Menu */}
+          {                   }
           <AnimatePresence>
             {profileDropdownOpen && (
               <motion.div

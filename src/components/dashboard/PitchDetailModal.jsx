@@ -101,7 +101,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
   return (
     <Modal open={open} onClose={onClose} size="xl" title={pitch.title || "Pitch Details"} noPadding>
       <div className="flex flex-col lg:grid lg:grid-cols-[1.1fr_380px] max-h-[85dvh] lg:max-h-[720px] bg-[#0A1F14] text-white overflow-y-auto lg:overflow-hidden">
-        {/* Video / thumbnail */}
+        {                       }
         <div className="relative bg-black aspect-video max-h-[32vh] sm:max-h-[40vh] lg:aspect-auto lg:max-h-none lg:min-h-[600px] w-full flex-shrink-0 flex items-center justify-center overflow-hidden">
           <img
             src={pitch.coverUrl || pitch.thumbnailUrl}
@@ -136,9 +136,9 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
           </div>
         </div>
 
-        {/* Side panel */}
+        {                }
         <div className="flex flex-col flex-1 min-w-0 bg-[#0F2D1E] text-white border-t lg:border-t-0 lg:border-l border-gold/15 lg:max-h-[720px] lg:h-[720px] overflow-hidden">
-          {/* Founder header */}
+          {                    }
           <div className="p-3 sm:p-4 border-b border-gold/10 flex items-center gap-3 bg-[#0F2D1E] flex-shrink-0">
             <img
               src={
@@ -178,7 +178,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
             </div>
           </div>
 
-          {/* Action bar */}
+          {                }
           <div className="p-2 sm:p-3 border-b border-gold/10 grid grid-cols-4 gap-1 sm:gap-2 flex-shrink-0">
             <ActionPill
               icon={HiHeart}
@@ -217,7 +217,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
             />
           </div>
 
-          {/* Quick info */}
+          {                }
           <div className="p-3 sm:p-4 border-b border-gold/10 grid grid-cols-3 gap-2 text-center flex-shrink-0">
             <Info label="Asking" value={formatINR(pitch.askAmount)} />
             <Info label="Equity" value={`${pitch.equityOffered}%`} />
@@ -233,7 +233,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
             />
           </div>
 
-          {/* CTA buttons */}
+          {                 }
           <div className="p-3 sm:p-4 border-b border-gold/10 grid grid-cols-2 gap-2 flex-shrink-0">
             <button
               onClick={() => toast.success("Investment interest sent")}
@@ -251,7 +251,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
             </button>
           </div>
 
-          {/* Comments */}
+          {              }
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 min-h-[140px]">
             <p className="text-[11px] uppercase tracking-wider font-bold text-gray-400">
               Comments · {comments.length}
@@ -284,7 +284,7 @@ export default function PitchDetailModal({ pitch, open, onClose }) {
             ))}
           </div>
 
-          {/* Composer */}
+          {              }
           <form
             onSubmit={submitComment}
             className="p-2.5 sm:p-3 border-t border-gold/10 flex items-center gap-2 bg-[#0A1F14] flex-shrink-0"

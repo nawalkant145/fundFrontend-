@@ -66,7 +66,7 @@ export default function AdminModerationPage() {
       title="Moderation queue"
       subtitle="Auto-flagged content awaiting review."
     >
-      {/* Status filter */}
+      {                   }
       <div className="flex gap-2 flex-wrap mb-5">
         {[
           { v: "pending", l: "Pending" },
@@ -130,12 +130,12 @@ export default function AdminModerationPage() {
                       </span>
                     </div>
 
-                    {/* Original flagged text */}
+                    {                           }
                     <p className="text-sm text-gray-300 mb-2 bg-dark-bg/40 p-3 rounded-lg italic">
                       "{f.originalText}"
                     </p>
 
-                    {/* Matched terms */}
+                    {                   }
                     {f.matchedTerms?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {f.matchedTerms.map((t, i) => (

@@ -201,17 +201,17 @@ export default function AppCoursesPage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Modals & Active Video Player
+                                 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [selectedCourseForLesson, setSelectedCourseForLesson] = useState(null);
   const [previewCourseModal, setPreviewCourseModal] = useState(null);
 
-  // Active Player State (watching enrolled course video)
+                                                         
   const [playerCourse, setPlayerCourse] = useState(null);
   const [activeLesson, setActiveLesson] = useState(null);
 
-  // Create Course Form State
+                             
   const [courseForm, setCourseForm] = useState({
     title: "",
     description: "",
@@ -225,7 +225,7 @@ export default function AppCoursesPage() {
   const [previewVideoFile, setPreviewVideoFile] = useState(null);
   const [submittingCourse, setSubmittingCourse] = useState(false);
 
-  // Add Lesson Form State
+                          
   const [lessonForm, setLessonForm] = useState({
     title: "",
     description: "",
@@ -314,11 +314,11 @@ export default function AppCoursesPage() {
 
     setPurchasingCourseId(courseId);
     try {
-      // 1. Create Razorpay Order on server
+                                           
       const res = await courseService.createPaymentOrder({ courseId });
       const resData = res.data?.data || res.data;
 
-      // Handle free course (price = 0)
+                                       
       if (resData.isFree) {
         toast.success(`🎉 Free course unlocked! Enrolled in "${course.title}".`);
         await fetchCourses();
@@ -331,7 +331,7 @@ export default function AppCoursesPage() {
 
       const { order, keyId } = resData;
 
-      // 2. Load Razorpay Checkout SDK
+                                      
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         toast.error("Failed to load Razorpay payment SDK. Please check your internet connection.");
@@ -339,7 +339,7 @@ export default function AppCoursesPage() {
         return;
       }
 
-      // 3. Launch Razorpay Standard Checkout Popup
+                                                   
       const options = {
         key: keyId,
         amount: order.amount,
@@ -362,7 +362,7 @@ export default function AppCoursesPage() {
         handler: async function (response) {
           try {
             toast.info("Verifying payment with backend...");
-            // 4. Send Razorpay response to server for HMAC signature & REST status verification
+                                                                                                
             await courseService.verifyPayment({
               courseId,
               razorpay_order_id: response.razorpay_order_id,
@@ -552,7 +552,7 @@ export default function AppCoursesPage() {
     }
   };
 
-  // Filtered Explore List
+                          
   const filteredExploreCourses = publishedCourses.filter((c) => {
     const matchesSearch =
       c.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -572,7 +572,7 @@ export default function AppCoursesPage() {
           : "Master fundraising, pitching, and startup scaling with video masterclasses."
       }
     >
-      {/* Header Tabs */}
+      {                 }
       <div className="flex items-center justify-between border-b border-gold/15 pb-4 mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-3 overflow-x-auto pb-1">
           {canPurchase && (
@@ -627,7 +627,7 @@ export default function AppCoursesPage() {
         )}
       </div>
 
-      {/* ENROLLED COURSES TAB (FOUNDER & INVESTOR - MY LEARNING) */}
+      {                                                             }
       {canPurchase && activeTab === "enrolled" && (
         <div className="space-y-6">
           {enrolledCourses.length === 0 ? (
@@ -701,7 +701,7 @@ export default function AppCoursesPage() {
         </div>
       )}
 
-      {/* ADMIN COURSE MANAGEMENT TAB (ADMIN ONLY) */}
+      {                                              }
       {isAdmin && activeTab === "admin-courses" && (
         <div className="space-y-6">
           {loading ? (
@@ -798,7 +798,7 @@ export default function AppCoursesPage() {
         </div>
       )}
 
-      {/* EXPLORE COURSES TAB */}
+      {                         }
       {activeTab === "explore" && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -911,7 +911,7 @@ export default function AppCoursesPage() {
         </div>
       )}
 
-      {/* CREATE COURSE MODAL (ADMIN ONLY) */}
+      {                                      }
       {isAdmin && (
         <Modal
           open={showCreateModal}
@@ -1023,7 +1023,7 @@ export default function AppCoursesPage() {
         </Modal>
       )}
 
-      {/* ADD LESSON MODAL (ADMIN ONLY) */}
+      {                                   }
       {isAdmin && (
         <Modal
           open={showLessonModal}
@@ -1155,7 +1155,7 @@ export default function AppCoursesPage() {
         </Modal>
       )}
 
-      {/* PREVIEW COURSE MODAL (BEFORE ENROLLMENT) */}
+      {                                              }
       <Modal
         open={!!previewCourseModal}
         onClose={() => setPreviewCourseModal(null)}
@@ -1225,7 +1225,7 @@ export default function AppCoursesPage() {
         )}
       </Modal>
 
-      {/* ACTIVE COURSE VIDEO PLAYER MODAL (FOR ENROLLED COURSES / ADMIN PREVIEW) */}
+      {                                                                             }
       <Modal
         open={!!playerCourse}
         onClose={() => setPlayerCourse(null)}

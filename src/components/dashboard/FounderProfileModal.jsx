@@ -20,10 +20,7 @@ import { chatService } from "../../services/chatService";
 
 import { FOUNDER_PROFILES, MOCK_PITCHES } from "../../constants/mockData";
 
-/**
- * Instagram-style founder profile preview.
- * Fetches the founder's real active pitches + follower counts.
- */
+                                                                                                                      
 export default function FounderProfileModal({
   open,
   onClose,
@@ -63,7 +60,7 @@ export default function FounderProfileModal({
       );
     setPitches(fallbackPitches);
 
-    // Only fetch from API for real (Mongo ObjectId) founders
+                                                             
     if (!/^[a-f0-9]{24}$/i.test(founder._id)) {
       return;
     }
@@ -92,7 +89,7 @@ export default function FounderProfileModal({
       maxWidth="max-w-md sm:max-w-xl"
     >
       <div className="text-[#0A1F14]">
-        {/* Header */}
+        {            }
         <div className="flex items-center gap-3 sm:gap-4 mb-4">
           <img
             src={
@@ -128,14 +125,14 @@ export default function FounderProfileModal({
           </div>
         </div>
 
-        {/* Bio */}
+        {         }
         {founder.bio && (
           <p className="text-xs sm:text-sm text-[#0A1F14]/80 mb-4 leading-relaxed bg-[#FAFAF7] p-3 rounded-xl border border-[#1B5E3F]/10">
             {founder.bio}
           </p>
         )}
 
-        {/* Stats row */}
+        {               }
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
           <Stat icon={HiVideoCamera} label="Pitches" value={pitches.length} />
           <Stat
@@ -150,7 +147,7 @@ export default function FounderProfileModal({
           />
         </div>
 
-        {/* Action buttons */}
+        {                    }
         <div className="flex gap-2 mb-4">
           <motion.button
             onClick={onToggleFollow}
@@ -187,7 +184,7 @@ export default function FounderProfileModal({
           )}
         </div>
 
-        {/* Pitches grid — Instagram profile feel */}
+        {                                           }
         <div>
           <p className="text-[11px] uppercase tracking-wider font-bold text-[#0A1F14]/60 mb-2">
             Pitches ({pitches.length})

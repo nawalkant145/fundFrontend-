@@ -6,15 +6,12 @@ import DashboardShell from "../../components/dashboard/DashboardShell";
 import { useToast } from "../../components/ui/Toast";
 import { adminService } from "../../services/adminService";
 
-/**
- * Admin broadcast page — send push notifications (and optionally emails)
- * to all users or targeted segments (founders/investors).
- */
+                                                                                                                                               
 export default function AdminBroadcastPage() {
   const toast = useToast();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [role, setRole] = useState(""); // "" = all
+  const [role, setRole] = useState("");            
   const [sendEmail, setSendEmail] = useState(false);
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState([]);
@@ -152,7 +149,7 @@ export default function AdminBroadcastPage() {
           </motion.button>
         </form>
 
-        {/* Sent history (session-only, for quick reference) */}
+        {                                                      }
         {history.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-bold text-gray-300 mb-2">

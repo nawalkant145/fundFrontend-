@@ -1,8 +1,6 @@
 import { useRef, useEffect } from "react";
 
-/**
- * 6-digit OTP input — light theme with auto-advance and paste support.
- */
+                                                                                 
 export default function OtpInput({ value = "", onChange, length = 6 }) {
   const refs = useRef([]);
 

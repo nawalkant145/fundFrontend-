@@ -3,11 +3,7 @@ import { motion } from "framer-motion";
 import { HiPhone, HiVideoCamera, HiMicrophone, HiDesktopComputer } from "react-icons/hi";
 import { useCall } from "../../context/CallContext";
 
-/**
- * Modern Responsive Meeting Room Overlay.
- * Displays screen share / remote video in main view, local camera in floating PIP,
- * and fixed responsive meeting controls toolbar at bottom.
- */
+                                                                                                                                                                                                      
 export default function CallOverlay() {
   const {
     status,
@@ -30,7 +26,7 @@ export default function CallOverlay() {
   const mainVideoRef = useRef(null);
   const localVideoRef = useRef(null);
 
-  // Active stream to display in main view (Screen Share > Remote Stream)
+                                                                         
   const activeMainStream = isScreenSharing ? screenStream : remoteStream;
   const isMainActive = Boolean(activeMainStream && status === "connected");
 
@@ -65,7 +61,7 @@ export default function CallOverlay() {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between text-white overflow-hidden select-none">
-      {/* Dedicated audio element for remote participant audio - ALWAYS active */}
+      {                                                                          }
       {remoteStream && (
         <audio
           autoPlay
@@ -79,7 +75,7 @@ export default function CallOverlay() {
         />
       )}
 
-      {/* ─── MAIN DISPLAY AREA (Remote Video or Screen Share) ─── */}
+      {                                                              }
       <div className="absolute inset-0 flex items-center justify-center bg-[#0b141a]">
         {isMainActive ? (
           <video
@@ -140,7 +136,7 @@ export default function CallOverlay() {
         )}
       </div>
 
-      {/* ─── TOP HEADER BADGES (Fixed Center) ─── */}
+      {                                              }
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 max-w-[90vw]">
         <div className="px-4 py-1.5 bg-[#182229]/90 border border-gold/30 backdrop-blur-md rounded-full text-xs font-bold text-white shadow-xl flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -162,7 +158,7 @@ export default function CallOverlay() {
         )}
       </div>
 
-      {/* ─── FLOATING LOCAL PIP (Top Right Camera Preview) ─── */}
+      {                                                           }
       {localStream && (
         <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-40 w-28 h-40 sm:w-40 sm:h-56 rounded-2xl overflow-hidden border-2 border-gold/50 shadow-2xl bg-black/90 backdrop-blur-md">
           {cameraOff ? (
@@ -185,9 +181,9 @@ export default function CallOverlay() {
         </div>
       )}
 
-      {/* ─── RESPONSIVE CONTROLS TOOLBAR (Fixed Bottom Center) ─── */}
+      {                                                               }
       <div className="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-3 sm:gap-5 bg-[#182229]/95 border border-gold/30 backdrop-blur-xl px-5 sm:px-6 py-3 rounded-full shadow-2xl max-w-[95vw]">
-        {/* Mute Mic */}
+        {              }
         <CtrlBtn
           active={muted}
           activeBg="bg-red-500/30 text-red-400 border-red-500/50"
@@ -197,7 +193,7 @@ export default function CallOverlay() {
           label={muted ? "Unmute Mic" : "Mute Mic"}
         />
 
-        {/* Toggle Camera */}
+        {                   }
         <CtrlBtn
           active={cameraOff}
           activeBg="bg-red-500/30 text-red-400 border-red-500/50"
@@ -207,7 +203,7 @@ export default function CallOverlay() {
           label={cameraOff ? "Turn Camera On" : "Turn Camera Off"}
         />
 
-        {/* Share Screen */}
+        {                  }
         <CtrlBtn
           active={isScreenSharing}
           disabled={!canShareScreen && !isScreenSharing}
@@ -223,7 +219,7 @@ export default function CallOverlay() {
           }
         />
 
-        {/* End Call */}
+        {              }
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}

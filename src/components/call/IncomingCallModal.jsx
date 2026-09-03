@@ -2,9 +2,7 @@ import { motion } from "framer-motion";
 import { HiPhone, HiVideoCamera, HiX, HiVolumeUp } from "react-icons/hi";
 import { useCall } from "../../context/CallContext";
 
-/**
- * Full-screen incoming-call prompt with accept / decline and ringtone handling.
- */
+                                                                                          
 export default function IncomingCallModal({ info, onAccept, onDecline }) {
   const { isAutoplayBlocked, startIncomingRingtone } = useCall();
 

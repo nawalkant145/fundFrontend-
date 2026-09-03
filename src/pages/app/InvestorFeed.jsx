@@ -85,8 +85,8 @@ export default function InvestorFeed() {
   const { user } = useAuth();
   const userId = user?._id;
 
-  // Tracks the active pitch ID across array replacements.
-  // Initialised from the URL param so the correct pitch is shown on first render.
+                                                          
+                                                                                  
   const activePitchRef = useRef(
     new URLSearchParams(window.location.search).get("pitch") || null,
   );
@@ -98,7 +98,7 @@ export default function InvestorFeed() {
   const [feedLoaded, setFeedLoaded] = useState(false);
   const [idx, setIdx] = useState(0);
 
-  // Pagination state for infinite feed scrolling
+                                                 
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
@@ -107,7 +107,7 @@ export default function InvestorFeed() {
 
   const { socket } = useSocket();
 
-  // Socket sync for pitch engagement (commentCount, likes, saves)
+                                                                  
   useEffect(() => {
     if (!socket) return;
     const onEngagement = (data) => {
@@ -128,7 +128,7 @@ export default function InvestorFeed() {
     return () => socket.off("pitch:engagement", onEngagement);
   }, [socket]);
 
-  // Lock body scroll while Reel viewer is active
+                                                 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -137,8 +137,8 @@ export default function InvestorFeed() {
     };
   }, []);
 
-  // Fetch real feed on mount. Resolves active target pitch BEFORE setting feedLoading(false)
-  // so the player starts immediately at requested Pitch #N without flickering to Pitch #0.
+                                                                                             
+                                                                                           
   useEffect(() => {
     let isMounted = true;
 
@@ -169,7 +169,7 @@ export default function InvestorFeed() {
         if (foundIdx >= 0) {
           targetIdx = foundIdx;
         } else {
-          // Check ALL_MOCK_PITCHES first
+                                         
           const mockMatch = ALL_MOCK_PITCHES.find((p) => (p.pitchId || p._id) === activeId);
           if (mockMatch) {
             merged = [mockMatch, ...merged.filter((p) => (p.pitchId || p._id) !== (mockMatch.pitchId || mockMatch._id))];
@@ -218,10 +218,10 @@ export default function InvestorFeed() {
     return () => {
       isMounted = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+                                                         
   }, []);
 
-  // Fetch subsequent feed pages as the user approaches the end of loaded pitches
+                                                                                 
   const loadMorePitches = useCallback(() => {
     if (!hasMore || !nextCursor || fetchingMoreRef.current) return;
     fetchingMoreRef.current = true;
@@ -266,14 +266,14 @@ export default function InvestorFeed() {
       });
   }, [hasMore, nextCursor]);
 
-  // Auto-fetch next page when user approaches end of current pitches array
+                                                                           
   useEffect(() => {
     if (feedLoaded && hasMore && idx >= pitches.length - 2) {
       loadMorePitches();
     }
   }, [idx, pitches.length, hasMore, feedLoaded, loadMorePitches]);
 
-  // Enable slide animations for user-driven scrolling after the first pitch is presented
+                                                                                         
   useEffect(() => {
     if (!feedLoading && pitches.length > 0) {
       const timer = setTimeout(() => {
@@ -283,9 +283,9 @@ export default function InvestorFeed() {
     }
   }, [feedLoading, pitches.length]);
 
-  // Remember user's mute choice across sessions — Instagram does this too.
-  // First-time users still start muted (browser autoplay policy requires it),
-  // but a returning user who unmuted previously gets sound right away.
+                                                                           
+                                                                              
+                                                                       
   const [muted, setMuted] = useState(() => {
     if (typeof window === "undefined") return true;
     const saved = localStorage.getItem("expglo:feedMuted");
@@ -303,17 +303,17 @@ export default function InvestorFeed() {
   const [expanded, setExpanded] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
 
-  const [direction, setDirection] = useState("down"); // 'up' | 'down' for slide animation
+  const [direction, setDirection] = useState("down");                                     
 
-  // React to URL ?pitch=<id> — fires when navigating here from a profile card or sidebar.
-  // Finds the pitch, jumps to it, then strips the param so normal scrolling works.
+                                                                                          
+                                                                                   
   useEffect(() => {
     const param = searchParams.get("pitch");
     if (!param) return;
 
     activePitchRef.current = param;
 
-    // Strip the param immediately so scrolling isn't locked to this pitch
+                                                                          
     const next = new URLSearchParams(searchParams);
     next.delete("pitch");
     setSearchParams(next, { replace: true });
@@ -325,7 +325,7 @@ export default function InvestorFeed() {
       scrollToPitchIndex(found, true);
       setExpanded(false);
     } else {
-      // Pitch not in current list — add it
+                                           
       const mockMatch = ALL_MOCK_PITCHES.find((p) => (p.pitchId || p._id) === param);
       if (mockMatch) {
         setPitches((prev) => {
@@ -369,12 +369,12 @@ export default function InvestorFeed() {
           .catch(() => {});
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+                                                           
   }, [searchParams]);
 
   const pitch = pitches[idx];
 
-  // founderId may be a plain string (unpopulated ObjectId) — check founderId & founder
+                                                                                       
   const founder = pitch && typeof pitch.founderId === "object" && pitch.founderId !== null
     ? pitch.founderId
     : (pitch && typeof pitch.founder === "object" && pitch.founder !== null ? pitch.founder : {});
@@ -404,15 +404,15 @@ export default function InvestorFeed() {
     (founder?.name === "Kant" || founder?.name?.toLowerCase().includes("kant") || founder?.role === "founder")
   );
 
-  // Update activePitchRef whenever active pitch changes (only after feed has loaded)
+                                                                                     
   useEffect(() => {
     if (feedLoaded && pitch?._id) {
       activePitchRef.current = pitch._id;
     }
   }, [pitch?._id, feedLoaded]);
 
-  // Log a view when a pitch becomes active (once per pitch per session).
-  // Fires after 1.5s on the pitch so quick scroll-throughs don't count.
+                                                                         
+                                                                        
   const viewedRef = useRef(new Set());
   useEffect(() => {
     if (!pitch?._id) return;
@@ -446,8 +446,8 @@ export default function InvestorFeed() {
     }, 400);
   }, []);
 
-  // Stable navigation functions using functional setState so they never capture
-  // stale idx/pitches values regardless of when the closure was formed.
+                                                                                
+                                                                        
   const next = useCallback(() => {
     setIdx((i) => {
       const pitchCount = pitches.length;
@@ -479,8 +479,8 @@ export default function InvestorFeed() {
     });
   }, [scrollToPitchIndex]);
 
-  // Keep stable refs so gesture handlers can call the latest version without
-  // needing to be re-registered on every render.
+                                                                             
+                                                 
   const nextRef = useRef(next);
   const prevRef = useRef(prev);
   useEffect(() => { nextRef.current = next; }, [next]);
@@ -510,7 +510,7 @@ export default function InvestorFeed() {
     setActiveModal(null);
   };
 
-  // Keyboard navigation — ArrowDown / ArrowUp
+                                              
   useEffect(() => {
     const onKey = (e) => {
       if (
@@ -525,9 +525,9 @@ export default function InvestorFeed() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []); // empty deps — uses stable refs only
+  }, []);                                      
 
-  // Trackpad 2-finger wheel navigation
+                                       
   useEffect(() => {
     const el = document.getElementById("pitch-feed-wrapper") || window;
     let hardLock = false;
@@ -576,7 +576,7 @@ export default function InvestorFeed() {
     return false;
   };
 
-  // Like toggle for specific pitch
+                                   
   const toggleLikeForPitch = (targetPitch) => {
     if (!targetPitch?._id) return;
     const id = targetPitch._id;
@@ -855,7 +855,7 @@ export default function InvestorFeed() {
 
   return (
     <FeedShell>
-      {/* Outer wrapper / Reels viewport with CSS Scroll Snap */}
+      {                                                         }
       <div
         id="pitch-feed-wrapper"
         className="w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] relative p-0 m-0 gap-0 space-y-0 overscroll-contain bg-black flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth sidebar-scroll border-0 rounded-none shadow-none"
@@ -923,12 +923,12 @@ export default function InvestorFeed() {
           })
         ) : null}
 
-        {/* Infinite Loading Reel State — Only render while fetching next page */}
+        {                                                                        }
         {fetchingMore && (
           <ReelLoadingItem onInView={loadMorePitches} />
         )}
 
-        {/* Failed to Load Retry State */}
+        {                                }
         {!fetchingMore && fetchMoreError && (
           <ReelRetryItem
             onInView={() => setIdx(pitches.length - 1)}
@@ -937,7 +937,7 @@ export default function InvestorFeed() {
         )}
       </div>
 
-      {/* Modals */}
+      {            }
       {pitch && (
         <>
           <FounderProfileModal
@@ -1067,7 +1067,7 @@ function FollowButton({ active, onClick }) {
   );
 }
 
-// ─── Modals ────────────────────────────────
+                                              
 
 function ShareModal({ open, onClose, pitch }) {
   if (!pitch) return null;
@@ -1335,7 +1335,7 @@ function ReelSnapItem({
       ref={itemRef}
       className="relative w-full h-[calc(100dvh-128px)] md:h-[calc(100dvh-72px)] min-h-[calc(100dvh-128px)] md:min-h-[calc(100dvh-72px)] shrink-0 snap-start snap-always p-0 m-0 border-0 rounded-none shadow-none bg-black overflow-hidden flex items-center justify-center"
     >
-      {/* 9:16 Portrait Reel Stage centered on desktop */}
+      {                                                  }
       <div
         className="relative w-full max-w-[480px] h-full bg-black overflow-hidden pitch-reel-overlay flex-1"
         data-pitch-reel="true"
@@ -1348,10 +1348,10 @@ function ReelSnapItem({
           onDoubleTap={doubleTapLike}
         />
 
-        {/* Bottom gradient */}
+        {                     }
         <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none" />
 
-        {/* Top bar — Industry badge (top-left) + Mute toggle (top-right) */}
+        {                                                                   }
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-auto">
           <span className="px-3 py-1 bg-gold text-black text-xs font-black rounded-full uppercase shadow-md category-badge tracking-wider">
             {pitch.industry}
@@ -1369,7 +1369,7 @@ function ReelSnapItem({
           </button>
         </div>
 
-        {/* Right-Side Overlay Actions */}
+        {                                }
         <div className="absolute right-3 bottom-20 z-20 flex flex-col gap-3.5 items-center pointer-events-auto">
           <RailButton
             icon={HiHeart}
@@ -1434,9 +1434,9 @@ function ReelSnapItem({
           />
         </div>
 
-        {/* Bottom info overlay */}
+        {                         }
         <div className="absolute bottom-4 left-0 right-16 pl-4 pr-2 pb-2 z-10 pointer-events-none">
-          {/* Founder Row: Avatar + Name/Username + Follow + Message inline */}
+          {                                                                   }
           <div className="flex items-center gap-3 mb-2 pointer-events-auto flex-wrap">
             <button
               onClick={() => setActiveModal("profile")}

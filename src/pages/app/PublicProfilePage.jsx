@@ -45,14 +45,14 @@ export default function PublicProfilePage() {
   const [posts, setPosts] = useState([]);
   const [tab, setTab] = useState("pitches");
   const [followModal, setFollowModal] = useState(null);
-  // Pre-loaded lists from the public profile API to avoid a second fetch
+                                                                         
   const [followersList, setFollowersList] = useState(null);
   const [followingList, setFollowingList] = useState(null);
 
-  // Helper to construct fallback profile for mock users
+                                                        
   const getFallbackProfile = (id) => {
     const fProf = FOUNDER_PROFILES[id];
-    // Find founder in MOCK_PITCHES
+                                   
     const mockPitch = MOCK_PITCHES.find(
       (p) => p.founderId?._id === id || p.founderId === id,
     );
@@ -72,14 +72,14 @@ export default function PublicProfilePage() {
         isVerified: info?.isVerified ?? true,
         bio: fProf?.bio || "Building impactful solutions for emerging markets.",
         location: fProf?.location || "India",
-        // Use real counts from mock data only — do NOT hardcode 1240/89 as defaults
+                                                                                    
         followersCount: fProf?.followers ?? 0,
         followingCount: fProf?.following ?? 0,
         website: fProf?.website || "",
       };
     }
 
-    // Fallback profile for any mock follower/following user IDs (e.g. f1_follower_1, m_user_5, etc.)
+                                                                                                     
     if (
       id &&
       (id.startsWith("f1_") ||
@@ -138,7 +138,7 @@ export default function PublicProfilePage() {
 
     const isRealMongoId = /^[a-f0-9]{24}$/i.test(userId);
     if (!isRealMongoId) {
-      // For mock/demo profiles, use follower/following arrays from FOUNDER_PROFILES
+                                                                                    
       const fProf = FOUNDER_PROFILES[userId];
       if (fProf?.followersList) setFollowersList(fProf.followersList);
       if (fProf?.followingList) setFollowingList(fProf.followingList);
@@ -153,7 +153,7 @@ export default function PublicProfilePage() {
         const realProfile = data?.user || data;
         if (realProfile) {
           setProfile(realProfile);
-          // Pre-load followers / following lists from the populated profile
+                                                                            
           if (Array.isArray(realProfile.followers)) {
             setFollowersList(realProfile.followers);
           }
@@ -184,14 +184,14 @@ export default function PublicProfilePage() {
       .catch(() => {});
   }, [userId]);
 
-  // Redirect to own profile if viewing self
+                                            
   useEffect(() => {
     if (me?._id === userId) navigate("/app/profile", { replace: true });
   }, [me, userId, navigate]);
 
   const message = async () => {
     if (profile?.role !== "founder") {
-      // Investor messaging founder — start chat with this founder
+                                                                  
       try {
         await chatService.startChat(userId);
         navigate("/app/messages");
@@ -200,7 +200,7 @@ export default function PublicProfilePage() {
         toast.error(msg);
       }
     } else {
-      // I'm an investor messaging a founder
+                                            
       try {
         await chatService.startChat(userId);
         navigate("/app/messages");
@@ -233,7 +233,7 @@ export default function PublicProfilePage() {
 
   return (
     <DashboardShell title={null}>
-      {/* Back */}
+      {          }
       <button
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-1.5 text-sm text-[#0A1F14]/65 hover:text-[#0F4A2E] mb-4 font-semibold"
@@ -241,7 +241,7 @@ export default function PublicProfilePage() {
         <HiArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      {/* Header */}
+      {            }
       <div className="relative bg-white border border-[#1B5E3F]/12 rounded-2xl overflow-hidden mb-6">
         <div className="h-28 sm:h-40 bg-gradient-to-br from-[#1B5E3F]/20 via-[#F5B942]/20 to-[#1B5E3F]/10" />
         <div className="px-4 sm:px-5 pb-5 -mt-10 sm:-mt-12">
@@ -282,7 +282,7 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
-          {/* Counts */}
+          {            }
           <div className="flex gap-6 mt-4">
             {isFounder && (
               <div>
@@ -318,7 +318,7 @@ export default function PublicProfilePage() {
             </button>
           </div>
 
-          {/* Chips */}
+          {           }
           <div className="flex flex-wrap gap-2 mt-4">
             {profile.companyName && (
               <Chip icon={HiOfficeBuilding}>{profile.companyName}</Chip>
@@ -342,7 +342,7 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
-      {/* Content tabs */}
+      {                  }
       <div className="border-b border-[#1B5E3F]/12 mb-4 flex">
         <TabBtn
           active={tab === "pitches"}
@@ -415,7 +415,7 @@ export default function PublicProfilePage() {
                   <span className="line-clamp-6 text-xs text-[#0A1F14]/80 leading-relaxed">{p.caption}</span>
                 </div>
               )}
-              {/* Hover overlay */}
+              {                   }
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
                 <span className="inline-flex items-center gap-1">
                   <HiHeart className="w-4 h-4 text-red-400" />

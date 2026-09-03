@@ -12,15 +12,11 @@ import {
 } from "react-icons/fa";
 import { useToast } from "../ui/Toast";
 
-/**
- * Modern Instagram-style Share Sheet
- * - Mobile:  Portal bottom-sheet that sits above the bottom nav and hides it, with drag handle & body scroll lock.
- * - Desktop: Centered modal card.
- */
+                                                                                                                                                                                                        
 export default function ShareSheet({ open, onClose, title = "Share", url }) {
   const toast = useToast();
 
-  // Escape key listener
+                        
   useEffect(() => {
     if (!open) return;
     const onEsc = (e) => e.key === "Escape" && onClose?.();
@@ -28,7 +24,7 @@ export default function ShareSheet({ open, onClose, title = "Share", url }) {
     return () => document.removeEventListener("keydown", onEsc);
   }, [open, onClose]);
 
-  // Mobile body scroll lock + bottom nav hiding
+                                                
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
     if (!isMobile) return;
@@ -108,7 +104,7 @@ export default function ShareSheet({ open, onClose, title = "Share", url }) {
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  // Render sheet content
+                         
   const content = (
     <AnimatePresence>
       <motion.div
@@ -128,21 +124,21 @@ export default function ShareSheet({ open, onClose, title = "Share", url }) {
           onClick={(e) => e.stopPropagation()}
           className={[
             "w-full bg-white shadow-2xl border border-[#1B5E3F]/10 flex flex-col",
-            // Mobile: fixed bottom drawer, rounded top, max height 85vh
+                                                                        
             "fixed bottom-0 left-0 right-0 z-[80] rounded-t-3xl max-h-[85vh] overflow-y-auto p-5 sm:p-6",
-            // Desktop: centered modal box
+                                          
             "md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:w-[440px] md:rounded-3xl md:max-h-none",
           ].join(" ")}
           style={{
             paddingBottom: isMobile ? "calc(1.25rem + env(safe-area-inset-bottom, 0px))" : undefined,
           }}
         >
-          {/* Mobile drag handle indicator */}
+          {                                  }
           <div className="md:hidden flex justify-center pb-2">
             <div className="w-10 h-1 bg-gray-300 rounded-full" />
           </div>
 
-          {/* Header */}
+          {            }
           <div className="flex items-center justify-between mb-4 pb-1 border-b border-gray-100">
             <h3 className="font-black text-base text-[#0A1F14]">{title}</h3>
             <button
@@ -154,7 +150,7 @@ export default function ShareSheet({ open, onClose, title = "Share", url }) {
             </button>
           </div>
 
-          {/* Copy link box */}
+          {                   }
           <div className="bg-[#FAFAF7] border border-[#1B5E3F]/15 rounded-2xl p-3 mb-4 flex items-center gap-3">
             <span className="text-xs font-mono text-[#0A1F14]/75 truncate flex-1 select-all">
               {shareUrl}
@@ -167,7 +163,7 @@ export default function ShareSheet({ open, onClose, title = "Share", url }) {
             </button>
           </div>
 
-          {/* Social buttons grid */}
+          {                         }
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {socialButtons.map(({ label, icon: Icon, href, style }) => (
               <a
@@ -195,6 +191,6 @@ export default function ShareSheet({ open, onClose, title = "Share", url }) {
     </AnimatePresence>
   );
 
-  // Portal to document.body on mobile so it escapes overflow/stacking context
+                                                                              
   return isMobile ? createPortal(content, document.body) : content;
 }

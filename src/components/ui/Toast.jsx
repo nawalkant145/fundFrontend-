@@ -89,7 +89,7 @@ export function ToastProvider({ children }) {
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    // Fallback if used outside provider
+                                        
     return { success: alert, error: alert, info: alert, warn: alert };
   }
   return ctx;

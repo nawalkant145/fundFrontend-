@@ -1,5 +1,5 @@
-// Static mock data used across all dashboard pages.
-// When backend wires up, replace with API calls.
+                                                    
+                                                 
 
 import { getRole } from "../lib/auth";
 
@@ -62,8 +62,8 @@ const PROFILES = {
   admin: ADMIN_PROFILE,
 };
 
-// Reactively reads the active role from auth at every access.
-// Falls back to founder for previewing without login.
+                                                              
+                                                      
 export const CURRENT_USER = new Proxy(
   {},
   {
@@ -494,7 +494,7 @@ export const generateMockUsersList = (count, keyPrefix = "m_user") => {
   return list;
 };
 
-// Each founder's other / past pitches — used for the profile modal grid
+                                                                        
 export const FOUNDER_PROFILES = {
   f_1: {
     bio: "Building diagnostic AI for under-resourced clinics across South Asia.",
@@ -538,7 +538,7 @@ export const FOUNDER_PROFILES = {
         likes: Array(110).fill("x"),
       },
     ],
-    // posts will be filtered from MOCK_POSTS by authorId._id === "f_1"
+                                                                       
   },
   f_2: {
     bio: "Tokenizing carbon offsets to make climate action verifiable.",
@@ -620,7 +620,7 @@ export const FOUNDER_PROFILES = {
   },
 };
 
-// All pitches combined (main feed pitches + extra profile pitches)
+                                                                   
 export const ALL_MOCK_PITCHES = [
   ...MOCK_PITCHES,
   ...Object.values(FOUNDER_PROFILES)
@@ -628,7 +628,7 @@ export const ALL_MOCK_PITCHES = [
     .filter((p) => !MOCK_PITCHES.some((m) => m._id === p._id)),
 ];
 
-// ─── Founder posts (Instagram/LinkedIn-style) ────────────
+                                                            
 export const MOCK_POSTS = [
   {
     _id: "p_1",
@@ -751,7 +751,7 @@ export const MOCK_POSTS = [
   },
 ];
 
-// ─── Mock initial comments for demo pitches & posts ───────
+                                                             
 export const MOCK_COMMENTS = {
   v_1: [
     {
@@ -1176,11 +1176,11 @@ export function getFullMockComments(id, targetCount = 0) {
 }
 
 
-// ─── Mock active boosts ─────────────────────────────
+                                                       
 export const MOCK_BOOSTS = [
   {
     _id: "b_1",
-    pitchId: "v_2", // GreenChain
+    pitchId: "v_2",              
     founderId: "f_2",
     tier: "pro",
     amountPaid: 1499,
@@ -1191,7 +1191,7 @@ export const MOCK_BOOSTS = [
   },
 ];
 
-// ─── Boost pricing tiers ────────────────────────────
+                                                       
 export const BOOST_TIERS = [
   {
     id: "mini",
@@ -1238,7 +1238,7 @@ export const BOOST_TIERS = [
   },
 ];
 
-// ─── Subscription plan (EXPGLO Pro) ────────────────
+                                                      
 export const SUBSCRIPTION_PLAN = {
   id: "pro",
   name: "EXPGLO Pro",
@@ -1254,7 +1254,7 @@ export const SUBSCRIPTION_PLAN = {
   ],
 };
 
-// ─── Role-specific subscription plans ──────────────
+                                                      
 export const INVESTOR_PLAN = {
   id: "investor-pro",
   role: "investor",
@@ -1362,8 +1362,8 @@ export const FOUNDER_PLAN = {
   ],
 };
 
-// Returns the plan that applies to a given role
+                                                
 export function getPlanForRole(role) {
   if (role === "founder") return FOUNDER_PLAN;
-  return INVESTOR_PLAN; // default to investor for everyone else
+  return INVESTOR_PLAN;                                         
 }

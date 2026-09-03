@@ -18,13 +18,7 @@ import { useUploadModal } from "../../context/UploadModalContext";
 import UploadPitchModal from "./UploadPitchModal";
 import UploadPostModal from "./UploadPostModal";
 
-/**
- * Standard EXPGLO FUND Dashboard Shell matching Figma specification.
- * - Header: Fixed at top (h-16 / 64px)
- * - Left Sidebar: Stationary (~280px), height calc(100vh - 64px)
- * - Right Sidebar: Stationary (~360-380px) on desktop (lg:block), Slide-in drawer on mobile (lg:hidden) via Dollar ($) icon button
- * - Main Center: Scrollable container
- */
+                                                                                                                                                                                                                                                                                                                                                                        
 export default function DashboardShell({
   children,
   title,
@@ -67,13 +61,13 @@ export default function DashboardShell({
       data-light-app="true"
       className="bg-[#F8FAFC] text-[#0F172A] h-dvh max-h-dvh w-screen max-w-full overflow-hidden flex flex-col relative antialiased"
     >
-      {/* 1. Fixed Header (TopBar ~72px) */}
+      {                                    }
       <TopBar
         onMenuClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
         onRightSidebarClick={() => setMobileRightSidebarOpen(!mobileRightSidebarOpen)}
       />
 
-      {/* 2. Main Body Container (Below 72px Header) */}
+      {                                                }
       <div
         className={`flex-1 min-h-0 h-[calc(100dvh-72px)] w-full flex relative overflow-hidden ${
           fullWidth
@@ -81,12 +75,12 @@ export default function DashboardShell({
             : "max-w-[1440px] mx-auto w-full gap-5 xl:gap-6 px-4 sm:px-6"
         }`}
       >
-        {/* Desktop Left Sidebar (Constant 280px width) */}
+        {                                                 }
         <div className="hidden md:block w-[280px] min-w-[280px] max-w-[280px] shrink-0 flex-none h-full">
           <Sidebar mode={resolvedMode} />
         </div>
 
-        {/* Mobile Left Sidebar Overlay Drawer */}
+        {                                        }
         {mobileSidebarOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
             <div
@@ -99,10 +93,10 @@ export default function DashboardShell({
           </div>
         )}
 
-        {/* Upload progress indicator */}
+        {                               }
         <UploadProgressBar />
 
-        {/* Center Main Content Container */}
+        {                                   }
         <div
           className={`flex-1 min-w-0 h-full ${
             noScroll
@@ -133,7 +127,7 @@ export default function DashboardShell({
           )}
         </div>
 
-        {/* Desktop Right Sidebar (Stationary, visible on lg screens and above when present) */}
+        {                                                                                      }
         {effectiveRightSidebar && (
           <div className="hidden lg:block w-[340px] xl:w-[350px] shrink-0 h-full overflow-y-auto sidebar-scroll py-5 space-y-5">
             {effectiveRightSidebar}
@@ -141,11 +135,11 @@ export default function DashboardShell({
         )}
       </div>
 
-      {/* Mobile Right Sidebar Overlay Slide-in Drawer (< lg screens) */}
+      {                                                                 }
       <AnimatePresence>
         {mobileRightSidebarOpen && (
           <div className="lg:hidden fixed inset-0 z-50 flex justify-end">
-            {/* Backdrop */}
+            {              }
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -155,7 +149,7 @@ export default function DashboardShell({
               onClick={() => setMobileRightSidebarOpen(false)}
             />
 
-            {/* Drawer Container */}
+            {                      }
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -163,7 +157,7 @@ export default function DashboardShell({
               transition={{ type: "spring", damping: 25, stiffness: 250 }}
               className="relative w-[340px] sm:w-[380px] max-w-[90vw] bg-[#F8FAFC] h-full shadow-2xl z-50 flex flex-col border-l border-[#E2E8F0]"
             >
-              {/* Header with Title + Close (X) Button */}
+              {                                          }
               <div className="p-4 bg-white border-b border-[#E2E8F0] flex items-center justify-between shrink-0 shadow-xs">
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl leading-none shrink-0">💰</span>
@@ -185,7 +179,7 @@ export default function DashboardShell({
                 </button>
               </div>
 
-              {/* Scrollable Right Sidebar Content */}
+              {                                      }
               <div className="flex-1 overflow-y-auto sidebar-scroll p-4 space-y-5 overscroll-contain">
                 {effectiveRightSidebar}
               </div>
@@ -194,10 +188,10 @@ export default function DashboardShell({
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {                                  }
       <BottomBar mode={resolvedMode} />
 
-      {/* Global Modals */}
+      {                   }
       <UploadPitchModal open={pitchOpen} onClose={closePitchModal} />
       <UploadPostModal open={postOpen} onClose={closePostModal} />
     </div>

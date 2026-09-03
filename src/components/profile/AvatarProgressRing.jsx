@@ -28,13 +28,13 @@ export default function AvatarProgressRing({
         className="relative flex items-center justify-center transition-transform duration-200 group-hover:scale-[1.03]"
         style={{ width: size, height: size }}
       >
-        {/* SVG Progress Ring */}
+        {                       }
         <svg
           width={size}
           height={size}
           className="transform -rotate-90 overflow-visible"
         >
-          {/* Track (Light Gray Track) */}
+          {                              }
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -43,7 +43,7 @@ export default function AvatarProgressRing({
             strokeWidth={strokeWidth}
             fill="transparent"
           />
-          {/* Animated Dark Green Progress Stroke (#0F4A2E) */}
+          {                                                   }
           {hasPercentage && (
             <motion.circle
               cx={size / 2}
@@ -61,7 +61,7 @@ export default function AvatarProgressRing({
           )}
         </svg>
 
-        {/* User Avatar Circle */}
+        {                        }
         <div
           className="absolute rounded-full overflow-hidden border-2 border-white shadow-md bg-[#0F4A2E] text-white-force font-bold flex items-center justify-center"
           style={{
@@ -87,14 +87,14 @@ export default function AvatarProgressRing({
           )}
         </div>
 
-        {/* Verified Badge Overlay (Bottom-Right) */}
+        {                                           }
         {isVerified && (
           <div className="absolute bottom-2 right-1 bg-white rounded-full p-0.5 shadow-xs z-10">
             <MdVerified className="w-5 h-5 text-[#0F4A2E]" />
           </div>
         )}
 
-        {/* Percentage Badge Pill overlapping bottom of the ring */}
+        {                                                          }
         {hasPercentage ? (
           <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 bg-[#0F4A2E] text-white-force text-[11px] font-extrabold px-3 py-0.5 rounded-full shadow-md border border-white/20">
             <span className="text-white-force" style={{ color: "#ffffff" }}>

@@ -12,12 +12,12 @@ export const videoService = {
     });
   },
 
-  // Upload with progress callback (used by the global UploadContext)
+                                                                     
   uploadWithProgress: (formData, { onProgress, signal } = {}) => {
     return api.post("/video/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
       signal,
-      timeout: 5 * 60 * 1000, // 5 min timeout for large videos
+      timeout: 5 * 60 * 1000,                                  
       onUploadProgress: (e) => {
         if (e.total) {
           const pct = Math.round((e.loaded / e.total) * 100);

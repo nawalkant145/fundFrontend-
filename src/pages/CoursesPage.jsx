@@ -355,10 +355,10 @@ export default function CoursesPage() {
     currentUser = null;
   }
 
-  // Modals state
+                 
   const [selectedPreview, setSelectedPreview] = useState(null);
   const [selectedEnroll, setSelectedEnroll] = useState(null);
-  const [payState, setPayState] = useState("idle"); // 'idle' | 'creating_order' | 'checkout_open' | 'verification' | 'success' | 'guest_success' | 'failed'
+  const [payState, setPayState] = useState("idle");                                                                                                         
   const [payErrorMessage, setPayErrorMessage] = useState("");
   const [activeModule, setActiveModule] = useState(0);
   const [dbCourses, setDbCourses] = useState([]);
@@ -461,13 +461,13 @@ export default function CoursesPage() {
     setPayErrorMessage("");
   };
 
-  // Formats price for display — DB courses have numeric price, fallback courses have "₹299" string
+                                                                                                   
   const formatCoursePrice = (course) => {
     if (!course) return "";
     if (typeof course.price === "number") {
       return course.price === 0 ? "Free" : `₹${course.price}`;
     }
-    return course.price || ""; // already formatted string from fallback
+    return course.price || "";                                          
   };
 
   const loadRazorpayScript = () => {
@@ -576,7 +576,7 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-white text-[#0A1F14] overflow-x-hidden">
-      {/* Soft brand glows */}
+      {                      }
       <div className="fixed inset-0 pointer-events-none -z-0">
         <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-[#1B5E3F]/[0.06] rounded-full blur-[160px]" />
         <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-[#F5B942]/[0.10] rounded-full blur-[180px]" />
@@ -584,7 +584,7 @@ export default function CoursesPage() {
 
       <PublicNav />
 
-      {/* HERO */}
+      {          }
       <section className="pt-32 sm:pt-40 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
@@ -646,7 +646,7 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* WHY */}
+      {         }
       <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-[#FAFAF7] border-y border-[#1B5E3F]/8 relative z-10">
         <div className="max-w-6xl mx-auto">
           <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-3">
@@ -680,7 +680,7 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* COURSES GRID */}
+      {                  }
       <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
           <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-3">
@@ -814,7 +814,7 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* ─── COURSE PREVIEW MODAL ───────────────────────── */}
+      {                                                        }
       <AnimatePresence>
         {selectedPreview && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -831,7 +831,7 @@ export default function CoursesPage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden z-10 my-8 max-h-[90vh] flex flex-col"
             >
-              {/* Header */}
+              {            }
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#1B5E3F]/10 bg-[#FAFAF7]">
                 <div className="flex items-center gap-3">
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${selectedPreview.badgeColor}`}>
@@ -850,9 +850,9 @@ export default function CoursesPage() {
                 </button>
               </div>
 
-              {/* Modal Body */}
+              {                }
               <div className="overflow-y-auto overscroll-contain p-6 space-y-6 flex-1">
-                {/* Video Player */}
+                {                  }
                 <div className="relative rounded-2xl overflow-hidden bg-black aspect-video shadow-lg border border-[#1B5E3F]/15">
                   <video
                     controls
@@ -869,7 +869,7 @@ export default function CoursesPage() {
                   </video>
                 </div>
 
-                {/* Info Bar */}
+                {              }
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#1B5E3F]/5 border border-[#1B5E3F]/10 text-center">
                   <div>
                     <span className="text-xs text-[#0A1F14]/50 block">Rating</span>
@@ -891,7 +891,7 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                {/* Syllabus */}
+                {              }
                 <div>
                   <h4 className="font-black text-lg mb-3 flex items-center gap-2 text-[#0A1F14]">
                     <HiBookOpen className="w-5 h-5 text-[#1B5E3F]" />
@@ -928,7 +928,7 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                {/* Instructor Details */}
+                {                        }
                 <div className="p-4 rounded-2xl border border-[#1B5E3F]/10 bg-[#FAFAF7] flex items-center gap-4">
                   <img
                     src={selectedPreview.thumbnail}
@@ -943,7 +943,7 @@ export default function CoursesPage() {
                 </div>
               </div>
 
-              {/* Modal Footer */}
+              {                  }
               <div className="p-4 sm:p-6 border-t border-[#1B5E3F]/10 bg-[#FAFAF7] flex items-center justify-between gap-4">
                 <div>
                   <span className="text-2xl font-black text-[#0F4A2E]">{formatCoursePrice(selectedPreview)}</span>
@@ -972,7 +972,7 @@ export default function CoursesPage() {
         )}
       </AnimatePresence>
 
-      {/* ─── COURSE ENROLLMENT MODAL ────────────────────── */}
+      {                                                        }
       <AnimatePresence>
         {selectedEnroll && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto overscroll-contain">
@@ -1132,7 +1132,7 @@ export default function CoursesPage() {
                     </p>
                   </div>
 
-                  {/* Pricing Breakdown */}
+                  {                       }
                   <div className="p-4 rounded-2xl bg-[#FAFAF7] border border-[#1B5E3F]/10 space-y-2.5">
                     <div className="flex justify-between text-xs text-[#0A1F14]/70">
                       <span>Course Price</span>
@@ -1148,7 +1148,7 @@ export default function CoursesPage() {
                     </div>
                   </div>
 
-                  {/* Guarantee & Features */}
+                  {                          }
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs font-semibold text-[#0F4A2E]">
                       <HiShieldCheck className="w-4 h-4 text-[#F5B942]" />
@@ -1160,14 +1160,14 @@ export default function CoursesPage() {
                     </div>
                   </div>
 
-                  {/* Account state alert */}
+                  {                         }
                   {!currentUser && (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
                       <strong>Guest Purchase:</strong> You will be prompted to create or sign in to your Expglo account after payment confirmation.
                     </div>
                   )}
 
-                  {/* Submit Button */}
+                  {                   }
                   <button
                     type="button"
                     disabled={payState !== "idle"}
@@ -1184,7 +1184,7 @@ export default function CoursesPage() {
         )}
       </AnimatePresence>
 
-      {/* CTA */}
+      {         }
       <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0F4A2E] via-[#1B5E3F] to-[#0F4A2E] text-white relative overflow-hidden">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-[#F5B942]/15 rounded-full blur-[140px]" />
         <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-[#F5B942]/10 rounded-full blur-[160px]" />

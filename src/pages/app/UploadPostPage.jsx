@@ -24,8 +24,8 @@ export default function UploadPostPage() {
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
   const initialType = searchParams.get("type") === "text" ? "text" : "images";
-  const [type, setType] = useState(initialType); // 'images' | 'text'
-  const [images, setImages] = useState([]); // [{ file, preview }]
+  const [type, setType] = useState(initialType);                     
+  const [images, setImages] = useState([]);                       
   const [caption, setCaption] = useState("");
   const [link, setLink] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -80,9 +80,9 @@ export default function UploadPostPage() {
         onSubmit={handleSubmit}
         className="grid lg:grid-cols-[1fr_360px] gap-6"
       >
-        {/* Left — composer */}
+        {                     }
         <div className="space-y-5">
-          {/* Type toggle */}
+          {                 }
           <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1">
             <button
               type="button"
@@ -108,7 +108,7 @@ export default function UploadPostPage() {
             </button>
           </div>
 
-          {/* Image dropzone + grid */}
+          {                           }
           {type === "images" && (
             <div>
               <div
@@ -181,7 +181,7 @@ export default function UploadPostPage() {
             </div>
           )}
 
-          {/* Caption */}
+          {             }
           <div>
             <label className="flex items-center justify-between text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
               <span>Caption</span>
@@ -202,7 +202,7 @@ export default function UploadPostPage() {
             />
           </div>
 
-          {/* Link */}
+          {          }
           <div>
             <label className="block text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
               External link (optional)
@@ -219,7 +219,7 @@ export default function UploadPostPage() {
             </div>
           </div>
 
-          {/* Hashtags */}
+          {              }
           <div>
             <label className="block text-sm font-semibold mb-1.5 text-[#0A1F14]/85">
               Hashtags (comma-separated)
@@ -250,7 +250,7 @@ export default function UploadPostPage() {
           </motion.button>
         </div>
 
-        {/* Right — preview card */}
+        {                          }
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0A1F14]/55 mb-3">
             Live preview

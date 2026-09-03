@@ -51,7 +51,7 @@ export default function LoginPage() {
       });
       const role = data.user?.role || userType;
 
-      // Check for pending guest course purchase claim
+                                                      
       const pendingClaimToken = sessionStorage.getItem("expglo_pending_purchase");
       if (pendingClaimToken && ["founder", "investor"].includes(role)) {
         try {
@@ -88,7 +88,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell maxWidth="max-w-3xl">
-      {/* Header */}
+      {            }
       <div className="text-center mb-6">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-2 leading-tight tracking-tight">
           Welcome back to{" "}
@@ -122,11 +122,11 @@ export default function LoginPage() {
                 icon={<IoRocketSharp className="w-7 h-7 text-[#0F4A2E]" />}
                 description="Pitch your startup. Connect with investors. Close your round."
                 accent="gold"
-                // bullets={[
-                //   "Access fundraising dashboard",
-                //   "Pitch deck & deal room tools",
-                //   "Connect with verified investors",
-                // ]}
+                             
+                                                    
+                                                    
+                                                       
+                     
                 onClick={() => setUserType("founder")}
               />
               <RoleCard
@@ -134,11 +134,11 @@ export default function LoginPage() {
                 icon={<HiTrendingUp className="w-7 h-7 text-[#0F4A2E]" />}
                 description="Discover promising startups. Back the next big thing."
                 accent="green"
-                // bullets={[
-                //   "Browse startup deal flow",
-                //   "Direct founder messaging",
-                //   "Portfolio tracking & analytics",
-                // ]}
+                             
+                                                
+                                                
+                                                      
+                     
                 onClick={() => setUserType("investor")}
               />
             </div>
@@ -216,35 +216,8 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Social Login Divider & Buttons */}
-            {/* <div className="relative my-6 text-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#1B5E3F]/15" />
-              </div>
-              <div className="relative inline-block px-3 bg-white text-xs font-bold uppercase tracking-wider text-[#0A1F14]/50">
-                Or continue with
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleSocialLogin("google")}
-                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white border border-[#1B5E3F]/20 hover:border-[#1B5E3F]/50 hover:bg-[#FAFAF7] rounded-xl text-sm font-bold text-[#0A1F14] shadow-sm transition-all cursor-pointer"
-              >
-                <FcGoogle className="w-5 h-5 flex-shrink-0" />
-                <span>Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSocialLogin("linkedin")}
-                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white border border-[#1B5E3F]/20 hover:border-[#1B5E3F]/50 hover:bg-[#FAFAF7] rounded-xl text-sm font-bold text-[#0A1F14] shadow-sm transition-all cursor-pointer"
-              >
-                <FaLinkedin className="w-5 h-5 text-[#0A66C2] flex-shrink-0" />
-                <span>LinkedIn</span>
-              </button>
-            </div> */}
+            {                                    }
+            {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }
           </motion.div>
         )}
       </AnimatePresence>

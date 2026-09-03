@@ -47,9 +47,9 @@ export default function VerificationStatusCard({ user }) {
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-5 sm:space-y-6 max-w-full overflow-hidden">
-      {/* Header matching reference image */}
+      {                                     }
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Left: Shield Icon + Verification Tier Title + LEVEL badge */}
+        {                                                               }
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0F4A2E] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#F5B942]/20">
             <HiShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-[#F5B942]" />
@@ -67,7 +67,7 @@ export default function VerificationStatusCard({ user }) {
           </div>
         </div>
 
-        {/* Right: Profile Completeness + Progress bar + Keep going helper text */}
+        {                                                                         }
         <div className="w-full sm:w-64">
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-xs font-semibold text-[#0F172A]">Profile Completeness</span>
@@ -93,14 +93,14 @@ export default function VerificationStatusCard({ user }) {
         </div>
       </div>
 
-      {/* Level Rows matching reference image */}
+      {                                         }
       {loading ? (
         <div className="py-6 flex justify-center">
           <div className="w-6 h-6 border-2 border-[#0F4A2E] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="space-y-3">
-          {/* L1 Row */}
+          {            }
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-8 h-8 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-bold text-xs flex items-center justify-center border border-[#A5D6A7] shrink-0">
@@ -116,7 +116,7 @@ export default function VerificationStatusCard({ user }) {
             </div>
           </div>
 
-          {/* L2 Row */}
+          {            }
           <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -146,7 +146,7 @@ export default function VerificationStatusCard({ user }) {
               </div>
             </div>
 
-            {/* 4-Stage Stepper Timeline for Active Submissions */}
+            {                                                     }
             {(user?.kycStatus === "pending" || user?.kycStatus === "under_review" || user?.kycStatus === "resubmitted" || user?.kycStatus === "rejected") && (
               <div className="pt-2 border-t border-slate-100 space-y-2">
                 <div className="grid grid-cols-4 gap-1 text-center">
@@ -186,7 +186,7 @@ export default function VerificationStatusCard({ user }) {
             )}
           </div>
 
-          {/* L3 Row (Founder) */}
+          {                      }
           {user?.role === "founder" && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
               <div className="flex items-center gap-3 min-w-0">
@@ -211,7 +211,7 @@ export default function VerificationStatusCard({ user }) {
             </div>
           )}
 
-          {/* L4 Row (Investor) */}
+          {                       }
           {user?.role === "investor" && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
               <div className="flex items-center gap-3 min-w-0">

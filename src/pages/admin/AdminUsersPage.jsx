@@ -40,7 +40,7 @@ export default function AdminUsersPage() {
   const [suspending, setSuspending] = useState(null);
   const [selected, setSelected] = useState(new Set());
 
-  // Map UI filter → API params
+                               
   const fetchUsers = () => {
     setLoading(true);
     const params = { limit: 50 };
@@ -62,11 +62,11 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false));
   };
 
-  // Debounced fetch on filter/query change
+                                           
   useEffect(() => {
     const t = setTimeout(fetchUsers, query ? 400 : 0);
     return () => clearTimeout(t);
-    // eslint-disable-next-line
+                               
   }, [filter, query]);
 
   const ban = (id, reason) => {
@@ -129,7 +129,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Revoke verified badge
+                          
   const revokeVerified = (id) => {
     setUsers((p) =>
       p.map((x) => (x._id === id ? { ...x, isVerified: false } : x)),
@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
     toast.info("Verified badge revoked");
   };
 
-  // ─── Bulk actions ──────────────────────────
+                                                
   const toggleSelect = (id) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -251,7 +251,7 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Bulk action toolbar */}
+      {                         }
       {selected.size > 0 && (
         <div className="bg-gold/10 border-2 border-gold/30 rounded-2xl p-3 mb-4 flex items-center gap-3 flex-wrap">
           <span className="text-sm font-bold text-gold">
@@ -482,7 +482,7 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* View modal */}
+      {                }
       <Modal
         open={!!viewing}
         onClose={() => setViewing(null)}
@@ -543,35 +543,35 @@ export default function AdminUsersPage() {
         )}
       </Modal>
 
-      {/* Edit modal */}
+      {                }
       <EditModal
         user={editing}
         onClose={() => setEditing(null)}
         onSave={(changes) => saveEdit(editing._id, changes)}
       />
 
-      {/* Reset password modal */}
+      {                          }
       <ResetModal
         user={resetting}
         onClose={() => setResetting(null)}
         onConfirm={(pw) => resetPw(resetting._id, pw)}
       />
 
-      {/* Ban reason modal */}
+      {                      }
       <BanModal
         user={banning}
         onClose={() => setBanning(null)}
         onConfirm={(reason) => ban(banning._id, reason)}
       />
 
-      {/* Suspend modal */}
+      {                   }
       <SuspendModal
         user={suspending}
         onClose={() => setSuspending(null)}
         onConfirm={(days, reason) => suspend(suspending._id, days, reason)}
       />
 
-      {/* Promote confirm */}
+      {                     }
       <Confirm
         open={!!promoting}
         onClose={() => setPromoting(null)}
@@ -581,7 +581,7 @@ export default function AdminUsersPage() {
         confirmLabel="Promote to admin"
       />
 
-      {/* Delete confirm */}
+      {                    }
       <Confirm
         open={!!deleting}
         onClose={() => setDeleting(null)}

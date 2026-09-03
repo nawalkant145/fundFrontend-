@@ -8,18 +8,14 @@ import {
 import { videoService } from "../services/videoService";
 import { useToast } from "../components/ui/Toast";
 
-/**
- * Global upload context — YouTube-style background uploader.
- * The upload continues even when the user navigates away from the upload page.
- * A persistent mini progress bar shows in the sidebar/bottom bar.
- */
+                                                                                                                                                                                                                            
 const UploadContext = createContext(null);
 
 export function UploadProvider({ children }) {
-  // Current upload state
+                         
   const [uploadState, setUploadState] = useState(null);
-  // { status: 'uploading' | 'processing' | 'done' | 'error',
-  //   progress: 0-100, title, error }
+                                                             
+                                      
   const abortRef = useRef(null);
   const toast = useToast();
 
@@ -38,11 +34,11 @@ export function UploadProvider({ children }) {
       });
 
       try {
-        // Create an AbortController so user can cancel
+                                                       
         const controller = new AbortController();
         abortRef.current = controller;
 
-        // Upload with progress tracking via Axios onUploadProgress
+                                                                   
         const fd = new FormData();
         fd.append("video", videoFile);
         Object.entries(metadata).forEach(([key, val]) => {
@@ -62,7 +58,7 @@ export function UploadProvider({ children }) {
           signal: controller.signal,
         });
 
-        // Upload and server processing complete
+                                                
         setUploadState((prev) => ({
           ...prev,
           status: "done",
@@ -70,7 +66,7 @@ export function UploadProvider({ children }) {
         }));
         toast?.success("Pitch uploaded successfully! 🎉");
 
-        // Keep completion state visible for 4s before clearing
+                                                               
         setTimeout(() => {
           setUploadState((prev) => (prev?.status === "done" ? null : prev));
         }, 4000);

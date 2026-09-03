@@ -4,11 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HiX, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import { useUpload } from "../../context/UploadContext";
 
-/**
- * Persistent mini upload progress bar.
- * Rendered at document root via React Portal at z-[100001] so it stays
- * clearly visible above all modals, overlays, and sidebars across all pages.
- */
+                                                                                                                                                                                                         
 export default function UploadProgressBar() {
   const { uploadState, cancelUpload, dismissUpload } = useUpload();
   const [mounted, setMounted] = useState(false);
@@ -45,10 +41,10 @@ export default function UploadProgressBar() {
         exit={{ y: 20, opacity: 0 }}
         className="upload-progress-bar"
       >
-        {/* Desktop version — bottom-left corner, z-[100001] above modal overlays */}
+        {                                                                           }
         <div className="hidden md:block fixed bottom-6 left-6 z-[100001] w-[290px] pointer-events-auto">
           <div className="bg-white rounded-xl shadow-2xl border border-[#1B5E3F]/15 overflow-hidden">
-            {/* Progress bar track */}
+            {                        }
             <div className="h-1.5 w-full bg-gray-100 relative">
               <motion.div
                 className={`h-full ${statusColor} rounded-r-full`}
@@ -61,7 +57,7 @@ export default function UploadProgressBar() {
             </div>
 
             <div className="px-3.5 py-3 flex items-center gap-2.5">
-              {/* Status icon */}
+              {                 }
               {status === "done" ? (
                 <HiCheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
               ) : status === "error" ? (
@@ -80,7 +76,7 @@ export default function UploadProgressBar() {
                 )}
               </div>
 
-              {/* Cancel/dismiss button */}
+              {                           }
               <button
                 onClick={status === "uploading" ? cancelUpload : dismissUpload}
                 className="p-1 text-[#0A1F14]/40 hover:text-red-500 transition-colors flex-shrink-0"
@@ -92,10 +88,10 @@ export default function UploadProgressBar() {
           </div>
         </div>
 
-        {/* Mobile version — z-[100001] above modal overlays & bottom bar */}
+        {                                                                   }
         <div className="md:hidden fixed bottom-16 left-3 right-3 z-[100001] pointer-events-auto">
           <div className="bg-white rounded-xl shadow-2xl border border-[#1B5E3F]/15 overflow-hidden">
-            {/* Progress bar track */}
+            {                        }
             <div className="h-1.5 w-full bg-gray-100 relative">
               <motion.div
                 className={`h-full ${statusColor} rounded-r-full`}

@@ -2,15 +2,11 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import PublicNav from "../public/PublicNav";
 
-/**
- * Shared layout for all auth pages — white premium look matching the
- * landing page. Frosted nav on top, soft brand glows behind, and a
- * clean white card with subtle ring + shadow for the form itself.
- */
+                                                                                                                                                                                                                        
 export default function AuthShell({ children, maxWidth = "max-w-2xl" }) {
   return (
     <div className="min-h-screen bg-white text-[#0A1F14] relative overflow-hidden">
-      {/* Soft brand glows */}
+      {                      }
       <div className="fixed inset-0 pointer-events-none -z-0">
         <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-[#1B5E3F]/[0.07] rounded-full blur-[160px]" />
         <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-[#F5B942]/[0.10] rounded-full blur-[180px]" />

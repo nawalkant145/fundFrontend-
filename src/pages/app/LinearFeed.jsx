@@ -59,18 +59,11 @@ import { useUploadModal } from "../../context/UploadModalContext";
 import { MOCK_PITCHES, ALL_MOCK_PITCHES, MOCK_POSTS, formatINR } from "../../constants/mockData";
 import { canStartChat, consumeFreeChat, getRole } from "../../lib/auth";
 
-/**
- * LinkedIn / Instagram-style linear feed.
- * Mixes pitch cards and post cards into one chronological timeline.
- * Boosted pitches are pinned to the top.
- *
- * Used by both investors and founders. Founders skip their own content
- * (mocked as f_1) and don't see the "Express Interest" pill on pitches.
- */
+                                                                                                                                                                                                                                                                                                                            
 export default function LinearFeed() {
   const { user, loading: authLoading } = useAuth();
-  // Wait for auth to resolve — during loading user is null which would
-  // incorrectly mark the session as investor and hide the composer card.
+                                                                       
+                                                                         
   const role = authLoading ? null : (user?.role || getRole() || "investor");
   const isFounder = role === "founder";
   const userId = user?._id;
@@ -112,7 +105,7 @@ export default function LinearFeed() {
       .finally(done);
   };
 
-  // Fetch real pitches + posts on mount; fall back to mock data if API fails
+                                                                             
   useEffect(() => {
     loadFeedData();
 
@@ -129,8 +122,8 @@ export default function LinearFeed() {
     };
   }, []);
 
-  // Disable browser scroll-restoration so refresh always lands at the top
-  // of the feed (Instagram/TikTok behaviour).
+                                                                          
+                                              
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
       const previous = window.history.scrollRestoration;
@@ -143,18 +136,18 @@ export default function LinearFeed() {
     window.scrollTo(0, 0);
   }, []);
 
-  // Shared mute state across all feed videos.
-  // ALWAYS start muted on page load (browser autoplay policy requires it).
-  // User can unmute by clicking — that persists until next page load.
-  // Instagram does the same: videos always start muted on refresh.
+                                              
+                                                                           
+                                                                      
+                                                                   
   const [muted, setMuted] = useState(true);
   const setMutedPersistent = (next) => {
     setMuted(next);
   };
 
   const items = useMemo(() => {
-    // Use actual logged-in user's ID (not hardcoded f_1)
-    // Only filter out own content if user is a real logged-in founder with a known ID
+                                                         
+                                                                                      
     const ownId = isFounder && userId ? userId : null;
 
     const pitchSource = [...(realPitches || [])];
@@ -195,14 +188,14 @@ export default function LinearFeed() {
       }));
 
     const merged = [...pitchEntries, ...postEntries].sort((a, b) => {
-      // Boosted always first
+                             
       if (a.boosted && !b.boosted) return -1;
       if (!a.boosted && b.boosted) return 1;
-      // Then most recent
+                         
       return b.ts - a.ts;
     });
 
-    // Deduplicate by item ID to guarantee no duplicate cards
+                                                             
     const seen = new Set();
     return merged.filter((item) => {
       if (seen.has(item.id)) return false;
@@ -265,12 +258,12 @@ export default function LinearFeed() {
   return (
     <DashboardShell rightSidebar={rightSidebarContent}>
       <div className="w-full max-w-[680px] mx-auto space-y-5">
-        {/* Mobile / Tablet ONLY (< lg screens) for Investors: Dynamic Funding Summary Bar + Navigation Tabs */}
+        {                                                                                                      }
         {!isFounder && (
           <div className="lg:hidden sticky top-0 z-20 bg-[#F8FAFC] pt-3 pb-2 -mt-2 space-y-3">
             <FundingSummaryBar />
 
-            {/* Navigation Tabs Bar */}
+            {                         }
             <div className="w-full bg-[#F1F5F9] p-1 sm:p-1.5 rounded-2xl border border-[#E2E8F0] flex items-center justify-between text-xs font-bold gap-1 shadow-2xs">
               <button
                 type="button"
@@ -309,13 +302,13 @@ export default function LinearFeed() {
           </div>
         )}
 
-        {/* TAB 1: ALL POSTS (Shown when activeTab is "all" on mobile, or ALWAYS on desktop) */}
+        {                                                                                      }
         {(activeTab === "all" || window.innerWidth >= 1024) && (
           <div className={activeTab !== "all" ? "hidden lg:block space-y-5" : "space-y-5"}>
           <>
-            {/* Composer for founders and investors */}
+            {                                         }
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
-              {/* Top row: Avatar + Pill input link */}
+              {                                       }
               <div className="flex items-center gap-3 pb-3 border-b border-[#E2E8F0]">
                 <Link to="/app/profile" className="flex-shrink-0">
                   <img
@@ -337,7 +330,7 @@ export default function LinearFeed() {
                 </button>
               </div>
 
-              {/* Bottom row: Quick action links */}
+              {                                    }
               <div className="flex items-center gap-1 sm:gap-2 pt-2.5">
                 <button
                   type="button"
@@ -424,7 +417,7 @@ export default function LinearFeed() {
           </div>
         )}
 
-        {/* TAB 2: DISCOVER & EVENTS */}
+        {                              }
         {activeTab === "discover" && (
           <div className="space-y-5">
             <TrendingPitchesCard />
@@ -434,7 +427,7 @@ export default function LinearFeed() {
           </div>
         )}
 
-        {/* TAB 3: FUNDING IMPACT */}
+        {                           }
         {activeTab === "impact" && (
           <div className="space-y-5">
             <FundingImpactCard />
@@ -451,7 +444,7 @@ export default function LinearFeed() {
   );
 }
 
-// ─── PITCH CARD ──────────────────────────────────
+                                                    
 function PitchFeedCard({
   pitch,
   boosted,
@@ -511,21 +504,21 @@ function PitchFeedCard({
     }
   };
 
-  // Log a view once when this pitch first comes into view (real pitches only)
+                                                                              
   const logViewOnce = () => {
     if (viewLoggedRef.current) return;
     const id = pitch._id;
-    if (!id || !/^[a-f0-9]{24}$/i.test(id)) return; // skip mock ids
+    if (!id || !/^[a-f0-9]{24}$/i.test(id)) return;                 
     viewLoggedRef.current = true;
     videoService.logView(id, {}).catch(() => {});
   };
 
-  // Sync muted DOM property (React doesn't do this reliably)
+                                                             
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
-  // Single stable effect for IntersectionObserver — no deps that change
+                                                                        
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
@@ -556,7 +549,7 @@ function PitchFeedCard({
     );
     observer.observe(node);
 
-    // Tab visibility
+                     
     const onVis = () => {
       if (document.hidden) pause();
       else if (inViewRef.current) play();
@@ -618,7 +611,7 @@ function PitchFeedCard({
       animate={{ opacity: 1, y: 0 }}
       className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
     >
-      {/* Author row */}
+      {                }
       <div className="flex items-center gap-3 p-4">
         <Link
           to={founderObj._id ? `/app/u/${founderObj._id}` : "#"}
@@ -650,7 +643,7 @@ function PitchFeedCard({
         {founderObj._id && <FollowButton userId={founderObj._id} variant="outline" />}
       </div>
 
-      {/* Title + description */}
+      {                         }
       <div className="px-4 pb-3">
         <h3 className="font-black text-base sm:text-lg text-[#0F172A] leading-snug">
           {pitch.title}
@@ -660,7 +653,7 @@ function PitchFeedCard({
         </p>
       </div>
 
-      {/* Auto-playing video preview — controlled 16:9 aspect ratio */}
+      {                                                               }
       <Link
         to={`/app/pitch?pitch=${pitch._id}`}
         className="block relative bg-black rounded-xl overflow-hidden mx-4 group cursor-pointer"
@@ -678,19 +671,19 @@ function PitchFeedCard({
             className="absolute inset-0 w-full h-full object-cover"
           />
 
-          {/* Centered Figma-style Play Button Overlay */}
+          {                                              }
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-12 h-12 rounded-full bg-white/90 shadow-xl flex items-center justify-center text-[#0F172A] group-hover:scale-110 transition-transform duration-200">
               <HiPlay className="w-6 h-6 ml-0.5 text-[#0F172A]" />
             </div>
           </div>
 
-          {/* Duration Badge */}
+          {                    }
           <span className="absolute top-3 left-3 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-extrabold rounded-md shadow-sm">
             {pitch.duration ? `${Math.floor(pitch.duration / 60)}:${String(pitch.duration % 60).padStart(2, "0")}` : "0:28"}
           </span>
 
-          {/* Mute toggle */}
+          {                 }
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -706,7 +699,7 @@ function PitchFeedCard({
             )}
           </button>
 
-          {/* Ask + equity pill */}
+          {                       }
           {!isFounder && pitch.askAmount && (
             <span className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/80 backdrop-blur-md text-white-force text-white text-xs font-bold rounded-full shadow-md inline-flex items-center gap-1" style={{ color: "#ffffff" }}>
               <HiCurrencyDollar className="w-3.5 h-3.5 text-[#F5B942] shrink-0" style={{ color: "#F5B942" }} />
@@ -718,7 +711,7 @@ function PitchFeedCard({
         </div>
       </Link>
 
-      {/* Actions Row */}
+      {                 }
       <div className="px-4 py-3 flex items-center justify-between gap-2 flex-wrap border-t border-[#E2E8F0] mt-3">
         <div className="flex items-center gap-3">
           <button
@@ -754,7 +747,7 @@ function PitchFeedCard({
           </button>
         </div>
 
-        {/* Primary Investor CTA: Outlined Purple "Express Interest" */}
+        {                                                              }
         {!isFounder && (
           <button
             onClick={() => setShowInvestModal(true)}
@@ -803,7 +796,7 @@ function PitchFeedCard({
   );
 }
 
-// ─── POST CARD ───────────────────────────────────
+                                                    
 function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -859,7 +852,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
 
   const totalImgs = post.images?.length || 0;
 
-  // Safe author object — authorId may be null (deleted user) or a string
+                                                                         
   const author =
     post.authorId && typeof post.authorId === "object"
       ? post.authorId
@@ -901,10 +894,10 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
     if (!socket || !post._id) return;
     const onEngagement = (data) => {
       if (data.postId !== post._id) return;
-      // Sync counts from any interaction anywhere (like/comment/save from Feed/Studio/Profile)
+                                                                                               
       if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
       if (typeof data.commentCount === "number") setCommentCount(data.commentCount);
-      // NOTE: liked/saved booleans are user-specific — do NOT apply them globally
+                                                                                  
     };
     socket.on("post:engagement", onEngagement);
     return () => socket.off("post:engagement", onEngagement);
@@ -916,7 +909,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
     >
-      {/* Author row */}
+      {                }
       <div className="flex items-center gap-3 p-4">
         <Link
           to={author._id ? `/app/u/${author._id}` : "#"}
@@ -945,7 +938,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         {author._id && <FollowButton userId={author._id} variant="outline" />}
       </div>
 
-      {/* Caption */}
+      {             }
       {post.caption && (
         <div className="px-4 pb-3">
           <p className="text-sm text-[#334155] whitespace-pre-wrap leading-relaxed">
@@ -977,7 +970,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         </div>
       )}
 
-      {/* Image carousel */}
+      {                    }
       {totalImgs > 0 && (
         <Link
           to={`/app/post/${post._id}`}
@@ -1042,7 +1035,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         </Link>
       )}
 
-      {/* Actions */}
+      {             }
       <div className="px-4 py-3 flex items-center justify-between gap-2 flex-wrap border-t border-[#E2E8F0] mt-3">
         <div className="flex items-center gap-3">
           <button
@@ -1088,7 +1081,7 @@ function PostFeedCard({ post, isFounder, userId, onChatBlocked }) {
         )}
       </div>
 
-      {/* Stats */}
+      {           }
       <div className="px-4 pb-4 text-xs text-[#0A1F14]/65 font-semibold">
         {likeCount.toLocaleString()} likes ·{" "}
         <button

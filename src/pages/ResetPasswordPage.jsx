@@ -12,10 +12,7 @@ import AuthShell from "../components/auth/AuthShell";
 import { FormField, PasswordStrength } from "../components/auth/FormField";
 import { authService } from "../services/authService";
 
-/**
- * Password complexity regex — mirrors the backend PASSWORD_REGEX exactly:
- * At least 8 chars, one uppercase, one lowercase, one digit, one special char.
- */
+                                                                                                                                                                     
 const PASSWORD_REGEX =
   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
@@ -23,7 +20,7 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Read the reset token and email that the backend embedded in the link
+                                                                         
   const token = searchParams.get("token") || "";
   const emailFromUrl = (searchParams.get("email") || "").trim().toLowerCase();
 
@@ -33,12 +30,12 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // True when both password fields are fully valid
+                                                   
   const passwordComplex = PASSWORD_REGEX.test(password);
   const passwordsMatch = password === confirm && confirm.length > 0;
   const valid = passwordComplex && passwordsMatch;
 
-  // If the URL is missing the token or email, show an error immediately
+                                                                        
   if (!token || !emailFromUrl) {
     return (
       <AuthShell maxWidth="max-w-xl">

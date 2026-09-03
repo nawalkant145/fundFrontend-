@@ -14,35 +14,27 @@ import IncomingCallModal from "../components/call/IncomingCallModal";
 
 const CallContext = createContext(null);
 
-// Fallback ICE servers if the backend doesn't supply any
+                                                         
 const FALLBACK_ICE = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
 ];
 
-/**
- * Screen sharing capability detection for browsers/devices.
- */
+                                                                      
 export const canShareScreen =
   typeof window !== "undefined" &&
   !!window.isSecureContext &&
   !!navigator.mediaDevices &&
   typeof navigator.mediaDevices.getDisplayMedia === "function";
 
-/**
- * Global call manager. Handles outgoing + incoming WebRTC calls end-to-end:
- * getUserMedia → RTCPeerConnection → offer/answer/ICE over Socket.IO.
- * Renders the call overlay + incoming-call modal so calls work from anywhere.
- *
- * Status machine: idle → calling | incoming → connecting → connected → (ended)
- */
+                                                                                                                                                                                                                                                                                                                                   
 export function CallProvider({ children }) {
   const { socket } = useSocket() || {};
   const { user } = useAuth();
   const toast = useToast();
 
   const [status, setStatus] = useState("idle");
-  const [callInfo, setCallInfo] = useState(null); // { callId, peerId, peerName, peerAvatar, type, isCaller }
+  const [callInfo, setCallInfo] = useState(null);                                                            
   const [remoteStream, setRemoteStream] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
@@ -69,12 +61,12 @@ export function CallProvider({ children }) {
   const incomingRingtoneRef = useRef(null);
   const endCallRef = useRef(null);
 
-  // Keep a ref copy of callInfo for use inside socket callbacks
+                                                                
   useEffect(() => {
     callInfoRef.current = callInfo;
   }, [callInfo]);
 
-  // ─── Incoming Ringtone Management (Receiver) ──
+                                                   
   const stopIncomingRingtone = useCallback(() => {
     console.log("🔕 Stopping incoming ringtone");
     setIsAutoplayBlocked(false);
@@ -135,14 +127,14 @@ export function CallProvider({ children }) {
     }
   }, []);
 
-  // Stop incoming ringtone whenever call status leaves "incoming"
+                                                                  
   useEffect(() => {
     if (status !== "incoming") {
       stopIncomingRingtone();
     }
   }, [status, stopIncomingRingtone]);
 
-  // ─── Cleanup ────────────────────────────────
+                                                 
   const cleanup = useCallback(() => {
     try {
       pcRef.current?.getSenders?.().forEach((s) => s.track?.stop());
@@ -174,7 +166,7 @@ export function CallProvider({ children }) {
     stopIncomingRingtone();
   }, [stopIncomingRingtone]);
 
-  // ─── Outgoing Ringback Tone (Caller) ────────
+                                                 
   const startRingtone = () => {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -203,7 +195,7 @@ export function CallProvider({ children }) {
     }
   };
 
-  // ─── Media ──────────────────────────────────
+                                                 
   const getMedia = async (type) => {
     try {
       console.log("🎥 Getting user media for type:", type);
@@ -224,7 +216,7 @@ export function CallProvider({ children }) {
     }
   };
 
-  // ─── Peer connection ────────────────────────
+                                                 
   const createPeer = (peerId) => {
     console.log("🌐 Creating RTCPeerConnection for peerId:", peerId, "with ICE servers:", iceServersRef.current);
     if (pcRef.current) {
@@ -308,7 +300,7 @@ export function CallProvider({ children }) {
       console.log("🚥 PC signalingState:", pc.signalingState);
     };
 
-    // Add local tracks
+                       
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => {
         console.log("➕ Adding local track to PC:", t.kind, t.id, t.label);
@@ -318,7 +310,7 @@ export function CallProvider({ children }) {
       console.warn("⚠️ createPeer called but localStreamRef.current is empty!");
     }
 
-    // Ensure a video transceiver exists so screen sharing can replace/send video track seamlessly
+                                                                                                  
     const senders = pc.getSenders();
     const hasVideoSender = senders.some((s) => s.track?.kind === "video");
     if (!hasVideoSender) {
@@ -350,7 +342,7 @@ export function CallProvider({ children }) {
     }
   };
 
-  // Receiver: apply the caller's offer and send back an answer
+                                                               
   const processOffer = async (from, offer) => {
     const pc = pcRef.current;
     if (!pc) {
@@ -374,7 +366,7 @@ export function CallProvider({ children }) {
     }
   };
 
-  // ─── Outgoing call ──────────────────────────
+                                                 
   const startCall = useCallback(
     async ({ receiverId, name, avatar, type = "meeting" }) => {
       console.log("CALL SOCKET STATUS", {
@@ -428,7 +420,7 @@ export function CallProvider({ children }) {
           setCallInfo((prev) => ({ ...prev, callId: ack.callId }));
         });
       } else {
-        // Socket not connected — try REST fallback
+                                                   
         console.warn("🔌 Socket not connected, attempting REST fallback for meeting initiation...");
         try {
           const response = await callService.initiate({ receiverId, callType: type, type });
@@ -466,7 +458,7 @@ export function CallProvider({ children }) {
     [socket, status, toast, cleanup],
   );
 
-  // ─── Accept / decline incoming ──────────────
+                                                 
   const acceptCall = useCallback(async () => {
     const info = callInfoRef.current;
     if (!socket || !info?.callId) return;
@@ -488,16 +480,16 @@ export function CallProvider({ children }) {
       iceServersRef.current = ack.iceServers?.length
         ? ack.iceServers
         : FALLBACK_ICE;
-      // Receiver creates the peer now and waits for the caller's offer
+                                                                       
       createPeer(info.peerId);
-      // If the offer already arrived before the peer was ready, process it now
+                                                                               
       if (pendingOffer.current) {
         const { from, offer } = pendingOffer.current;
         pendingOffer.current = null;
         processOffer(from, offer);
       }
     });
-    // eslint-disable-next-line
+                               
   }, [socket, toast, cleanup]);
 
   const declineCall = useCallback(() => {
@@ -520,7 +512,7 @@ export function CallProvider({ children }) {
     cleanup();
   }, [cleanup]);
 
-  // ─── Track Recovery Helpers ─────────────────
+                                                 
   const ensureCameraTrack = async () => {
     let track = localStreamRef.current?.getVideoTracks?.()?.[0];
     if (!track || track.readyState === "ended") {
@@ -576,7 +568,7 @@ export function CallProvider({ children }) {
     }
   }, [socket]);
 
-  // ─── Controls ───────────────────────────────
+                                                 
   const toggleMute = useCallback(() => {
     const s = localStreamRef.current;
     if (!s) return;
@@ -594,7 +586,7 @@ export function CallProvider({ children }) {
     let track = localStreamRef.current?.getVideoTracks()?.[0];
 
     if (!nextCameraOff) {
-      // User wants camera ON -> Ensure live track
+                                                  
       track = await ensureCameraTrack();
       if (track) {
         track.enabled = true;
@@ -612,7 +604,7 @@ export function CallProvider({ children }) {
         }
       }
     } else {
-      // User wants camera OFF
+                              
       if (track) {
         track.enabled = false;
       }
@@ -627,7 +619,7 @@ export function CallProvider({ children }) {
 
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
-      // Stop screen share & revert to camera
+                                             
       if (screenStreamRef.current) {
         try {
           screenStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -662,14 +654,14 @@ export function CallProvider({ children }) {
       sendMediaState({ isScreenSharing: false });
       toast?.info("Stopped screen sharing");
     } else {
-      // 1. Secure context check
+                                
       if (typeof window !== "undefined" && !window.isSecureContext) {
         console.error("Screen sharing failed: Page is not in a secure context (HTTPS required).");
         toast?.error("Screen sharing requires a secure HTTPS connection.");
         return;
       }
 
-      // 2. Capability detection check
+                                      
       if (!canShareScreen) {
         console.error("Screen sharing failed: navigator.mediaDevices.getDisplayMedia is not available.");
         toast?.error(
@@ -678,7 +670,7 @@ export function CallProvider({ children }) {
         return;
       }
 
-      // 3. Start display media capture
+                                       
       try {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: { cursor: "always" },
@@ -707,7 +699,7 @@ export function CallProvider({ children }) {
           }
         }
 
-        // Handle user stopping screen share via browser bar
+                                                            
         screenTrack.onended = async () => {
           console.log("🖥️ Screen track ended by user/browser");
           if (screenStreamRef.current) {
@@ -761,7 +753,7 @@ export function CallProvider({ children }) {
     }
   }, [isScreenSharing, cameraOff, toast, sendMediaState, renegotiate]);
 
-  // ─── Duration timer ─────────────────────────
+                                                 
   useEffect(() => {
     endCallRef.current = endCall;
   }, [endCall]);
@@ -772,13 +764,13 @@ export function CallProvider({ children }) {
     return () => clearInterval(t);
   }, [status]);
 
-  // ─── Socket event wiring ────────────────────
+                                                 
   useEffect(() => {
     if (!socket) return;
 
     const onIncoming = (data) => {
       console.log("📞 Incoming call received:", data.callId, "from caller:", data.callerName);
-      // Busy → auto-decline
+                            
       if (callInfoRef.current) {
         console.log("Busy: Auto-declining second incoming call:", data.callId);
         socket.emit("call_decline", { callId: data.callId });
@@ -797,7 +789,7 @@ export function CallProvider({ children }) {
     };
 
     const onAccepted = async ({ iceServers }) => {
-      // Caller side: build the peer, create + send the offer
+                                                             
       console.log("📥 Received call_accepted event from receiver with iceServers:", iceServers);
       stopRingtone();
       iceServersRef.current = iceServers?.length ? iceServers : FALLBACK_ICE;
@@ -824,7 +816,7 @@ export function CallProvider({ children }) {
 
     const onOffer = async ({ from, offer }) => {
       console.log("📥 Received webrtc_offer event from:", from);
-      // Receiver side — buffer if the peer isn't ready yet
+                                                           
       if (!pcRef.current) {
         console.log("⏳ Buffering offer because pcRef.current is not initialized yet");
         pendingOffer.current = { from, offer };
@@ -835,7 +827,7 @@ export function CallProvider({ children }) {
 
     const onAnswer = async ({ answer }) => {
       console.log("📥 Received webrtc_answer event");
-      // Caller side
+                    
       const pc = pcRef.current;
       if (!pc) {
         console.error("❌ onAnswer failed: pcRef.current is null");
@@ -916,7 +908,7 @@ export function CallProvider({ children }) {
       socket.off("call_no_answer", onNoAnswer);
       socket.off("disconnect", onDisconnect);
     };
-    // eslint-disable-next-line
+                               
   }, [socket, toast, cleanup, endCall, startIncomingRingtone, stopIncomingRingtone]);
 
   const value = {

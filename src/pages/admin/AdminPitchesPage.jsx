@@ -188,7 +188,7 @@ export default function AdminPitchesPage() {
         )}
       </div>
 
-      {/* Preview */}
+      {             }
       <Modal
         open={!!previewing}
         onClose={() => setPreviewing(null)}
@@ -222,21 +222,21 @@ export default function AdminPitchesPage() {
         )}
       </Modal>
 
-      {/* Reject reason */}
+      {                   }
       <RejectModal
         pitch={rejecting}
         onClose={() => setRejecting(null)}
         onConfirm={(reason) => reject(rejecting._id, reason)}
       />
 
-      {/* Boost days */}
+      {                }
       <BoostModal
         pitch={boosting}
         onClose={() => setBoosting(null)}
         onConfirm={(days) => boost(boosting._id, days)}
       />
 
-      {/* Delete confirm */}
+      {                    }
       <Confirm
         open={!!deleting}
         onClose={() => setDeleting(null)}

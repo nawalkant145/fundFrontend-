@@ -1,5 +1,5 @@
-// Tiny static auth + monetization helpers, all backed by localStorage.
-// When backend wires up, replace these reads/writes with real API + tokens.
+                                                                       
+                                                                            
 
 import { userService } from "../services/userService";
 
@@ -9,7 +9,7 @@ const FOLLOW_KEY = "expglo:follows";
 
 const VALID_ROLES = ["founder", "investor", "admin"];
 
-// ─── Auth ─────────────────────────────────────────
+                                                     
 
 export function getAuth() {
   try {
@@ -49,14 +49,14 @@ export function isLoggedIn() {
   return !!getAuth();
 }
 
-// ─── Subscription (EXPGLO Pro) ─────────────────────
+                                                      
 
 const FREE_CHATS_PER_MONTH = 1;
 const FREE_BOOSTS_PER_MONTH = 0;
 
 const defaultSub = () => ({
-  plan: "free", // 'free' | 'pro'
-  status: "inactive", // 'inactive' | 'active' | 'expired'
+  plan: "free",                  
+  status: "inactive",                                     
   startedAt: null,
   expiresAt: null,
   freeChatsUsedThisMonth: 0,
@@ -78,7 +78,7 @@ export function getSubscription() {
     if (!raw) return defaultSub();
     const parsed = JSON.parse(raw);
 
-    // Auto-reset monthly counters
+                                  
     if (
       !parsed.countersResetAt ||
       new Date(parsed.countersResetAt) <= new Date()
@@ -89,7 +89,7 @@ export function getSubscription() {
       localStorage.setItem(SUB_KEY, JSON.stringify(parsed));
     }
 
-    // Auto-expire if past expiresAt
+                                    
     if (
       parsed.status === "active" &&
       parsed.expiresAt &&
@@ -141,9 +141,9 @@ export function cancelPro() {
   );
 }
 
-// Sync the client-side gating cache from the server's user.subscription.
-// Called after login / profile refresh so isPro() and the chat quota
-// reflect the real, server-enforced subscription state.
+                                                                         
+                                                                     
+                                                        
 export function syncSubscriptionFromUser(user) {
   if (!user) return;
   const serverSub = user.subscription || {};
@@ -166,23 +166,23 @@ export function syncSubscriptionFromUser(user) {
           : current.status,
       startedAt: serverSub.startedAt || current.startedAt,
       expiresAt: serverSub.expiresAt || current.expiresAt,
-      // Server is the source of truth for the chat counter
+                                                           
       freeChatsUsedThisMonth:
         user.freeChatsUsedThisMonth ?? current.freeChatsUsedThisMonth ?? 0,
     }),
   );
 }
 
-// Returns { allowed, reason, freeRemaining }
-// Founders never gated — they message investors freely.
-// Investors hit the free-chat counter, then the paywall.
+                                             
+                                                        
+                                                         
 export function canStartChat({
   withUserId,
   isLegacy = false,
   role = null,
 } = {}) {
   if (isLegacy) return { allowed: true, freeRemaining: 0 };
-  // Founders chat free, always
+                               
   const effectiveRole = role || getRole();
   if (effectiveRole === "founder") {
     return { allowed: true, freeRemaining: Infinity, isFreeChat: false };
@@ -207,8 +207,8 @@ export function canStartChat({
 
 export function consumeFreeChat() {
   const role = getRole();
-  if (role === "founder") return; // founders aren't gated
-  if (isPro()) return; // Pro = no quota tracking
+  if (role === "founder") return;                         
+  if (isPro()) return;                           
   const sub = getSubscription();
   localStorage.setItem(
     SUB_KEY,
@@ -219,8 +219,8 @@ export function consumeFreeChat() {
   );
 }
 
-// Returns { allowed, reason }
-// Founders can call freely. Investors must be Pro.
+                              
+                                                   
 export function canStartCall(role = null) {
   const effectiveRole = role || getRole();
   if (effectiveRole === "founder") return { allowed: true };
@@ -232,9 +232,9 @@ export function canStartCall(role = null) {
   };
 }
 
-// ─── Follow / Following ──────────────────────────
-// These now delegate to the API. The localStorage cache is kept as a
-// fast optimistic read so the UI doesn't flicker on mount.
+                                                    
+                                                                     
+                                                           
 
 function readFollowSet() {
   try {
@@ -262,7 +262,7 @@ export function follow(userId) {
   const set = readFollowSet();
   set.add(userId);
   writeFollowSet(set);
-  // Fire real API call in background
+                                     
   userService.follow(userId).catch(() => {});
 }
 
@@ -270,7 +270,7 @@ export function unfollow(userId) {
   const set = readFollowSet();
   set.delete(userId);
   writeFollowSet(set);
-  // Fire real API call in background (toggle off)
+                                                  
   userService.follow(userId).catch(() => {});
 }
 

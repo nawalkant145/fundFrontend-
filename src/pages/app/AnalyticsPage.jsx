@@ -20,7 +20,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
-  // Load the founder's pitches and auto-select the first
+                                                         
   useEffect(() => {
     videoService
       .getMyPitches()
@@ -34,7 +34,7 @@ export default function AnalyticsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Load analytics for the selected pitch
+                                          
   useEffect(() => {
     if (!selectedId) return;
     setLoadingAnalytics(true);
@@ -83,7 +83,7 @@ export default function AnalyticsPage() {
       title="Pitch analytics"
       subtitle={selectedPitch?.title || ""}
     >
-      {/* Pitch selector (only if more than one) */}
+      {                                            }
       {pitches.length > 1 && (
         <div className="mb-6 flex gap-2 flex-wrap">
           {pitches.map((p) => (
@@ -136,7 +136,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Engagement breakdown */}
+        {                          }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-6">
           <h3 className="text-base sm:text-lg font-bold mb-1">Engagement</h3>
           <p className="text-xs text-gray-400 mb-5">
@@ -169,7 +169,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Quick numbers */}
+        {                   }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-4 sm:p-6">
           <h3 className="text-base sm:text-lg font-bold mb-1">At a glance</h3>
           <p className="text-xs text-gray-400 mb-5">Raw engagement counts</p>
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Tip banner */}
+      {                }
       <motion.div
         className="mt-6 p-5 bg-gradient-to-br from-gold/15 to-primary-green/10 border-2 border-gold/30 rounded-2xl flex items-center gap-4"
         whileHover={{ y: -2 }}

@@ -99,7 +99,7 @@ export default function NotificationsPage() {
     fetchList();
   }, []);
 
-  // Real-time socket listener
+                              
   useEffect(() => {
     if (!socket) return;
     const onNotif = (notif) => {
@@ -145,7 +145,7 @@ export default function NotificationsPage() {
 
   return (
     <DashboardShell title="Notifications" subtitle={loading ? "Loading…" : `${unread} unread`}>
-      {/* Filters */}
+      {             }
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <div className="flex gap-2 flex-wrap">
           {FILTERS.map((f) => (
@@ -172,7 +172,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* List */}
+      {          }
       {loading ? (
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl divide-y divide-gold/10 overflow-hidden animate-pulse">
           {Array.from({ length: 5 }).map((_, i) => (

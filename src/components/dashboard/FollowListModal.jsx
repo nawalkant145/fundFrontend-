@@ -5,11 +5,7 @@ import Modal from "../ui/Modal";
 import FollowButton from "../monetization/FollowButton";
 import { userService } from "../../services/userService";
 
-/**
- * Modal listing a user's followers or following.
- * mode: "followers" | "following"
- * preloadedFollowers / preloadedFollowing: arrays already fetched from the profile API
- */
+                                                                                                                                                                                        
 export default function FollowListModal({
   open,
   onClose,
@@ -24,20 +20,20 @@ export default function FollowListModal({
   useEffect(() => {
     if (!open || !userId || !mode) return;
 
-    // Clear stale list immediately each time modal opens
+                                                         
     setUsers([]);
     setLoading(true);
 
-    // Use preloaded data if available (avoids a second API call)
+                                                                 
     const preloaded = mode === "followers" ? preloadedFollowers : preloadedFollowing;
     if (preloaded !== null && Array.isArray(preloaded)) {
-      // Only filter out raw ObjectId strings — keep any object with an _id
+                                                                           
       setUsers(preloaded.filter((item) => item && typeof item === "object" && item._id));
       setLoading(false);
       return;
     }
 
-    // Fallback: fetch from API
+                               
     const fetcher =
       mode === "followers"
         ? userService.getFollowers(userId)
@@ -45,14 +41,14 @@ export default function FollowListModal({
     fetcher
       .then((res) => {
         const data = res?.data?.data || res?.data;
-        // Backend returns { users, followers, following, list } — handle all shapes
+                                                                                    
         const list =
           (mode === "followers"
             ? data?.followers || data?.users || data?.list
             : data?.following || data?.users || data?.list) ||
           (Array.isArray(data) ? data : []);
         const arr = Array.isArray(list) ? list : [];
-        // Only require _id — name is optional (fall back to username or "Unknown")
+                                                                                   
         setUsers(arr.filter((item) => item && typeof item === "object" && item._id));
       })
       .catch(() => setUsers([]))

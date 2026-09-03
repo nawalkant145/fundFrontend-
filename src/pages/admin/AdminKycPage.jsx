@@ -19,7 +19,7 @@ import Modal from "../../components/ui/Modal";
 import { adminService } from "../../services/adminService";
 
 export default function AdminKycPage() {
-  const [activeQueueTab, setActiveQueueTab] = useState("personal"); // personal | founder | investor | risk
+  const [activeQueueTab, setActiveQueueTab] = useState("personal");                                        
   const [kpis, setKpis] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +106,7 @@ export default function AdminKycPage() {
 
   return (
     <DashboardShell title="Identity & KYC Operations Workspace">
-      {/* KPI Overview Summary Bar */}
+      {                              }
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <KpiCard
           label="Pending Personal ID Queue"
@@ -134,7 +134,7 @@ export default function AdminKycPage() {
         />
       </div>
 
-      {/* Queue Selection Tabs */}
+      {                          }
       <div className="flex items-center gap-2 mb-6 border-b border-[#1B5E3F]/12 pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveQueueTab("personal")}
@@ -181,7 +181,7 @@ export default function AdminKycPage() {
         </button>
       </div>
 
-      {/* Queue Items */}
+      {                 }
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <div className="w-8 h-8 rounded-full border-[3px] border-[#F5B942]/20 border-t-[#F5B942] animate-spin" />
@@ -260,7 +260,7 @@ export default function AdminKycPage() {
         </div>
       )}
 
-      {/* Review & Document View Modal */}
+      {                                  }
       <Modal
         open={!!reviewing}
         onClose={() => setReviewing(null)}
@@ -269,7 +269,7 @@ export default function AdminKycPage() {
       >
         {reviewing && (
           <div className="space-y-5 text-sm text-gray-300">
-            {/* User Metadata & Reference Header */}
+            {                                      }
             <div className="p-4 bg-dark-bg/50 rounded-xl space-y-2 border border-[#F5B942]/10">
               <div className="flex justify-between items-start flex-wrap gap-2 pb-2 border-b border-[#F5B942]/10">
                 <div>
@@ -298,7 +298,7 @@ export default function AdminKycPage() {
               </div>
             </div>
 
-            {/* Viewable Uploaded Document Cards */}
+            {                                      }
             {(() => {
               const docFiles = [
                 reviewing.documentFront || reviewing.documents?.panCard,
@@ -376,7 +376,7 @@ export default function AdminKycPage() {
                     </div>
                   )}
 
-                  {/* Audit History Timeline Section */}
+                  {                                    }
                   {reviewing.history && reviewing.history.length > 0 && (
                     <div className="pt-3 border-t border-[#F5B942]/10 space-y-2">
                       <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -394,7 +394,7 @@ export default function AdminKycPage() {
                     </div>
                   )}
 
-                  {/* Review Notes Textarea */}
+                  {                           }
                   <div className="pt-2">
                     <label className="text-xs font-bold text-gray-400 block mb-1">Admin Review Notes</label>
                     <textarea
@@ -406,7 +406,7 @@ export default function AdminKycPage() {
                     />
                   </div>
 
-                  {/* Action Buttons */}
+                  {                    }
                   <div className="flex gap-2 pt-3 border-t border-[#F5B942]/10">
                     <button
                       onClick={() => {
@@ -439,7 +439,7 @@ export default function AdminKycPage() {
         )}
       </Modal>
 
-      {/* Approve Confirmation Modal */}
+      {                                }
       {approving && (
         <ApproveConfirmModal
           item={approving}
@@ -452,7 +452,7 @@ export default function AdminKycPage() {
         />
       )}
 
-      {/* Reject Confirmation Modal */}
+      {                               }
       {rejecting && (
         <RejectConfirmModal
           item={rejecting}
@@ -590,7 +590,7 @@ function RejectConfirmModal({ item, onClose, onConfirm }) {
       <div className="space-y-4 text-sm text-gray-300">
         <p>Select a mandatory rejection reason for the user:</p>
 
-        {/* Preset Reason Selector */}
+        {                            }
         <div className="grid grid-cols-2 gap-2">
           {presetOptions.map((opt) => (
             <button

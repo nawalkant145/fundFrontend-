@@ -22,26 +22,26 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
   const toast = useToast();
   const fileInputRef = useRef(null);
   const { postType } = useUploadModal();
-  const [type, setType] = useState("images"); // 'images' | 'text'
-  const [images, setImages] = useState([]); // [{ file, preview }]
+  const [type, setType] = useState("images");                     
+  const [images, setImages] = useState([]);                       
   const [caption, setCaption] = useState("");
   const [link, setLink] = useState("");
   const [hashtags, setHashtags] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Sync composer type when modal opens
+                                        
   useEffect(() => {
     if (open) {
       setType(postType || "images");
     }
   }, [open, postType]);
 
-  // Reset form when modal closes/opens
+                                       
   useEffect(() => {
     if (!open) {
       setTimeout(() => {
         setType("images");
-        // Revoke previews to avoid memory leak
+                                               
         images.forEach((img) => URL.revokeObjectURL(img.preview));
         setImages([]);
         setCaption("");
@@ -97,12 +97,12 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
     }
   };
 
-  // Close on backdrop click
+                            
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // Close on Escape
+                    
   useEffect(() => {
     if (!open) return;
     const handleKey = (e) => {
@@ -125,10 +125,10 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
           transition={{ duration: 0.2 }}
           onClick={handleBackdropClick}
         >
-          {/* Backdrop */}
+          {              }
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-          {/* Modal panel */}
+          {                 }
           <motion.div
             className="relative z-10 w-full sm:max-w-4xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden flex flex-col"
             initial={{ y: 80, opacity: 0, scale: 0.97 }}
@@ -137,12 +137,12 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drag handle (mobile) */}
+            {                          }
             <div className="flex justify-center pt-2.5 sm:hidden flex-shrink-0">
               <div className="w-10 h-1.5 rounded-full bg-[#0A1F14]/15" />
             </div>
 
-            {/* Header */}
+            {            }
             <div className="flex items-center justify-between px-4 sm:px-6 pt-2 sm:pt-4 pb-3.5 sm:pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
               <div className="min-w-0 flex-1 pr-2">
                 <h2 className="text-lg sm:text-xl font-black text-[#0A1F14] truncate">Create a post</h2>
@@ -156,12 +156,12 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
               </button>
             </div>
 
-            {/* Body */}
+            {          }
             <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
               <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_320px] gap-6">
-                {/* Left — composer */}
+                {                     }
                 <div className="space-y-4 text-left">
-                  {/* Type toggle — hidden when opened from "Thoughts" (text-only mode) */}
+                  {                                                                       }
                   {postType !== "text" && (
                     <div className="inline-flex bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-full p-1">
                       <button
@@ -189,7 +189,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                     </div>
                   )}
 
-                  {/* Image dropzone + grid — never shown in thoughts (text-only) mode */}
+                  {                                                                      }
                   {type === "images" && postType !== "text" && (
                     <div>
                       <div
@@ -262,7 +262,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                     </div>
                   )}
 
-                  {/* Caption */}
+                  {             }
                   <div>
                     <label className="flex items-center justify-between text-xs font-semibold mb-1 text-[#0A1F14]/85">
                       <span>Caption</span>
@@ -283,7 +283,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                     />
                   </div>
 
-                  {/* Link */}
+                  {          }
                   <div>
                     <label className="block text-xs font-semibold mb-1 text-[#0A1F14]/85">
                       External link (optional)
@@ -300,7 +300,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                     </div>
                   </div>
 
-                  {/* Hashtags */}
+                  {              }
                   <div>
                     <label className="block text-xs font-semibold mb-1 text-[#0A1F14]/85">
                       Hashtags (comma-separated)
@@ -331,7 +331,7 @@ export default function UploadPostModal({ open, onClose, onPostCreated }) {
                   </motion.button>
                 </div>
 
-                {/* Right — preview card */}
+                {                          }
                 <div className="hidden lg:block text-left">
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0A1F14]/55 mb-2">
                     Live preview

@@ -15,10 +15,7 @@ import { videoService } from "../../services/videoService";
 import { postService } from "../../services/postService";
 import { useSocket } from "../../context/SocketContext";
 
-/**
- * Saved Studio (replaces "Saved Pitches" for investors).
- * Two sub-tabs: Pitches | Posts.
- */
+                                                                                                      
 export default function SavedPitchesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "posts" ? "posts" : "pitches";
@@ -28,7 +25,7 @@ export default function SavedPitchesPage() {
   const [savedPosts, setSavedPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
 
-  // Fetch real saved pitches
+                             
   useEffect(() => {
     videoService
       .getSaved()
@@ -61,7 +58,7 @@ export default function SavedPitchesPage() {
       title="Saved Studio"
       subtitle="Pitches and posts you've bookmarked."
     >
-      {/* Tabs */}
+      {          }
       <div className="border-b border-[#1B5E3F]/12 mb-6">
         <div className="flex">
           <TabButton

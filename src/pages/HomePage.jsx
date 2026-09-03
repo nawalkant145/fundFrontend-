@@ -25,22 +25,9 @@ import { IoRocketSharp, IoSend } from "react-icons/io5";
 import PublicNav from "../components/public/PublicNav";
 import PublicFooter from "../components/public/PublicFooter";
 
-/**
- * EXPGLO FUND — premium social-fundraising landing page.
- * Videos under /videos/ tell the story across the page.
- *
- * Brand palette:
- *   green-deep:  #0F4A2E
- *   green:       #1B5E3F
- *   green-soft:  #2D7A4F
- *   gold:        #F5B942
- *   gold-bright: #FFD166
- *   bg:          #FFFFFF
- *   bg-soft:     #FAFAF7
- *   ink:         #0A1F14
- */
+                                                                                                                                                                                                                                                                                                                                                                            
 
-// ─── Counter ────────────────────────────────
+                                               
 function Counter({ end, suffix = "", prefix = "" }) {
   const [n, setN] = useState(0);
   const ref = useRef(null);
@@ -66,7 +53,7 @@ function Counter({ end, suffix = "", prefix = "" }) {
   );
 }
 
-// ─── Marquee ─────────────────────────────────
+                                                
 function Marquee({ items }) {
   return (
     <div className="overflow-hidden py-2">
@@ -107,7 +94,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-[#0A1F14] overflow-x-hidden">
-      {/* Soft brand glows */}
+      {                      }
       <div className="fixed inset-0 pointer-events-none -z-0">
         <div className="absolute -top-40 -left-40 w-[520px] h-[520px] bg-[#1B5E3F]/[0.06] rounded-full blur-[160px]" />
         <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-[#F5B942]/[0.10] rounded-full blur-[180px]" />
@@ -129,7 +116,7 @@ export default function HomePage() {
   );
 }
 
-// ─── HERO — split layout with rotating video carousel ─
+                                                         
 const HERO_VIDEOS = [
   {
     src: "/videos/herostory.mp4",
@@ -148,7 +135,7 @@ function Hero() {
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(true);
 
-  // Pause/resume based on tab visibility + scroll into view
+                                                            
   useEffect(() => {
     const onTabVis = () => setVisible(!document.hidden);
     document.addEventListener("visibilitychange", onTabVis);
@@ -160,7 +147,7 @@ function Hero() {
     const io = new IntersectionObserver(
       (entries) => {
         const e = entries[0];
-        // 25% visible threshold
+                                
         setVisible((prev) => (document.hidden ? false : e.isIntersecting));
       },
       { threshold: 0.25 },
@@ -172,7 +159,7 @@ function Hero() {
     };
   }, []);
 
-  // Sync each <video> element to whether it's the current slide AND visible.
+                                                                             
   useEffect(() => {
     videoRefs.current.forEach((v, i) => {
       if (!v) return;
@@ -185,7 +172,7 @@ function Hero() {
     });
   }, [idx, visible, muted]);
 
-  // Advance to next slide as soon as current one ends — no gap, no reload
+                                                                          
   const handleEnded = () => {
     setIdx((i) => (i + 1) % HERO_VIDEOS.length);
   };
@@ -196,7 +183,7 @@ function Hero() {
       className="pt-20 pb-12 sm:pt-24 sm:pb-20 px-4 sm:px-6 lg:px-8 relative"
     >
       <div className="max-w-7xl mx-auto grid lg:grid-cols-[0.85fr_1.4fr] gap-10 lg:gap-14 items-center">
-        {/* LEFT — copy */}
+        {                 }
         <div className="text-center lg:text-left order-2 lg:order-1">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -317,7 +304,7 @@ function Hero() {
           </motion.div>
         </div>
 
-        {/* RIGHT — video card with both videos preloaded for gapless swap */}
+        {                                                                    }
         <div className="order-1 lg:order-2 relative flex justify-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -325,10 +312,10 @@ function Hero() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="relative w-full"
           >
-            {/* Glow */}
+            {          }
             <div className="absolute -inset-6 bg-gradient-to-br from-[#1B5E3F]/25 via-[#F5B942]/25 to-[#1B5E3F]/15 rounded-[2.5rem] blur-3xl opacity-70" />
 
-            {/* Video card */}
+            {                }
             <div className="relative aspect-video rounded-3xl overflow-hidden bg-[#0A1F14] shadow-2xl shadow-[#1B5E3F]/30 ring-1 ring-[#1B5E3F]/10">
               {HERO_VIDEOS.map((v, i) => (
                 <video
@@ -345,9 +332,9 @@ function Hero() {
                 />
               ))}
 
-              {/* Top badge removed — clean video */}
+              {                                     }
 
-              {/* Mute */}
+              {          }
               <button
                 onClick={() => setMuted((m) => !m)}
                 className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-10"
@@ -359,7 +346,7 @@ function Hero() {
                 )}
               </button>
 
-              {/* Carousel dots */}
+              {                   }
               <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
                 {HERO_VIDEOS.map((_, i) => (
                   <button
@@ -382,7 +369,7 @@ function Hero() {
   );
 }
 
-// ─── Industries marquee ─────────────────────
+                                               
 function IndustriesBar({ industries }) {
   return (
     <section className="py-10 bg-[#FAFAF7] border-y border-[#1B5E3F]/8 relative z-10">
@@ -394,7 +381,7 @@ function IndustriesBar({ industries }) {
   );
 }
 
-// ─── OLD vs NEW — uses oldvsnew.mp4 ────────
+                                              
 function OldVsNewSection() {
   const ref = useRef(null);
   const [muted, setMuted] = useState(true);
@@ -494,7 +481,7 @@ function StepPill({ num, title, subtitle }) {
   );
 }
 
-// ─── BENTO showcase — uses appshowcase.mp4 + investorpov.mp4 ──
+                                                                 
 function BentoShowcase() {
   return (
     <section
@@ -512,7 +499,7 @@ function BentoShowcase() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[minmax(220px,auto)]">
-          {/* 1. App showcase video — large feature */}
+          {                                           }
           <BentoCard className="sm:col-span-2 lg:row-span-2 bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white p-6 sm:p-8 overflow-hidden">
             <div className="flex flex-col h-full">
               <div className="flex items-center gap-2 mb-3">
@@ -544,7 +531,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 2. Chat */}
+          {             }
           <BentoCard className="bg-white p-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F]/15 to-[#1B5E3F]/5 border border-[#1B5E3F]/15 flex items-center justify-center">
@@ -571,7 +558,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 3. Audio + Video calls */}
+          {                            }
           <BentoCard className="bg-gradient-to-br from-[#FFF6E0] to-[#FFE9BD] p-6 relative overflow-hidden">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/40">
@@ -614,7 +601,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 4. KYC verified */}
+          {                     }
           <BentoCard className="bg-white p-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F]/15 to-[#1B5E3F]/5 border border-[#1B5E3F]/15 flex items-center justify-center">
@@ -637,7 +624,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 5. Investor POV — uses investorpov.mp4 */}
+          {                                            }
           <BentoCard className="sm:col-span-2 bg-[#0A1F14] text-white p-0 overflow-hidden relative min-h-[280px]">
             <video
               src="/videos/investorpov.mp4"
@@ -667,7 +654,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 6. AI matching */}
+          {                    }
           <BentoCard className="bg-white p-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F5B942] to-[#FFD166] flex items-center justify-center shadow-md shadow-[#F5B942]/30">
@@ -693,7 +680,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 7. Live analytics */}
+          {                       }
           <BentoCard className="bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white p-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/30">
@@ -711,7 +698,7 @@ function BentoShowcase() {
             </div>
           </BentoCard>
 
-          {/* 8. In-app investments */}
+          {                           }
           <BentoCard className="bg-white p-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3F]/15 to-[#1B5E3F]/5 border border-[#1B5E3F]/15 flex items-center justify-center">
@@ -790,7 +777,7 @@ function MiniStat({ icon: Icon, label, value }) {
   );
 }
 
-// ─── DUAL VALUE — founder vs investor ──────
+                                              
 function DualValue() {
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 relative z-10">
@@ -837,13 +824,13 @@ function DualValue() {
   );
 }
 
-// ─── GLOBAL NETWORK — uses globalnetwork.mp4 ──
+                                                 
 function GlobalNetworkSection() {
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#FAFAF7] relative z-10 overflow-hidden">
       <div className="max-w-6xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-          {/* Left: video */}
+          {                 }
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -867,7 +854,7 @@ function GlobalNetworkSection() {
             </div>
           </motion.div>
 
-          {/* Right: copy */}
+          {                 }
           <div className="order-1 lg:order-2">
             <Eyebrow>GLOBAL NETWORK</Eyebrow>
             <h2 className="text-3xl sm:text-5xl font-black mb-5 leading-tight">
@@ -909,7 +896,7 @@ function NetworkPill({ icon: Icon, label }) {
   );
 }
 
-// ─── STATS ──────────────────────────────────
+                                               
 function StatsSection() {
   return (
     <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 relative z-10">
@@ -930,7 +917,7 @@ function StatsSection() {
   );
 }
 
-// ─── TESTIMONIALS ──────────────────────────
+                                              
 function TestimonialsSection() {
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#FAFAF7] relative z-10">
@@ -966,7 +953,7 @@ function TestimonialsSection() {
   );
 }
 
-// ─── BIG CTA ───────────────────────────────
+                                              
 function BigCTA() {
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0F4A2E] via-[#1B5E3F] to-[#0F4A2E] text-white relative overflow-hidden">
@@ -1024,7 +1011,7 @@ function BigCTA() {
   );
 }
 
-// ─── helpers ───────────────────────────────
+                                              
 function Eyebrow({ children }) {
   return (
     <p className="text-center text-xs uppercase tracking-[0.2em] font-bold text-[#1B5E3F] mb-4">

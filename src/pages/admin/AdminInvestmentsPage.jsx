@@ -77,7 +77,7 @@ export default function AdminInvestmentsPage() {
     toast.success("Investment refunded");
   };
 
-  // Download CSV via the authenticated api client
+                                                  
   const exportCsv = async () => {
     try {
       const res = await api.get(adminService.exportInvestmentsUrl(), {
@@ -109,7 +109,7 @@ export default function AdminInvestmentsPage() {
       title="Investments oversight"
       subtitle={`${deals.length} deals`}
     >
-      {/* Toolbar */}
+      {             }
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex gap-2">
           <button
@@ -127,7 +127,7 @@ export default function AdminInvestmentsPage() {
         </div>
       </div>
 
-      {/* Suspicious activity alert */}
+      {                               }
       {suspicious.length > 0 && (
         <div className="bg-red-500/10 border-2 border-red-500/30 rounded-2xl p-4 mb-5">
           <div className="flex items-center gap-2 mb-2 text-red-400 font-bold text-sm">
@@ -238,7 +238,7 @@ export default function AdminInvestmentsPage() {
         </div>
       )}
 
-      {/* Freeze modal */}
+      {                  }
       <ReasonModal
         item={freezing}
         title="Freeze this deal?"
@@ -249,7 +249,7 @@ export default function AdminInvestmentsPage() {
         onConfirm={(reason) => freeze(freezing._id, reason)}
       />
 
-      {/* Refund modal */}
+      {                  }
       <ReasonModal
         item={refunding}
         title="Refund this investment?"

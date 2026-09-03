@@ -49,22 +49,22 @@ export default function KycPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedRefId, setSubmittedRefId] = useState("");
 
-  // DigiLocker & Pre-account flow state
+                                        
   const [showManualUpload, setShowManualUpload] = useState(false);
   const [digilockerLoading, setDigilockerLoading] = useState(false);
   const [digilockerFailed, setDigilockerFailed] = useState(false);
 
-  // Skip Verification Modal state
+                                  
   const [showSkipModal, setShowSkipModal] = useState(false);
   const [skippingLoading, setSkippingLoading] = useState(false);
 
-  // Pre-account signup flow detection
+                                      
   const params = new URLSearchParams(location.search);
   const signupSessionId =
     params.get("session") || sessionStorage.getItem("signupSessionId") || null;
   const isSignupFlow = !!signupSessionId;
 
-  // Level 2 Docs
+                 
   const [personalDocs, setPersonalDocs] = useState({
     documentType: "pan",
     documentNumber: "",
@@ -73,7 +73,7 @@ export default function KycPage() {
     selfie: null,
   });
 
-  // Level 3 Docs
+                 
   const [companyDocs, setCompanyDocs] = useState({
     companyName: "",
     CIN: "",
@@ -84,7 +84,7 @@ export default function KycPage() {
     startupIndiaCert: null,
   });
 
-  // Level 4 Docs
+                 
   const [investorDocs, setInvestorDocs] = useState({
     addressProofType: "bank_statement",
     addressProofUrl: null,
@@ -96,7 +96,7 @@ export default function KycPage() {
   });
 
   const fetchStatus = () => {
-    if (isSignupFlow) return; // no account yet — skip status fetch
+    if (isSignupFlow) return;                                      
     kycService
       .getStatus()
       .then((res) => {
@@ -108,10 +108,10 @@ export default function KycPage() {
 
   useEffect(() => {
     fetchStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+                                                           
   }, []);
 
-  // Handle the browser landing back here after the DigiLocker OAuth callback
+                                                                             
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const result = urlParams.get("digilocker");
@@ -149,7 +149,7 @@ export default function KycPage() {
     fetchStatus();
     if (refreshUser) refreshUser();
     navigate("/kyc", { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+                                                           
   }, [location.search]);
 
   const handleVerifyWithDigiLocker = async () => {
@@ -178,7 +178,7 @@ export default function KycPage() {
     setSkippingLoading(true);
     try {
       if (isSignupFlow && signupSessionId) {
-        // Pre-account flow: Call backend API to create unverified account
+                                                                          
         const res = await authService.skipSignup(signupSessionId);
         const payload = res?.data?.data || res?.data;
         sessionStorage.removeItem("signupSessionId");
@@ -188,7 +188,7 @@ export default function KycPage() {
         }
         navigate("/app", { replace: true });
       } else {
-        // Post-account flow: Logged-in user skipping to app
+                                                            
         toast.info("You can complete verification anytime from Settings or Profile.");
         navigate("/app", { replace: true });
       }
@@ -210,7 +210,7 @@ export default function KycPage() {
     try {
       console.log("📤 Starting Direct S3 Uploads for Personal KYC...");
 
-      // Step 1: Upload native File objects directly to S3 bucket via presigned URLs
+                                                                                    
       const documentFrontKey = await uploadFileDirectlyToS3(personalDocs.documentFront, "kyc");
       const documentBackKey = personalDocs.documentBack
         ? await uploadFileDirectlyToS3(personalDocs.documentBack, "kyc")
@@ -226,7 +226,7 @@ export default function KycPage() {
       const isRejected = status?.statusCard?.identityVerified?.status === "rejected";
       const apiCall = isRejected ? kycService.resubmitPersonalKyc : kycService.submitPersonalKyc;
 
-      // Step 2: Submit ONLY S3 keys to backend API
+                                                   
       const res = await apiCall({
         documentType: personalDocs.documentType,
         documentNumber: personalDocs.documentNumber,
@@ -333,7 +333,7 @@ export default function KycPage() {
   return (
     <AuthShell maxWidth="max-w-4xl">
       <AnimatePresence mode="wait">
-        {/* ── PRE-ACCOUNT SIGNUP VERIFICATION MODE ─────────────────────────── */}
+        {                                                                         }
         {isSignupFlow ? (
           <motion.div
             key="signup-verification"
@@ -342,7 +342,7 @@ export default function KycPage() {
             exit={{ opacity: 0, y: -12 }}
             className="space-y-7"
           >
-            {/* 1. Header */}
+            {               }
             <div className="text-center space-y-3">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1B5E3F] via-[#24704B] to-[#0F4A2E] shadow-xl shadow-[#1B5E3F]/20 mx-auto">
                 <HiShieldCheck className="w-9 h-9 text-[#F5B942]" />
@@ -355,7 +355,7 @@ export default function KycPage() {
               </p>
             </div>
 
-            {/* 2. Account Status Alert */}
+            {                             }
             <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start shadow-xs">
               <div className="p-2 bg-amber-100/80 text-amber-700 rounded-xl flex-shrink-0 mt-0.5">
                 <HiExclamationCircle className="w-5 h-5" />
@@ -368,9 +368,9 @@ export default function KycPage() {
               </div>
             </div>
 
-            {/* 3. DigiLocker Verification Card */}
+            {                                     }
             {digilockerFailed ? (
-              /* FAILURE STATE */
+                                 
               <div className="bg-red-50/90 border-2 border-red-200/90 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-600 border-2 border-red-200 mx-auto">
                   <HiXCircle className="w-10 h-10" />
@@ -405,13 +405,13 @@ export default function KycPage() {
                 </div>
               </div>
             ) : (
-              /* TWO-COLUMN DIGILOCKER CARD */
+                                              
               <div className="bg-white border border-[#1B5E3F]/15 rounded-3xl p-6 sm:p-8 md:p-9 shadow-sm hover:shadow-md transition-all">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
                   
-                  {/* Left Column: Security Illustration & Messaging */}
+                  {                                                    }
                   <div className="md:col-span-5 bg-gradient-to-br from-[#F4F7F4] via-[#EEF5F0] to-[#E2EFE7] rounded-2xl p-6 sm:p-7 border border-[#1B5E3F]/12 text-center space-y-4">
-                    {/* Visual Security Stack */}
+                    {                           }
                     <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
                       <div className="absolute inset-0 rounded-full bg-[#1B5E3F]/10 animate-ping opacity-30" />
                       <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#1B5E3F] to-[#2D7A4F] text-white flex items-center justify-center shadow-lg shadow-[#1B5E3F]/25 relative z-10">
@@ -437,9 +437,9 @@ export default function KycPage() {
                     </div>
                   </div>
 
-                  {/* Right Column: Verification Action & Features */}
+                  {                                                  }
                   <div className="md:col-span-7 space-y-5">
-                    {/* Trust Badge */}
+                    {                 }
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold bg-[#1B5E3F]/10 text-[#0F4A2E] border border-[#1B5E3F]/20">
                       <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
                       <span>Trusted by Government of India</span>
@@ -454,9 +454,9 @@ export default function KycPage() {
                       </p>
                     </div>
 
-                    {/* Three Security Feature Indicators */}
+                    {                                       }
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-1">
-                      {/* 1. Secure */}
+                      {               }
                       <div className="bg-[#F8FAF8] border border-[#1B5E3F]/12 rounded-2xl p-3 flex items-start gap-2.5 text-left shadow-2xs">
                         <div className="w-9 h-9 rounded-full bg-[#1B5E3F]/10 text-[#1B5E3F] flex items-center justify-center flex-shrink-0 mt-0.5">
                           <HiShieldCheck className="w-5 h-5" />
@@ -471,7 +471,7 @@ export default function KycPage() {
                         </div>
                       </div>
 
-                      {/* 2. Official */}
+                      {                 }
                       <div className="bg-[#F8FAF8] border border-[#1B5E3F]/12 rounded-2xl p-3 flex items-start gap-2.5 text-left shadow-2xs">
                         <div className="w-9 h-9 rounded-full bg-[#1B5E3F]/10 text-[#1B5E3F] flex items-center justify-center flex-shrink-0 mt-0.5">
                           <HiBuildingLibrary className="w-5 h-5" />
@@ -486,7 +486,7 @@ export default function KycPage() {
                         </div>
                       </div>
 
-                      {/* 3. Fast & Easy */}
+                      {                    }
                       <div className="bg-[#F8FAF8] border border-[#1B5E3F]/12 rounded-2xl p-3 flex items-start gap-2.5 text-left shadow-2xs">
                         <div className="w-9 h-9 rounded-full bg-[#1B5E3F]/10 text-[#1B5E3F] flex items-center justify-center flex-shrink-0 mt-0.5">
                           <HiLightningBolt className="w-5 h-5" />
@@ -504,7 +504,7 @@ export default function KycPage() {
 
 
 
-                    {/* Primary CTA Button */}
+                    {                        }
                     <div className="space-y-2 pt-1">
                       <button
                         type="button"
@@ -530,7 +530,7 @@ export default function KycPage() {
                       </p>
                     </div>
 
-                    {/* Edit details back link */}
+                    {                            }
                     <div className="text-center pt-2">
                       <button
                         type="button"
@@ -550,7 +550,7 @@ export default function KycPage() {
               </div>
             )}
 
-            {/* 4. NEW — Skip Verification Section */}
+            {                                        }
             <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-3xl p-5 sm:p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
                 <div className="flex items-start sm:items-center gap-3.5">
@@ -578,7 +578,7 @@ export default function KycPage() {
               </div>
             </div>
 
-            {/* Bottom Security Note */}
+            {                          }
             <div className="text-center text-xs text-slate-500 font-medium flex items-center justify-center gap-1.5 pt-2">
               <HiShieldCheck className="w-4 h-4 text-[#1B5E3F]/70" />
               <span>Some features may be limited until identity verification is completed.</span>
@@ -586,7 +586,7 @@ export default function KycPage() {
           </motion.div>
         ) : !submitted ? (
 
-          /* ── POST-ACCOUNT LOGGED-IN KYC WORKSPACE MODE ─────────────────── */
+                                                                                
           <motion.div
             key="form"
             initial={{ opacity: 0, y: 12 }}
@@ -605,7 +605,7 @@ export default function KycPage() {
               </p>
             </div>
 
-            {/* Logged in verification summary bar */}
+            {                                        }
             <div className="bg-[#FAFAF7] border border-[#1B5E3F]/15 rounded-2xl p-4 sm:p-5 mb-6 flex flex-wrap justify-between items-center gap-3">
               <div>
                 <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">Verification Level</span>
@@ -623,7 +623,7 @@ export default function KycPage() {
               </div>
             </div>
 
-            {/* DigiLocker Instant Card for Logged In User */}
+            {                                                }
             {!isIdentityApproved && !showManualUpload && (
               <div className="bg-white border-2 border-[#1B5E3F]/20 rounded-3xl p-6 sm:p-8 mb-8 text-center space-y-4 shadow-sm">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#1B5E3F]/10 border border-[#1B5E3F]/20 mx-auto">
@@ -657,7 +657,7 @@ export default function KycPage() {
               </div>
             )}
 
-            {/* Level Tabs */}
+            {                }
             {(isIdentityApproved || showManualUpload) && (
               <>
                 <div className="flex border-b border-[#1B5E3F]/15 mb-6 overflow-x-auto">
@@ -680,7 +680,7 @@ export default function KycPage() {
                   })}
                 </div>
 
-                {/* Level 2 Personal Upload */}
+                {                             }
                 {activeTab === "personal" && (
                   <form onSubmit={handlePersonalSubmit} className="space-y-6 bg-white p-6 rounded-3xl border border-[#1B5E3F]/15">
                     <h3 className="text-xl font-black text-[#0A1F14]">Level 2: Personal ID Verification</h3>
@@ -738,7 +738,7 @@ export default function KycPage() {
                   </form>
                 )}
 
-                {/* Level 3 Company Upload */}
+                {                            }
                 {activeTab === "company" && (
                   <form onSubmit={handleCompanySubmit} className="space-y-6 bg-white p-6 rounded-3xl border border-[#1B5E3F]/15">
                     <h3 className="text-xl font-black text-[#0A1F14]">Level 3: Startup & Company Verification</h3>
@@ -784,7 +784,7 @@ export default function KycPage() {
                   </form>
                 )}
 
-                {/* Level 4 Investor Upload */}
+                {                             }
                 {activeTab === "investment" && (
                   <form onSubmit={handleInvestorSubmit} className="space-y-6 bg-white p-6 rounded-3xl border border-[#1B5E3F]/15">
                     <h3 className="text-xl font-black text-[#0A1F14]">Level 4: Investor Transaction KYC</h3>
@@ -832,7 +832,7 @@ export default function KycPage() {
               </>
             )}
 
-            {/* Skip section for logged-in users who haven't completed verification */}
+            {                                                                         }
             <div className="bg-[#FAFAF7] border border-[#1B5E3F]/12 rounded-3xl p-5 sm:p-6 shadow-xs mt-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -858,7 +858,7 @@ export default function KycPage() {
           </motion.div>
         ) : (
 
-          /* ── SUBMITTED FEEDBACK STATE ─────────────────────────────────── */
+                                                                               
           <motion.div
             key="submitted"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -912,7 +912,7 @@ export default function KycPage() {
         )}
       </AnimatePresence>
 
-      {/* ── 7. SKIP CONFIRMATION MODAL ────────────────────────────────────── */}
+      {                                                                          }
       <AnimatePresence>
         {showSkipModal && (
           <div className="fixed inset-0 z-50 bg-[#0A1F14]/65 backdrop-blur-xs flex items-center justify-center p-4">
@@ -922,7 +922,7 @@ export default function KycPage() {
               exit={{ opacity: 0, scale: 0.92, y: 10 }}
               className="bg-white border border-[#1B5E3F]/20 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 relative overflow-hidden"
             >
-              {/* Top Accent bar */}
+              {                    }
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" />
 
               <div className="text-center space-y-2">
@@ -937,7 +937,7 @@ export default function KycPage() {
                 </p>
               </div>
 
-              {/* Status & feature impact breakdown */}
+              {                                       }
               <div className="bg-[#FAFBF9] border border-[#1B5E3F]/12 rounded-2xl p-4 space-y-2.5 text-xs text-slate-700">
                 <div className="flex items-center gap-2 font-bold text-amber-800">
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -953,7 +953,7 @@ export default function KycPage() {
                 </div>
               </div>
 
-              {/* Modal Buttons */}
+              {                   }
               <div className="space-y-2.5 pt-1">
                 <button
                   type="button"

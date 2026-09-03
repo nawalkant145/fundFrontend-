@@ -12,7 +12,7 @@ import AuthShell from "../components/auth/AuthShell";
 import { FormField } from "../components/auth/FormField";
 import { authService } from "../services/authService";
 
-// Mirrors the backend's email validation regex
+                                               
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
 export default function ForgotPasswordPage() {
@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
 
     const normalized = email.trim().toLowerCase();
 
-    // Client-side format check before hitting the network
+                                                          
     if (!EMAIL_REGEX.test(normalized)) {
       setError("Please enter a valid email address (e.g. you@example.com).");
       return;
@@ -36,8 +36,8 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await authService.forgotPassword(normalized);
-      // Always show the success screen — backend intentionally does not reveal
-      // whether the email is registered (prevents user enumeration).
+                                                                               
+                                                                     
       setSent(true);
     } catch (err) {
       const msg =

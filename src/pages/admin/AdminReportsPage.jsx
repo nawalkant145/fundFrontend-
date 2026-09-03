@@ -51,7 +51,7 @@ export default function AdminReportsPage() {
 
   useEffect(fetchReports, []);
 
-  // Resolve a report (optionally also ban the user / remove the content)
+                                                                         
   const resolve = (report, { actionTaken, banUser, removeContent } = {}) => {
     const id = report._id;
     setReports((p) =>
@@ -66,7 +66,7 @@ export default function AdminReportsPage() {
       .resolveReport(id, { actionTaken: actionTaken || "handled" })
       .catch(() => {});
 
-    // Take the moderation action
+                                 
     if (banUser) {
       const uid = report.reportedUser?._id || report.reportedUser;
       if (uid)

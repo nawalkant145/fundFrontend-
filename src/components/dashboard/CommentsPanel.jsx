@@ -8,11 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { getFullMockComments } from "../../constants/mockData";
 
-/**
- * Instagram Reels-style comments panel with nested replies.
- * On mobile  → Portal bottom-sheet (covers bottom nav, locks body scroll).
- * On desktop → Right-side panel (unchanged from original design).
- */
+                                                                                                                                                                                                                       
 export default function CommentsPanel({
   open,
   onClose,
@@ -26,26 +22,26 @@ export default function CommentsPanel({
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [localLikes, setLocalLikes] = useState({});
-  const [replyTo, setReplyTo] = useState(null); // { parentId, username }
+  const [replyTo, setReplyTo] = useState(null);                          
   const inputRef = useRef(null);
   const { user } = useAuth();
   const { socket } = useSocket();
   const targetId = videoId || postId;
 
-  // Unified comment fetch — works for either a video or a post target
+                                                                      
   const fetchComments = (params) => {
     if (videoId) return commentService.list(videoId, params);
     if (postId) return commentService.listByPost(postId, params);
     return Promise.reject(new Error("No target id"));
   };
 
-  // Helper to load mock comments only for non-mongo IDs
+                                                        
   const getFallbackComments = (id, count) => {
     if (!id) return [];
     return getFullMockComments(id, count);
   };
 
-  // Fetch top-level comments on open
+                                     
   useEffect(() => {
     if (!open || !targetId) return;
 
@@ -74,7 +70,7 @@ export default function CommentsPanel({
       .finally(() => setLoading(false));
   }, [open, targetId]);
 
-  // Real-time socket sync across all connected clients
+                                                       
   useEffect(() => {
     if (!socket || !open || !targetId) return;
 
@@ -261,7 +257,7 @@ export default function CommentsPanel({
     onCommentDeleted,
   ]);
 
-  // Escape to close
+                    
   useEffect(() => {
     if (!open) return;
     const onEsc = (e) => e.key === "Escape" && onClose?.();
@@ -269,11 +265,11 @@ export default function CommentsPanel({
     return () => document.removeEventListener("keydown", onEsc);
   }, [open, onClose]);
 
-  // ── Mobile: lock body scroll + hide BottomBar when sheet is open ──────────
-  // Adds/removes the CSS class "comments-sheet-open" from document.body.
-  // index.css uses this class to:
-  //   1. Set overflow:hidden on body (prevents feed scrolling behind sheet).
-  //   2. Hide the BottomBar nav (via nav[data-bottombar] selector).
+                                                                               
+                                                                         
+                                  
+                                                                             
+                                                                    
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
     if (!isMobile) return;
@@ -288,7 +284,7 @@ export default function CommentsPanel({
     };
   }, [open]);
 
-  // Build a UI comment object (used for optimistic add)
+                                                        
   const makeComment = (commentText, parentId = null) => ({
     _id: `temp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     userId: {
@@ -309,7 +305,7 @@ export default function CommentsPanel({
     _repliesOpen: true,
   });
 
-  // Post a comment OR a reply
+                              
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!text.trim()) return;
@@ -322,7 +318,7 @@ export default function CommentsPanel({
     const optimistic = makeComment(finalText, parentId);
 
     if (parentId) {
-      // Nest under the parent comment, ensure thread is open
+                                                             
       setComments((prev) =>
         prev.map((c) =>
           c._id === parentId
@@ -344,7 +340,7 @@ export default function CommentsPanel({
     setText("");
     setReplyTo(null);
 
-    // Only call API if targetId looks like a real Mongo ObjectId (24 hex characters)
+                                                                                     
     const isRealMongoId = targetId && /^[a-f0-9]{24}$/i.test(targetId);
     if (isRealMongoId) {
       commentService
@@ -394,9 +390,9 @@ export default function CommentsPanel({
     }
   };
 
-  // Toggle / load replies for a comment
+                                        
   const toggleReplies = (comment) => {
-    // Already loaded → just toggle open/closed
+                                               
     if (comment._repliesLoaded) {
       setComments((prev) =>
         prev.map((c) =>
@@ -405,7 +401,7 @@ export default function CommentsPanel({
       );
       return;
     }
-    // Load replies from API
+                            
     fetchComments({ parentId: comment._id, limit: 50 })
       .then((res) => {
         const data = res?.data?.data;
@@ -431,7 +427,7 @@ export default function CommentsPanel({
     commentService.like(commentId).catch(() => {});
   };
 
-  // Delete a top-level comment or a reply
+                                          
   const handleDelete = (comment, parentId = null) => {
     const previous = comments;
 
@@ -465,29 +461,29 @@ export default function CommentsPanel({
           }
         })
         .catch(() => {
-          // Rollback optimistic delete on error
+                                                
           setComments(previous);
         });
     }
   };
 
-  // Set up a reply (always nests under the TOP-LEVEL parent — Instagram flattens to 1 level)
+                                                                                             
   const startReply = (comment, topLevelParentId = null) => {
     const author = comment.userId || {};
     const username =
       author.username ||
       (author.name || "user").toLowerCase().replace(/\s+/g, "_");
-    // If replying to a reply, parent is the top-level comment; else the comment itself
+                                                                                       
     const parentId = topLevelParentId || comment._id;
     setReplyTo({ parentId, username });
     setText("");
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  // ── Detect mobile at render time (safe — we're always in browser here) ─────
+                                                                                
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  // ── Shared panel content ───────────────────────────────────────────────────
+                                                                                
   const panelContent = (
     <motion.aside
       key="comments-aside"
@@ -496,23 +492,23 @@ export default function CommentsPanel({
       exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 28, stiffness: 300 }}
       className={[
-        // Base — mobile bottom-sheet
+                                     
         "fixed z-[70] bg-white bottom-0 left-0 right-0",
-        // Desktop override — right sidebar
+                                           
         "md:left-auto md:right-0 md:top-0 md:w-[400px]",
-        // Height: 75vh on mobile, full height on desktop
+                                                         
         "h-[75vh] md:h-full",
         "rounded-t-2xl md:rounded-none",
         "flex flex-col shadow-2xl",
       ].join(" ")}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      {/* Mobile drag handle */}
+      {                        }
       <div className="md:hidden flex justify-center pt-2 pb-1">
         <div className="w-10 h-1 bg-gray-300 rounded-full" />
       </div>
 
-      {/* Header */}
+      {            }
       <div className="flex items-center justify-center relative px-4 py-3 border-b border-gray-100">
         <h2 className="font-bold text-base text-gray-900">
           Comments {comments.length > 0 ? `(${comments.length})` : ""}
@@ -525,7 +521,7 @@ export default function CommentsPanel({
         </button>
       </div>
 
-      {/* List */}
+      {          }
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -541,7 +537,7 @@ export default function CommentsPanel({
         ) : (
           comments.map((c) => (
             <div key={c._id} className="space-y-3">
-              {/* Top-level comment */}
+              {                       }
               <Comment
                 data={c}
                 currentUserId={user?._id}
@@ -551,7 +547,7 @@ export default function CommentsPanel({
                 onDelete={() => handleDelete(c)}
               />
 
-              {/* View / hide replies toggle */}
+              {                                }
               {c.replyCount > 0 && (
                 <button
                   onClick={() => toggleReplies(c)}
@@ -564,7 +560,7 @@ export default function CommentsPanel({
                 </button>
               )}
 
-              {/* Replies thread (indented) */}
+              {                               }
               <AnimatePresence>
                 {c._repliesOpen && c._replies?.length > 0 && (
                   <motion.div
@@ -593,7 +589,7 @@ export default function CommentsPanel({
         )}
       </div>
 
-      {/* Reply bar */}
+      {               }
       {replyTo && (
         <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
           <p className="text-xs text-gray-500">
@@ -609,7 +605,7 @@ export default function CommentsPanel({
         </div>
       )}
 
-      {/* Composer */}
+      {              }
       <form
         onSubmit={handleSubmit}
         className="px-4 py-3 border-t border-gray-100 flex items-center gap-3 bg-white"
@@ -637,7 +633,7 @@ export default function CommentsPanel({
     </motion.aside>
   );
 
-  // ── Backdrop ───────────────────────────────────────────────────────────────
+                                                                                
   const backdrop = (
     <motion.div
       key="comments-backdrop"
@@ -649,12 +645,12 @@ export default function CommentsPanel({
     />
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  // On MOBILE: portal the entire sheet + backdrop to document.body so it
-  // escapes the overflow stacking context of DashboardShell's scroll container
-  // and correctly appears above the BottomBar (which is hidden via CSS class).
-  //
-  // On DESKTOP: render inline — no stacking context issue there.
+                                                                                
+                                                                         
+                                                                               
+                                                                               
+    
+                                                                 
   return (
     <AnimatePresence>
       {open && (
@@ -679,7 +675,7 @@ export default function CommentsPanel({
   );
 }
 
-/* ─── Single comment / reply row ─────────────────────────── */
+                                                                
 function Comment({
   data,
   currentUserId,
@@ -764,7 +760,7 @@ function Comment({
   );
 }
 
-/* ─── Avatar with initials fallback ──────────────────────── */
+                                                                
 function CommentAvatar({ src, name, size = 36 }) {
   const style = { width: size, height: size, minWidth: size };
 
@@ -796,7 +792,7 @@ function CommentAvatar({ src, name, size = 36 }) {
   );
 }
 
-/* ─── Utilities ──────────────────────────────────────────── */
+                                                                
 function formatTimeAgo(dateStr) {
   if (!dateStr) return "now";
   const diff = Math.max(0, Date.now() - new Date(dateStr).getTime());

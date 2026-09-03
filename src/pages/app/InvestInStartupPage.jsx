@@ -49,20 +49,20 @@ export default function InvestInStartupPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Investment details state
+                             
   const [amount, setAmount] = useState(2500000);
   const [equity, setEquity] = useState(2.5);
   const [instrument, setInstrument] = useState("Equity");
   const [round, setRound] = useState("Series A");
   const [note, setNote] = useState("");
 
-  // Payment & confirmation state
+                                 
   const [submitting, setSubmitting] = useState(false);
   const [txDetails, setTxDetails] = useState(null);
   const [showCertificate, setShowCertificate] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("upi");
 
-  // Fetch REAL startups from backend API strictly
+                                                  
   const fetchStartups = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -84,7 +84,7 @@ export default function InvestInStartupPage() {
     fetchStartups();
   }, [fetchStartups]);
 
-  // Pre-select target startup from URL query param if present
+                                                              
   useEffect(() => {
     if (startups.length === 0) return;
 
@@ -114,7 +114,7 @@ export default function InvestInStartupPage() {
   const gst = useMemo(() => Math.round(platformFee * 0.18), [platformFee]);
   const totalPayable = useMemo(() => amount + platformFee + gst, [amount, platformFee, gst]);
 
-  // Execute payment flow using real database startup ID
+                                                        
   const handlePayment = async () => {
     if (!selectedStartup) return;
     setSubmitting(true);
@@ -123,7 +123,7 @@ export default function InvestInStartupPage() {
     const founderName = selectedStartup.founderId?.companyName || selectedStartup.founderId?.name || selectedStartup.title || "Startup";
 
     try {
-      // 1. Express interest / create or retrieve the real Investment document in MongoDB
+                                                                                         
       const expressRes = await investmentService.expressInterest({
         videoId: startupId,
         amount: Number(amount),
@@ -146,7 +146,7 @@ export default function InvestInStartupPage() {
         stage: invData.stage,
       });
 
-      // 2. Create Razorpay order via backend
+                                             
       const orderRes = await investmentService.createOrder(investmentId);
       const orderData = orderRes?.data?.data;
       if (!orderData?.keyId || !orderData?.order?.id) {
@@ -158,7 +158,7 @@ export default function InvestInStartupPage() {
         orderId: orderData.order.id,
       });
 
-      // 3. Trigger Razorpay Checkout modal
+                                           
       const paymentResult = await openRazorpayCheckout({
         keyId: orderData.keyId,
         order: orderData.order,
@@ -176,7 +176,7 @@ export default function InvestInStartupPage() {
         paymentId: paymentResult.razorpay_payment_id,
       });
 
-      // 4. Verify payment with backend
+                                       
       const verifyRes = await investmentService.verifyPayment(investmentId, paymentResult);
       const updatedInv = verifyRes?.data?.data?.investment || verifyRes?.data?.investment;
 
@@ -235,7 +235,7 @@ export default function InvestInStartupPage() {
   return (
     <DashboardShell fullWidth={false}>
       <div className="max-w-[1100px] mx-auto py-4 px-2 sm:px-4 space-y-6">
-        {/* Top Header */}
+        {                }
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -255,7 +255,7 @@ export default function InvestInStartupPage() {
           </div>
         </div>
 
-        {/* Progress Stepper */}
+        {                      }
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between max-w-4xl mx-auto">
             {STEPPER.map((s, idx) => {
@@ -299,7 +299,7 @@ export default function InvestInStartupPage() {
           </div>
         </div>
 
-        {/* ─── LOADING STATE ─── */}
+        {                           }
         {loading && (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center space-y-4">
             <div className="w-10 h-10 border-4 border-[#1B5E3F]/20 border-t-[#1B5E3F] rounded-full animate-spin" />
@@ -308,7 +308,7 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* ─── ERROR STATE ─── */}
+        {                         }
         {!loading && error && (
           <div className="bg-white border border-red-200 rounded-2xl p-10 text-center shadow-sm space-y-4">
             <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto">
@@ -327,7 +327,7 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* ─── EMPTY STATE (NO REAL STARTUPS RETURNED FROM DATABASE) ─── */}
+        {                                                                   }
         {!loading && !error && startups.length === 0 && (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-12 text-center shadow-sm space-y-4">
             <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#1B5E3F] flex items-center justify-center mx-auto">
@@ -348,10 +348,10 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* ─── STEP 1: STARTUP SELECTION & DETAILS (WHEN REAL DATA EXISTS) ─── */}
+        {                                                                         }
         {!loading && !error && startups.length > 0 && step === 1 && (
           <div className="space-y-6">
-            {/* Startup Selector Grid */}
+            {                           }
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-xs">
               <label className="block text-xs font-extrabold uppercase text-[#64748B] tracking-wider mb-3">
                 Select Startup to Invest ({startups.length} Available)
@@ -394,7 +394,7 @@ export default function InvestInStartupPage() {
               </div>
             </div>
 
-            {/* Selected Startup Details Card */}
+            {                                   }
             {selectedStartup && (
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E2E8F0]">
@@ -433,7 +433,7 @@ export default function InvestInStartupPage() {
                   </Link>
                 </div>
 
-                {/* Real Ask Amount & Equity Overview */}
+                {                                       }
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
                     <p className="text-[11px] text-[#64748B] font-medium">Target Funding Ask</p>
@@ -455,7 +455,7 @@ export default function InvestInStartupPage() {
                   </div>
                 </div>
 
-                {/* Step 1 Footer Action */}
+                {                          }
                 <div className="pt-4 border-t border-[#E2E8F0] flex justify-end">
                   <button
                     onClick={() => setStep(2)}
@@ -469,7 +469,7 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* ─── STEP 2: INVESTMENT TERMS ─── */}
+        {                                      }
         {!loading && !error && startups.length > 0 && step === 2 && (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-6">
             <h2 className="text-base font-extrabold text-[#0F172A] pb-3 border-b border-[#E2E8F0]">
@@ -477,7 +477,7 @@ export default function InvestInStartupPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Investment Amount */}
+              {                       }
               <div className="space-y-2">
                 <label className="block text-xs font-extrabold text-[#0F172A]">
                   Investment Amount (₹)
@@ -505,7 +505,7 @@ export default function InvestInStartupPage() {
                 </div>
               </div>
 
-              {/* Equity Offered */}
+              {                    }
               <div className="space-y-2">
                 <label className="block text-xs font-extrabold text-[#0F172A]">
                   Equity Offered (%)
@@ -534,7 +534,7 @@ export default function InvestInStartupPage() {
                 </div>
               </div>
 
-              {/* Instrument / Type */}
+              {                       }
               <div className="space-y-2">
                 <label className="block text-xs font-extrabold text-[#0F172A]">
                   Instrument / Type
@@ -550,7 +550,7 @@ export default function InvestInStartupPage() {
                 </select>
               </div>
 
-              {/* Round */}
+              {           }
               <div className="space-y-2">
                 <label className="block text-xs font-extrabold text-[#0F172A]">
                   Round
@@ -568,7 +568,7 @@ export default function InvestInStartupPage() {
               </div>
             </div>
 
-            {/* Note textarea */}
+            {                   }
             <div className="space-y-2">
               <label className="block text-xs font-extrabold text-[#0F172A]">
                 Investment Note (Optional)
@@ -582,7 +582,7 @@ export default function InvestInStartupPage() {
               />
             </div>
 
-            {/* Step 2 Actions */}
+            {                    }
             <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between">
               <button
                 onClick={() => setStep(1)}
@@ -600,7 +600,7 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* ─── STEP 3: PAYMENT SUMMARY & CHECKOUT ─── */}
+        {                                                }
         {!loading && !error && startups.length > 0 && step === 3 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-6">
@@ -645,7 +645,7 @@ export default function InvestInStartupPage() {
                 </div>
               </div>
 
-              {/* Payment Methods */}
+              {                     }
               <div>
                 <h3 className="text-xs font-extrabold uppercase text-[#64748B] tracking-wider mb-3">
                   Choose Payment Method
@@ -681,7 +681,7 @@ export default function InvestInStartupPage() {
                 </div>
               </div>
 
-              {/* Payment CTA */}
+              {                 }
               <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between gap-3">
                 <button
                   onClick={() => setStep(2)}
@@ -700,7 +700,7 @@ export default function InvestInStartupPage() {
               </div>
             </div>
 
-            {/* Sidebar Security Trust Card */}
+            {                                 }
             <div className="space-y-4">
               <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-5 text-xs text-[#475569] space-y-3">
                 <div className="flex items-center gap-2 text-[#10B981] font-extrabold text-sm">
@@ -718,7 +718,7 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* ─── STEP 4: CONFIRMATION / SUCCESS ─── */}
+        {                                            }
         {!loading && step === 4 && txDetails && (
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-md text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-[#10B981] flex items-center justify-center mx-auto shadow-md">
@@ -733,7 +733,7 @@ export default function InvestInStartupPage() {
               </p>
             </div>
 
-            {/* Investment Summary */}
+            {                        }
             <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-5 text-left text-xs sm:text-sm space-y-3">
               <h3 className="font-black text-[#0F172A] border-b border-[#E2E8F0] pb-2 text-xs uppercase tracking-wider">
                 Investment Summary
@@ -768,7 +768,7 @@ export default function InvestInStartupPage() {
               We've sent the details and agreement copy to your registered email.
             </p>
 
-            {/* Action Buttons */}
+            {                    }
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
               <button
                 onClick={() => navigate("/app/investments")}
@@ -792,7 +792,7 @@ export default function InvestInStartupPage() {
           </div>
         )}
 
-        {/* Certificate Modal */}
+        {                       }
         {txDetails && (
           <CertificateModal
             open={showCertificate}
@@ -831,7 +831,7 @@ function CertificateModal({ open, onClose, tx, userName }) {
           <p className="text-xs text-[#64748B]">{tx.round || "Series A"}</p>
         </div>
 
-        {/* Grid Summary */}
+        {                  }
         <div className="grid grid-cols-4 gap-2 py-3 bg-white border border-[#E2E8F0] rounded-xl text-xs">
           <div>
             <p className="text-[10px] text-[#64748B]">Investment Amount</p>
@@ -851,7 +851,7 @@ function CertificateModal({ open, onClose, tx, userName }) {
           </div>
         </div>
 
-        {/* Official Stamp & Sign */}
+        {                           }
         <div className="flex items-center justify-between pt-4 border-t border-[#E2E8F0] text-xs">
           <div className="text-left">
             <p className="font-serif italic text-sm text-[#0F172A] font-bold">Rajesh Sharma</p>
@@ -862,7 +862,7 @@ function CertificateModal({ open, onClose, tx, userName }) {
           </div>
         </div>
 
-        {/* Footer actions */}
+        {                    }
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             onClick={() => toast.success("Certificate downloaded as PDF")}

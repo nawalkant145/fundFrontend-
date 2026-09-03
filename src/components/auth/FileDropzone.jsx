@@ -2,9 +2,7 @@ import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { HiCloudUpload, HiCheckCircle, HiTrash } from "react-icons/hi";
 
-/**
- * Premium drag-and-drop file uploader — light theme.
- */
+                                                               
 export default function FileDropzone({
   label,
   description,

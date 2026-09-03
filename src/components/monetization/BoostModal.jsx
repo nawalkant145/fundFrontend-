@@ -13,11 +13,7 @@ import { useAuth } from "../../context/AuthContext";
 import { boostService } from "../../services/boostService";
 import { openRazorpayCheckout } from "../../lib/razorpay";
 
-/**
- * Modal that lets a founder buy a boost for their pitch.
- * 3 tier cards (Mini / Pro / Mega) → real Razorpay checkout.
- * In dev (no gateway keys), the backend activates the boost immediately.
- */
+                                                                                                                                                                                                             
 export default function BoostModal({ open, onClose, pitch, onBoosted }) {
   const [selected, setSelected] = useState("pro");
   const [submitting, setSubmitting] = useState(false);
@@ -33,14 +29,14 @@ export default function BoostModal({ open, onClose, pitch, onBoosted }) {
     }
     setSubmitting(true);
     try {
-      // 1. Create the boost order on the server (boost remains pending)
+                                                                        
       const res = await boostService.createOrder({
         videoId: pitch._id,
         tier: selected,
       });
       const data = res?.data?.data || {};
 
-      // 2. Open Razorpay Checkout modal
+                                        
       const payment = await openRazorpayCheckout({
         keyId: data.keyId,
         order: data.order,
@@ -53,10 +49,10 @@ export default function BoostModal({ open, onClose, pitch, onBoosted }) {
         },
       });
 
-      // 3. Verify signature server-side; backend marks boost active ONLY on success
+                                                                                    
       await boostService.verifyPayment(data.boost._id, payment);
 
-      // 4. Show success notification ONLY after payment verification succeeds
+                                                                              
       toast?.success(`${tier.name} activated for ${tier.duration}`);
       onBoosted?.(data.boost);
       onClose();

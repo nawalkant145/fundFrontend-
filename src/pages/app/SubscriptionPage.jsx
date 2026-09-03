@@ -38,7 +38,7 @@ export default function SubscriptionPage() {
       const res = await subscriptionService.createOrder();
       const data = res?.data?.data || {};
 
-      // Dev fallback — backend activated without a gateway
+                                                           
       if (data.activated) {
         await refreshUser();
         toast?.success(
@@ -91,7 +91,7 @@ export default function SubscriptionPage() {
 
   return (
     <DashboardShell title="Subscription" subtitle={`${plan.name} for ${role}s`}>
-      {/* Hero */}
+      {          }
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -152,9 +152,9 @@ export default function SubscriptionPage() {
         </div>
       </motion.div>
 
-      {/* Plan cards */}
+      {                }
       <div className="grid lg:grid-cols-2 gap-5 mb-10">
-        {/* Free */}
+        {          }
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -206,7 +206,7 @@ export default function SubscriptionPage() {
           )}
         </motion.div>
 
-        {/* Pro */}
+        {         }
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -276,7 +276,7 @@ Current Plan
         </motion.div>
       </div>
 
-      {/* Comparison table */}
+      {                      }
       <div className="bg-white border border-[#1B5E3F]/12 rounded-3xl overflow-hidden shadow-sm">
         <div className="grid grid-cols-[1.4fr_1fr_1fr] bg-[#FAFAF7] border-b border-[#1B5E3F]/10">
           <div className="p-4 sm:p-5 text-xs font-bold uppercase tracking-wider text-[#0A1F14]/65">
@@ -306,7 +306,7 @@ Current Plan
         ))}
       </div>
 
-      {/* Boost callout — founders only */}
+      {                                   }
       {!isInvestor && (
         <div className="mt-8 bg-gradient-to-br from-[#FFF6E0] to-[#FFE9BD] border border-[#F5B942]/40 rounded-3xl p-6 sm:p-7 flex flex-col sm:flex-row items-center gap-5">
           <div className="w-14 h-14 rounded-2xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/40 flex-shrink-0">
@@ -331,7 +331,7 @@ Current Plan
         </div>
       )}
 
-      {/* Saved hint — investors only */}
+      {                                 }
       {isInvestor && (
         <div className="mt-8 bg-gradient-to-br from-[#FFF6E0] to-[#FFE9BD] border border-[#F5B942]/40 rounded-3xl p-6 sm:p-7 flex flex-col sm:flex-row items-center gap-5">
           <div className="w-14 h-14 rounded-2xl bg-[#F5B942] flex items-center justify-center shadow-md shadow-[#F5B942]/40 flex-shrink-0">

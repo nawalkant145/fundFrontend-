@@ -2,10 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { HiEye, HiX } from "react-icons/hi";
 import { useAuth } from "../context/AuthContext";
 
-/**
- * Persistent banner shown while an admin is viewing the app as another user.
- * Lets them exit impersonation and return to the admin console.
- */
+                                                                                                                                                         
 export default function ImpersonationBanner() {
   const { impersonating, stopImpersonation } = useAuth();
   const navigate = useNavigate();

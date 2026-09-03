@@ -18,10 +18,7 @@ import { useToast } from "../ui/Toast";
 import { useUpload } from "../../context/UploadContext";
 import { INDUSTRIES, FUNDING_STAGES } from "../../constants/options";
 
-/**
- * UploadPitchModal — slide-up sheet for uploading a pitch video.
- * Same form as UploadPitchPage but rendered inside a modal overlay.
- */
+                                                                                                                                                 
 export default function UploadPitchModal({ open, onClose }) {
   const toast = useToast();
   const { startUpload, uploadState } = useUpload();
@@ -42,7 +39,7 @@ export default function UploadPitchModal({ open, onClose }) {
   });
   const [submitted, setSubmitted] = useState(false);
 
-  // Reset form when modal closes
+                                 
   useEffect(() => {
     if (!open) {
       setTimeout(() => {
@@ -62,7 +59,7 @@ export default function UploadPitchModal({ open, onClose }) {
           visibility: "everyone",
         });
         setSubmitted(false);
-      }, 300); // wait for exit animation
+      }, 300);                           
     }
   }, [open]);
 
@@ -118,12 +115,12 @@ export default function UploadPitchModal({ open, onClose }) {
     }
   };
 
-  // Close on backdrop click
+                            
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // Close on Escape
+                    
   useEffect(() => {
     if (!open) return;
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -144,10 +141,10 @@ export default function UploadPitchModal({ open, onClose }) {
           transition={{ duration: 0.2 }}
           onClick={handleBackdropClick}
         >
-          {/* Backdrop */}
+          {              }
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-          {/* Modal panel */}
+          {                 }
           <motion.div
             className="relative z-10 w-full sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden flex flex-col"
             initial={{ y: 80, opacity: 0, scale: 0.97 }}
@@ -156,12 +153,12 @@ export default function UploadPitchModal({ open, onClose }) {
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drag handle (mobile) */}
+            {                          }
             <div className="flex justify-center pt-2.5 sm:hidden flex-shrink-0">
               <div className="w-10 h-1.5 rounded-full bg-[#0A1F14]/15" />
             </div>
 
-            {/* Header */}
+            {            }
             <div className="flex items-center justify-between px-4 sm:px-6 pt-2 sm:pt-4 pb-3.5 sm:pb-4 border-b border-[#1B5E3F]/10 flex-shrink-0">
               <div className="min-w-0 flex-1 pr-2">
                 <h2 className="text-lg sm:text-xl font-black text-[#0A1F14] truncate">Upload your pitch</h2>
@@ -175,7 +172,7 @@ export default function UploadPitchModal({ open, onClose }) {
               </button>
             </div>
 
-            {/* Body */}
+            {          }
             <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
               {submitted ? (
                 <motion.div
@@ -207,7 +204,7 @@ export default function UploadPitchModal({ open, onClose }) {
                 </motion.div>
               ) : (
                 <form onSubmit={submit} className="space-y-5">
-                  {/* Tips */}
+                  {          }
                   <div className="bg-[#FAFAF7] border border-[#1B5E3F]/15 rounded-2xl p-4 flex gap-3">
                     <HiInformationCircle className="w-5 h-5 text-[#F5B942] flex-shrink-0 mt-0.5" />
                     <div>
@@ -221,7 +218,7 @@ export default function UploadPitchModal({ open, onClose }) {
                     </div>
                   </div>
 
-                  {/* Video */}
+                  {           }
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-[#0A1F14]/80">
                       Pitch video <span className="text-[#F5B942]">*</span>
@@ -270,7 +267,7 @@ export default function UploadPitchModal({ open, onClose }) {
                     )}
                   </div>
 
-                  {/* Cover picker */}
+                  {                  }
                   {videoFile && (
                     <CoverPicker
                       videoUrl={videoUrl}
@@ -316,7 +313,7 @@ export default function UploadPitchModal({ open, onClose }) {
                     <FormField label="Equity offered (%)" name="equityOffered" type="number" value={data.equityOffered} onChange={handleChange} placeholder="e.g. 10" />
                   </div>
 
-                  {/* Visibility */}
+                  {                }
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-[#0A1F14]/80">Who can see this pitch?</label>
                     <div className="flex gap-3">
@@ -346,7 +343,7 @@ export default function UploadPitchModal({ open, onClose }) {
                     </div>
                   </div>
 
-                  {/* Submit */}
+                  {            }
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#1B5E3F]/10">
                     <p className="text-xs text-[#0A1F14]/50">
                       {isUploadingOrProcessing
@@ -396,7 +393,7 @@ export default function UploadPitchModal({ open, onClose }) {
   );
 }
 
-/** Instagram-style cover picker (frames + custom upload) */
+                                                            
 function CoverPicker({ videoUrl, coverUrl, coverSource, onPickFrame, onUpload }) {
   const [frames, setFrames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -414,7 +411,7 @@ function CoverPicker({ videoUrl, coverUrl, coverSource, onPickFrame, onUpload })
         }
       })
       .catch(() => setLoading(false));
-    // eslint-disable-next-line
+                               
   }, [videoUrl]);
 
   return (
@@ -499,7 +496,7 @@ function extractFrames(videoUrl, count = 6) {
         if (!total || !isFinite(total)) { resolve([]); return; }
         for (i = 0; i < count; i++) {
           const t = (total / (count + 1)) * (i + 1);
-          // eslint-disable-next-line no-await-in-loop
+                                                      
           const url = await grabAt(t);
           if (url) frames.push(url);
         }

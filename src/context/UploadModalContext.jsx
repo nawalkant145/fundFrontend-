@@ -1,9 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
-/**
- * UploadModalContext — global state to open Upload Pitch or Upload Post modals
- * from anywhere in the app (Sidebar, FounderDashboard, MyStudioPage, etc.)
- */
+                                                                                                                                                                      
 const UploadModalContext = createContext(null);
 
 export function UploadModalProvider({ children }) {

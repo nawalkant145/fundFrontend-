@@ -76,7 +76,7 @@ export default function NotificationDetailPage() {
   return (
     <DashboardShell title="Notification Detail" subtitle="Complete information for this alert.">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Back Link */}
+        {               }
         <button
           onClick={() => navigate("/app/notifications")}
           className="inline-flex items-center gap-2 text-xs font-extrabold text-[#1B5E3F] hover:underline cursor-pointer"
@@ -102,7 +102,7 @@ export default function NotificationDetailPage() {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {/* Centered Hero Header */}
+            {                          }
             <div className="bg-gradient-to-br from-[#0F4A2E] to-[#1B5E3F] text-white rounded-3xl p-8 text-center shadow-lg relative overflow-hidden">
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto mb-4 shadow-inner">
                 <HiCheckCircle className="w-10 h-10" />
@@ -122,7 +122,7 @@ export default function NotificationDetailPage() {
               </p>
             </div>
 
-            {/* Investment Summary Details Table */}
+            {                                      }
             <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-base font-extrabold text-[#0A1F14] border-b border-[#1B5E3F]/10 pb-3">
                 Investment Summary
@@ -150,7 +150,7 @@ export default function NotificationDetailPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {                    }
             <div className="flex items-center gap-3 flex-wrap pt-2">
               {dealId && (
                 <Link to={`/app/deals/${dealId}`} className="flex-1">

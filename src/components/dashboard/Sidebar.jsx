@@ -94,7 +94,7 @@ export default function Sidebar({ mode }) {
 
   return (
     <aside className="w-[280px] min-w-[280px] max-w-[280px] bg-white border-r border-[#E2E8F0] flex flex-col flex-shrink-0 h-full overflow-hidden">
-      {/* Top User Profile Card (Compact Figma layout) */}
+      {                                                  }
       <div className="p-4 border-b border-[#E2E8F0] flex items-center gap-3 bg-gradient-to-b from-[#F8FAFC] to-white shrink-0">
         <Link to="/app/profile" className="relative flex-shrink-0">
           <img
@@ -124,7 +124,7 @@ export default function Sidebar({ mode }) {
         </div>
       </div>
 
-      {/* Main Navigation Links */}
+      {                           }
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto sidebar-scroll">
         {items.map((item) => (
           <NavLink
@@ -165,7 +165,7 @@ export default function Sidebar({ mode }) {
         </button>
       </nav>
 
-      {/* Bottom Promo Card (Investor Pro for Investor, Studio Pro for Founder) */}
+      {                                                                           }
       {role !== "admin" && (
         <div className="p-3 m-3 rounded-2xl shrink-0 shadow-sm transition-all duration-200">
           {role === "investor" ? (

@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiPlay, HiPause, HiHeart } from "react-icons/hi";
 
-/**
- * Instagram Reels / YouTube Shorts style video player.
- *
- * Tap behavior matches Instagram:
- *   - Single tap → toggles play/pause (300ms delay to detect double-tap)
- *   - Double tap → fires onDoubleTap (parent uses this to like) + heart burst
- *   - Big icon (play OR pause) flashes for ~600ms on single tap, then fades
- */
+                                                                                                                                                                                                                                                                                                                                                  
 export default function ShortsPlayer({
   src,
   poster,
@@ -23,15 +16,15 @@ export default function ShortsPlayer({
   const [progress, setProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
-  const [flash, setFlash] = useState(null); // 'play' | 'pause' | null
-  const [hearts, setHearts] = useState([]); // burst hearts at tap location
+  const [flash, setFlash] = useState(null);                           
+  const [hearts, setHearts] = useState([]);                                
   const flashTimerRef = useRef(null);
   const lastTapRef = useRef(0);
   const tapTimerRef = useRef(null);
 
   const prevSrcRef = useRef(src);
 
-  // Auto-play when this card becomes active, resetting currentTime ONLY on src change
+                                                                                      
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -54,7 +47,7 @@ export default function ShortsPlayer({
     }
   }, [active, src, userPaused]);
 
-  // Seamlessly resume playback when returning to visible tab if active & not userPaused
+                                                                                        
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -73,12 +66,12 @@ export default function ShortsPlayer({
     };
   }, [active, userPaused]);
 
-  // Mute sync
+              
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
-  // Progress
+             
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -89,7 +82,7 @@ export default function ShortsPlayer({
     return () => v.removeEventListener("timeupdate", tick);
   }, []);
 
-  // Cleanup timers
+                   
   useEffect(
     () => () => {
       clearTimeout(flashTimerRef.current);
@@ -120,7 +113,7 @@ export default function ShortsPlayer({
     }
   };
 
-  // Spawn a burst heart at the tap position (Insta double-tap behavior)
+                                                                        
   const burstHeart = (clientX, clientY) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -133,15 +126,15 @@ export default function ShortsPlayer({
     }, 1000);
   };
 
-  // Tap handler: discriminates single vs double tap.
-  // We delay single-tap action by 280ms to see if a second tap arrives.
+                                                     
+                                                                        
   const handleTap = (e) => {
     const now = Date.now();
     const since = now - lastTapRef.current;
     lastTapRef.current = now;
 
     if (since < 280) {
-      // Double tap detected
+                            
       clearTimeout(tapTimerRef.current);
       burstHeart(
         e.clientX ?? e.touches?.[0]?.clientX ?? 0,
@@ -151,14 +144,14 @@ export default function ShortsPlayer({
       return;
     }
 
-    // Schedule single-tap action
+                                 
     clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => {
       togglePlay();
     }, 280);
   };
 
-  // Click on progress bar — seek
+                                 
   const handleSeek = (e) => {
     e.stopPropagation();
     const v = videoRef.current;
@@ -185,14 +178,14 @@ export default function ShortsPlayer({
         className="absolute inset-0 w-full h-full object-cover bg-black cursor-pointer p-0 m-0 border-0 rounded-none shadow-none"
       />
 
-      {/* Loader */}
+      {            }
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/30">
           <div className="w-8 h-8 rounded-full border-4 border-gold/30 border-t-gold animate-spin" />
         </div>
       )}
 
-      {/* Single-tap flash icon */}
+      {                           }
       <AnimatePresence>
         {flash && (
           <motion.div
@@ -214,7 +207,7 @@ export default function ShortsPlayer({
         )}
       </AnimatePresence>
 
-      {/* Double-tap heart burst — anchored at tap point */}
+      {                                                    }
       <AnimatePresence>
         {hearts.map((h) => (
           <motion.div
@@ -239,7 +232,7 @@ export default function ShortsPlayer({
         ))}
       </AnimatePresence>
 
-      {/* Single EXPGLO Gold Reel Progress Bar */}
+      {                                          }
       <div
         onClick={handleSeek}
         className="absolute bottom-2 left-3 right-3 h-1 bg-white/20 rounded-full cursor-pointer group z-20 overflow-hidden"

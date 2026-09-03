@@ -49,7 +49,7 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Time-series stats for charts
+                                 
   useEffect(() => {
     adminService
       .getStats({ days })
@@ -60,9 +60,9 @@ export default function AdminDashboard() {
       .catch(() => setStats(null));
   }, [days]);
 
-  // Format the aggregation output into chart-ready arrays
+                                                          
   const fmtLabel = (d) => {
-    // d is "YYYY-MM-DD"
+                        
     const parts = String(d).split("-");
     return parts.length === 3 ? `${parts[2]}/${parts[1]}` : d;
   };
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
   }));
   const investmentAmounts = (stats?.investmentAmounts || []).map((i) => ({
     label: fmtLabel(i._id),
-    value: Math.round((i.amount || 0) / 1000), // in K
+    value: Math.round((i.amount || 0) / 1000),        
   }));
 
   return (
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6 mb-6">
-        {/* Users breakdown */}
+        {                     }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6">
           <h3 className="text-lg font-bold mb-4">Users breakdown</h3>
           <div className="space-y-3">
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Pitches breakdown */}
+        {                       }
         <div className="bg-card-bg/60 border-2 border-gold/15 rounded-2xl p-6">
           <h3 className="text-lg font-bold mb-4">Pitches</h3>
           <div className="space-y-3">
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* ─── Analytics charts ─── */}
+      {                              }
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="text-lg font-bold">Trends</h3>

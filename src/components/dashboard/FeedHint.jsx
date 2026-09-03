@@ -4,10 +4,7 @@ import { HiArrowUp, HiArrowDown } from "react-icons/hi";
 
 const STORAGE_KEY = "expglo:feedHintShown";
 
-/**
- * One-time onboarding overlay shown the first time a user opens the feed.
- * Auto-dismisses after 4s or on first scroll/key/click.
- */
+                                                                                                                                              
 export default function FeedHint() {
   const [show, setShow] = useState(false);
 

@@ -6,10 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import DropdownMenu from "../ui/DropdownMenu";
 
 
-/**
- * Shared frosted-glass navbar for public pages (Home, Courses, etc.)
- * Pulls active link styling from the current route automatically.
- */
+                                                                                                                                                   
 export default function PublicNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);

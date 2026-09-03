@@ -6,11 +6,11 @@ import AdminRoute from "./components/guards/AdminRoute";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 import PageLoader from "./components/ui/PageLoader";
 
-// Public (no auth needed)
+                          
 const HomePage = lazy(() => import("./pages/HomePage"));
 const CoursesPage = lazy(() => import("./pages/CoursesPage"));
 
-// Auth (guest only — redirects to /app if already logged in)
+                                                             
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const VerifyPage = lazy(() => import("./pages/VerifyPage"));
@@ -18,7 +18,7 @@ const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const KycPage = lazy(() => import("./pages/KycPage"));
 
-// App (protected — requires login)
+                                   
 const AppHome = lazy(() => import("./pages/app/AppHome"));
 const FounderDashboard = lazy(() => import("./pages/app/FounderDashboard"));
 const UploadPitchPage = lazy(() => import("./pages/app/UploadPitchPage"));
@@ -44,7 +44,7 @@ const PublicProfilePage = lazy(() => import("./pages/app/PublicProfilePage"));
 const SettingsPage = lazy(() => import("./pages/app/SettingsPage"));
 const AppEventsPage = lazy(() => import("./pages/app/AppEventsPage"));
 
-// Admin (protected — admin role only)
+                                      
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminFundingPage = lazy(() => import("./pages/admin/AdminFundingPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
@@ -72,11 +72,11 @@ function App() {
       <ImpersonationBanner />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* ─── PUBLIC ─────────────────────────────── */}
+          {                                                }
           <Route path="/" element={<HomePage />} />
           <Route path="/courses" element={<CoursesPage />} />
 
-          {/* ─── GUEST ONLY (redirect to /app if logged in) ─── */}
+          {                                                        }
           <Route
             path="/login"
             element={
@@ -119,7 +119,7 @@ function App() {
             }
           />
 
-          {/* ─── APP (protected — any logged-in user) ─── */}
+          {                                                  }
           <Route
             path="/app"
             element={
@@ -347,8 +347,8 @@ function App() {
             }
           />
 
-          {/* ─── ADMIN ─── */}
-          {/* Dedicated admin login (public) */}
+          {                   }
+          {                                    }
           <Route path="/admin/login" element={<AdminLoginPage />} />
 
           <Route

@@ -2,16 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiDotsVertical } from "react-icons/hi";
 
-/**
- * Premium dropdown menu (the "three dots" UI).
- *
- * Props:
- *   items     [{ label, icon, onClick, danger, disabled }] | { divider: true }
- *   trigger   custom element to render instead of the dots icon
- *   align     "left" | "right"   horizontal alignment of the menu  (default "right")
- *   placement "auto" | "top" | "bottom"  vertical direction (default "auto")
- *   triggerClass  override the trigger button class
- */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 export default function DropdownMenu({
   items = [],
   trigger,
@@ -32,7 +23,7 @@ export default function DropdownMenu({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  // Auto-detect best placement when opening
+                                            
   useEffect(() => {
     if (!open) return;
     if (placement === "top" || placement === "bottom") {
@@ -43,7 +34,7 @@ export default function DropdownMenu({
     if (!rect) return;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    // Estimate menu height roughly based on item count
+                                                       
     const estHeight = Math.min(items.length * 44 + 16, 320);
     if (spaceBelow < estHeight && spaceAbove > spaceBelow) {
       setActualPlacement("top");

@@ -22,15 +22,15 @@ import { userService } from "../../services/userService";
 import { eventService } from "../../services/eventService";
 import { useToast } from "../ui/Toast";
 
-// Normalize funding stage strings for robust case-insensitive comparison
+                                                                         
 function normalizeStage(stageStr) {
   if (!stageStr) return "";
   return String(stageStr)
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, ""); // e.g. "Pre-Seed" -> "preseed", "Series A" -> "seriesa"
+    .replace(/[^a-z0-9]/g, "");                                                         
 }
 
-// Helper to format currency amount to INR string (e.g. 18000000 -> "Up to ₹1.8 Cr")
+                                                                                    
 function formatINR(val) {
   if (!val || isNaN(val)) return "Up to ₹50 L";
   const num = Number(val);
@@ -43,7 +43,7 @@ function formatINR(val) {
   return `Up to ₹${num.toLocaleString("en-IN")}`;
 }
 
-// Helper to render real company logo or fallback initial avatar from REAL company name
+                                                                                       
 function OpportunityLogo({ logo, name }) {
   const [error, setError] = useState(false);
   const initial = (name || "C")[0].toUpperCase();
@@ -66,7 +66,7 @@ function OpportunityLogo({ logo, name }) {
   );
 }
 
-// Extract founder / user ID from opportunity object
+                                                    
 function getProfileId(opp) {
   if (!opp) return null;
   const f = opp.founderId || opp.founder || opp.userId || opp.authorId || opp.companyId || opp.ownerId;
@@ -79,7 +79,7 @@ function getProfileId(opp) {
   return null;
 }
 
-// Row item for each real Active Funding Opportunity
+                                                    
 function FundingOpportunityItem({ opp }) {
   const companyName =
     opp.companyName ||
@@ -112,7 +112,7 @@ function FundingOpportunityItem({ opp }) {
 
   return (
     <div className="p-3 bg-[#FAFAF7] hover:bg-[#F3F2EF] border border-[#1B5E3F]/8 rounded-xl transition-colors group flex items-center gap-3">
-      {/* 1. Real Company Logo / Initial Fallback — Clickable to Profile */}
+      {                                                                    }
       {profileUrl ? (
         <Link to={profileUrl} className="shrink-0 hover:opacity-85 transition-opacity cursor-pointer">
           <OpportunityLogo logo={logo} name={companyName} />
@@ -121,7 +121,7 @@ function FundingOpportunityItem({ opp }) {
         <OpportunityLogo logo={logo} name={companyName} />
       )}
 
-      {/* 2. Real Company Name + Real Funding Stage — Clickable to Profile */}
+      {                                                                      }
       <div className="min-w-0 flex-1">
         {profileUrl ? (
           <Link to={profileUrl} className="block group/link cursor-pointer">
@@ -144,7 +144,7 @@ function FundingOpportunityItem({ opp }) {
         )}
       </div>
 
-      {/* 3. Real Funding Amount */}
+      {                            }
       <div className="text-right shrink-0">
         <span className="text-xs font-black text-[#1B5E3F] px-2.5 py-1 bg-[#1B5E3F]/8 group-hover:bg-[#1B5E3F]/12 rounded-full inline-block">
           {amount}
@@ -163,7 +163,7 @@ export function ActiveFundingOpportunitiesCard({
   const [loading, setLoading] = useState(!propOpportunities || propOpportunities.length === 0);
   const [error, setError] = useState(false);
 
-  // User's REAL preferred funding stages
+                                         
   const userPreferredStages =
     propPreferredStages ||
     user?.preferredStages ||
@@ -200,7 +200,7 @@ export function ActiveFundingOpportunitiesCard({
     fetchOpportunities();
   }, [fetchOpportunities]);
 
-  // Filter REAL opportunities by user's REAL preferred funding stages
+                                                                      
   const filteredList = useMemo(() => {
     if (!Array.isArray(realItems) || realItems.length === 0) {
       return [];
@@ -277,7 +277,7 @@ export function ActiveFundingOpportunitiesCard({
   );
 }
 
-// Format relative time (e.g. 2h ago, 5h ago, 1d ago, just now)
+                                                               
 function formatTimeAgo(dateInput) {
   if (!dateInput) return "";
   const d = new Date(dateInput);
@@ -293,7 +293,7 @@ function formatTimeAgo(dateInput) {
   return `${days}d ago`;
 }
 
-// Avatar component with fallback initial
+                                         
 function InvestorAvatar({ avatar, name }) {
   const [error, setError] = useState(false);
   const initial = (name || "I")[0].toUpperCase();
@@ -316,7 +316,7 @@ function InvestorAvatar({ avatar, name }) {
   );
 }
 
-// Dedicated Modal for Investor Profile Views
+                                             
 export function InvestorProfileViewsModal({ open, onClose }) {
   const [viewers, setViewers] = useState([]);
   const [count, setCount] = useState(0);
@@ -357,7 +357,7 @@ export function InvestorProfileViewsModal({ open, onClose }) {
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
-        {/* Header Subtitle & Count */}
+        {                             }
         <div className="pb-2 border-b border-[#1B5E3F]/10">
           <p className="text-xs text-[#0A1F14]/65 font-medium">
             Investors who recently viewed your profile
@@ -456,7 +456,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
     setError(false);
 
     try {
-      // Fetch profile viewers, deck requests, investment interest, and notifications concurrently
+                                                                                                  
       const [profileViewsRes, deckRes, dealsRes, notifRes] = await Promise.allSettled([
         userService.getProfileViewers({ limit: 50 }),
         deckAccessService.incoming(),
@@ -474,7 +474,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
 
       const rows = [];
 
-      // 1. UNIQUE investors who viewed the founder's PROFILE
+                                                             
       let latestProfileViewTime = null;
       profileViewers.forEach((v) => {
         const t = v.viewedAt || v.createdAt;
@@ -495,7 +495,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
         });
       }
 
-      // 2. Deck Requests
+                         
       const deckInvestorIds = new Set();
       let latestDeckTime = null;
 
@@ -531,7 +531,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
         });
       }
 
-      // 3. Investment Interest from real database records (matches Deals page)
+                                                                               
       const dealsList = Array.isArray(deals) ? deals : [];
       let latestInterestTime = null;
 
@@ -556,7 +556,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
         });
       }
 
-      // Sort rows by most recent activity timestamp
+                                                    
       rows.sort((a, b) => b.timestamp - a.timestamp);
 
       setActivityRows(rows);
@@ -648,7 +648,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
         )}
       </div>
 
-      {/* Modal for Investor Profile Views */}
+      {                                      }
       <InvestorProfileViewsModal
         open={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
@@ -657,7 +657,7 @@ export function InvestorActivityCard({ activities: propActivities }) {
   );
 }
 
-// Format event date (e.g. "2026-05-24" -> "24 May 2026")
+                                                         
 function formatEventDate(dateInput) {
   if (!dateInput) return "";
   const d = new Date(dateInput);

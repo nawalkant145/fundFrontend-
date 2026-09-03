@@ -4,30 +4,22 @@ import { HiCheck, HiPlus } from "react-icons/hi";
 import { userService } from "../../services/userService";
 import { useAuth } from "../../context/AuthContext";
 
-/**
- * One-click follow button — calls real API (POST /user/follow/:userId).
- * Optimistic UI. Reads initial state from the API on mount.
- *
- * Variants:
- *   - "default" — full pill button
- *   - "compact" — small pill (used in feed overlays)
- *   - "outline" — outlined style for light backgrounds
- */
+                                                                                                                                                                                                                                                                                                                       
 export default function FollowButton({
   userId,
   variant = "default",
   className = "",
   onChange,
-  initialFollowing, // optional pre-known state to avoid an API call
+  initialFollowing,                                                 
 }) {
   const { user } = useAuth();
   const [following, setFollowing] = useState(initialFollowing ?? false);
   const [loaded, setLoaded] = useState(initialFollowing != null);
 
-  // Check follow status on mount (if not pre-provided)
+                                                       
   useEffect(() => {
     if (!userId || initialFollowing != null) return;
-    // Check from the logged-in user's following list (stored on user obj)
+                                                                          
     if (user?.following && Array.isArray(user.following)) {
       const isF = user.following.some(
         (id) => (id._id || id).toString() === userId,
@@ -46,7 +38,7 @@ export default function FollowButton({
       .finally(() => setLoaded(true));
   }, [userId, initialFollowing, user]);
 
-  // Don't render follow button for yourself
+                                            
   if (!userId || userId === user?._id) return null;
 
   const handleClick = (e) => {
@@ -56,7 +48,7 @@ export default function FollowButton({
     setFollowing(next);
     onChange?.(next);
     userService.follow(userId).catch(() => {
-      // Revert on error
+                        
       setFollowing(!next);
     });
   };

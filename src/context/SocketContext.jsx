@@ -4,7 +4,7 @@ import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext(null);
 
-// Auto-detect the socket server origin (same logic as api.js)
+                                                              
 const PROD_ORIGIN = "https://fundbackend-a2ur.onrender.com";
 const LOCAL_ORIGIN = "http://localhost:5000";
 const SOCKET_URL =
@@ -23,7 +23,7 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     if (!user) {
-      // Disconnect if user logs out
+                                    
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -64,7 +64,7 @@ export function SocketProvider({ children }) {
       setConnected(false);
     });
 
-    // Heartbeat — keep online status alive
+                                           
     const heartbeat = setInterval(() => {
       if (socket.connected) socket.emit("heartbeat");
     }, 20000);

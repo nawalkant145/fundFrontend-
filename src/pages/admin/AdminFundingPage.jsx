@@ -30,7 +30,7 @@ export default function AdminFundingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Modal form states
+                      
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [formData, setFormData] = useState({
@@ -41,7 +41,7 @@ export default function AdminFundingPage() {
   });
   const [formSubmitting, setFormSubmitting] = useState(false);
 
-  // Delete confirm dialog
+                          
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadData = async () => {
@@ -97,7 +97,7 @@ export default function AdminFundingPage() {
     const amountNum = Number(formData.fundingAmountCr);
     const startupsNum = Number(formData.startupsFunded);
 
-    // Validation
+                 
     if (!monthNum || monthNum < 1 || monthNum > 12) {
       toast.error("Please select a valid month (1-12)");
       return;
@@ -158,7 +158,7 @@ export default function AdminFundingPage() {
   return (
     <DashboardShell mode="admin">
       <div className="space-y-6">
-        {/* Header */}
+        {            }
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm">
           <div>
             <h1 className="text-2xl font-black text-[#0A1F14]">
@@ -178,7 +178,7 @@ export default function AdminFundingPage() {
           </motion.button>
         </div>
 
-        {/* Summary KPI Cards */}
+        {                       }
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 bg-white border border-[#1B5E3F]/12 rounded-2xl shadow-sm">
             <div className="flex items-center gap-3 mb-2">
@@ -245,7 +245,7 @@ export default function AdminFundingPage() {
           </div>
         </div>
 
-        {/* Monthly Data Table */}
+        {                        }
         <div className="bg-white border border-[#1B5E3F]/12 rounded-2xl p-6 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between pb-4 border-b border-[#1B5E3F]/8">
             <h3 className="font-bold text-base text-[#0A1F14]">
@@ -332,7 +332,7 @@ export default function AdminFundingPage() {
         </div>
       </div>
 
-      {/* Add / Edit Form Modal */}
+      {                           }
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -429,7 +429,7 @@ export default function AdminFundingPage() {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Dialog */}
+      {                                }
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}

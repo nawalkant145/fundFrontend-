@@ -147,11 +147,11 @@ export default function AdminEventsPage() {
   const [openModal, setOpenModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Registrations Modal State
+                              
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [registrationsModalOpen, setRegistrationsModalOpen] = useState(false);
 
-  // Form fields
+                
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -328,14 +328,14 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {/* View Registrations Modal */}
+      {                              }
       <RegisteredUsersModal
         open={registrationsModalOpen}
         onClose={() => setRegistrationsModalOpen(false)}
         event={selectedEvent}
       />
 
-      {/* Create Event Modal */}
+      {                        }
       <Modal
         open={openModal}
         onClose={() => setOpenModal(false)}

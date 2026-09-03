@@ -6,10 +6,7 @@ import {
   getCountryCallingCode,
 } from "libphonenumber-js/max";
 
-/**
- * Premium form field — light theme: white background, soft borders,
- * deep-green accents, gold selection ring on focus.
- */
+                                                                                                                                    
 export function FormField({
   label,
   name,
@@ -206,7 +203,7 @@ export function MultiSelectChips({ options, value = [], onChange, max }) {
   );
 }
 
-// ─── International Country Helpers & libphonenumber-js Validation ─────────
+                                                                             
 
 const getCountryFlag = (iso) => {
   if (!iso || iso.length !== 2) return "🌐";
@@ -245,10 +242,7 @@ export const ALL_COUNTRIES = getCountries()
   })
   .sort((a, b) => a.name.localeCompare(b.name));
 
-/**
- * Returns true when the phone number string is valid for the given country.
- * Uses libphonenumber-js/max as the single source of truth.
- */
+                                                                                                                                                    
 export function getPhoneIsValid(phone, defaultCountry = "IN") {
   if (!phone || typeof phone !== "string") return false;
   const trimmed = phone.trim();
@@ -293,7 +287,7 @@ export function PhoneInput({
   const [rawInput, setRawInput] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // Synchronize country if defaultCountry prop changes
+                                                       
   useEffect(() => {
     if (defaultCountry && typeof defaultCountry === "string") {
       const iso = defaultCountry.toUpperCase().trim();
@@ -303,7 +297,7 @@ export function PhoneInput({
     }
   }, [defaultCountry]);
 
-  // Synchronize input if value prop changes externally (e.g. international format)
+                                                                                   
   useEffect(() => {
     if (value && typeof value === "string") {
       if (value.startsWith("+")) {
@@ -316,7 +310,7 @@ export function PhoneInput({
           }
         } catch {}
       }
-      // If value is national or E.164 formatted for selected country
+                                                                     
       const selectedObj = ALL_COUNTRIES.find((c) => c.iso === selectedIso);
       if (selectedObj && value.startsWith(selectedObj.callingCode)) {
         setRawInput(value.slice(selectedObj.callingCode.length));
@@ -331,7 +325,7 @@ export function PhoneInput({
     flag: "🇮🇳",
   };
 
-  // Current phone string for validation
+                                        
   const currentFullStr = rawInput.startsWith("+")
     ? rawInput
     : rawInput
@@ -340,10 +334,10 @@ export function PhoneInput({
 
   const isValid = rawInput ? getPhoneIsValid(currentFullStr, selectedIso) : false;
 
-  // Determine error visibility:
-  // 1. External error prop passed from parent form
-  // 2. Field touched (onBlur) and rawInput is invalid
-  // 3. User entered enough digits (>= 6 digits or '+' format) and number is invalid
+                                
+                                                   
+                                                      
+                                                                                    
   const shouldShowError = (() => {
     if (externalError) return true;
     if (!rawInput) return false;
@@ -365,7 +359,7 @@ export function PhoneInput({
   const handleInputChange = (e) => {
     const val = e.target.value;
 
-    // International format (starts with '+')
+                                             
     if (val.startsWith("+")) {
       setRawInput(val);
       let activeIso = selectedIso;
@@ -390,7 +384,7 @@ export function PhoneInput({
       return;
     }
 
-    // National format (strip non-digits)
+                                         
     const cleanedDigits = val.replace(/\D/g, "");
     setRawInput(cleanedDigits);
 

@@ -28,10 +28,7 @@ import { useUploadModal } from "../../context/UploadModalContext";
 import { useSocket } from "../../context/SocketContext";
 import { formatINR } from "../../constants/mockData";
 
-/**
- * Combined "My Studio" page — replaces "My Pitches".
- * Sub-tabs: Pitches | Posts.
- */
+                                                                                              
 export default function MyStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "posts" ? "posts" : "pitches";
@@ -39,12 +36,12 @@ export default function MyStudioPage() {
   const [boostFor, setBoostFor] = useState(null);
   const [previewPitch, setPreviewPitch] = useState(null);
   const [previewPost, setPreviewPost] = useState(null);
-  const [followModal, setFollowModal] = useState(null); // "followers" | "following"
+  const [followModal, setFollowModal] = useState(null);                             
   const { user } = useAuth();
   const { socket } = useSocket();
   const { openPitchModal, openPostModal } = useUploadModal();
 
-  // Fetch real pitches — show empty state if none uploaded yet
+                                                               
   const [myPitches, setMyPitches] = useState([]);
   const [pitchesLoading, setPitchesLoading] = useState(true);
 
@@ -83,7 +80,7 @@ export default function MyStudioPage() {
     return () => window.removeEventListener("pitch-uploaded", handlePitchUploaded);
   }, []);
 
-  // Fetch real posts
+                     
   const [myPosts, setMyPosts] = useState([]);
   useEffect(() => {
     loadPosts();
@@ -95,7 +92,7 @@ export default function MyStudioPage() {
     return () => window.removeEventListener("post-created", handlePostCreated);
   }, []);
 
-  // Fetch the founder's currently-active boosts
+                                                
   const [boosts, setBoosts] = useState([]);
   const loadBoosts = () => {
     boostService
@@ -110,7 +107,7 @@ export default function MyStudioPage() {
     loadBoosts();
   }, []);
 
-  // Real-time socket sync for pitch metrics
+                                            
   useEffect(() => {
     if (!socket) return;
     const onEngagement = (data) => {
@@ -131,7 +128,7 @@ export default function MyStudioPage() {
     return () => socket.off("pitch:engagement", onEngagement);
   }, [socket]);
 
-  // Real-time socket sync for post metrics
+                                           
   useEffect(() => {
     if (!socket) return;
     const onPostEngagement = (data) => {
@@ -162,7 +159,7 @@ export default function MyStudioPage() {
 
   return (
     <DashboardShell>
-      {/* Profile header */}
+      {                    }
       <div className="flex flex-col sm:flex-row items-center gap-5 mb-6 sm:mb-8">
         <img
           src={
@@ -217,7 +214,7 @@ export default function MyStudioPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {          }
       <div className="border-b border-[#1B5E3F]/12 mb-6">
         <div className="flex">
           <TabButton
@@ -237,7 +234,7 @@ export default function MyStudioPage() {
         </div>
       </div>
 
-      {/* Tab content */}
+      {                 }
       {tab === "pitches" ? (
         pitchesLoading ? (
           <div className="flex items-center justify-center py-16">
@@ -278,7 +275,7 @@ export default function MyStudioPage() {
         />
       )}
 
-      {/* Boost modal */}
+      {                 }
       <BoostModal
         open={!!boostFor}
         onClose={() => setBoostFor(null)}
@@ -290,7 +287,7 @@ export default function MyStudioPage() {
         }}
       />
 
-      {/* Pitch preview modal */}
+      {                         }
       {previewPitch && (
         <PitchPreviewModal
           pitch={previewPitch}
@@ -303,7 +300,7 @@ export default function MyStudioPage() {
         />
       )}
 
-      {/* Post preview modal */}
+      {                        }
       {previewPost && (
         <PostPreviewModal
           post={previewPost}
@@ -315,7 +312,7 @@ export default function MyStudioPage() {
           }}
         />
       )}
-      {/* Follow list modal */}
+      {                       }
       {followModal && (
         <FollowListModal
           open={!!followModal}
@@ -465,7 +462,7 @@ function PostTile({ post, onClick }) {
           </span>
         </div>
       )}
-      {/* Hover overlay */}
+      {                   }
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white-force text-sm font-bold">
         <span className="inline-flex items-center gap-1">
           <HiHeart className="w-4 h-4 text-red-400" />{" "}

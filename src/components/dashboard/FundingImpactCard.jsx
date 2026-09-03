@@ -87,7 +87,7 @@ export default function FundingImpactCard() {
 
   const hasNoData = !current && trend.length === 0;
 
-  // Chart rendering math
+                         
   const maxFunding = trend.reduce((m, p) => Math.max(m, p.fundingAmountCr || 0), 10);
   const chartHeight = 90;
   const chartWidth = 280;
@@ -121,7 +121,7 @@ export default function FundingImpactCard() {
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header */}
+      {            }
       <div className="flex items-center justify-between pb-3.5 border-b border-[#E2E8F0]">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center text-[#F59E0B] shrink-0">
@@ -149,9 +149,9 @@ export default function FundingImpactCard() {
         </div>
       ) : (
         <>
-          {/* Key Stats Grid */}
+          {                    }
           <div className="grid grid-cols-2 gap-2.5 my-4">
-            {/* THIS MONTH */}
+            {                }
             <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
                 This Month
@@ -162,7 +162,7 @@ export default function FundingImpactCard() {
               <p className="text-[10px] text-[#64748B] font-medium">Funded this month</p>
             </div>
 
-            {/* VS LAST MONTH */}
+            {                   }
             <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
                 vs Last Month
@@ -184,7 +184,7 @@ export default function FundingImpactCard() {
               <p className="text-[10px] text-[#64748B] font-medium">MoM Growth</p>
             </div>
 
-            {/* STARTUPS FUNDED */}
+            {                     }
             <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
                 Startups Funded
@@ -195,7 +195,7 @@ export default function FundingImpactCard() {
               <p className="text-[10px] text-[#64748B] font-medium">This Month</p>
             </div>
 
-            {/* TOTAL FUNDING */}
+            {                   }
             <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
                 Total Funding
@@ -207,7 +207,7 @@ export default function FundingImpactCard() {
             </div>
           </div>
 
-          {/* Monthly Funding Trend Chart */}
+          {                                 }
           {trend.length > 0 && (
             <div className="mt-4 pt-3 border-t border-[#E2E8F0] relative">
               <div className="flex items-center justify-between mb-2">
@@ -234,7 +234,7 @@ export default function FundingImpactCard() {
                     </linearGradient>
                   </defs>
 
-                  {/* Horizontal grid lines */}
+                  {                           }
                   <line
                     x1={paddingX}
                     y1={paddingY}
@@ -252,10 +252,10 @@ export default function FundingImpactCard() {
                     strokeDasharray="3 3"
                   />
 
-                  {/* Fill Area */}
+                  {               }
                   {areaD && <path d={areaD} fill="url(#impactGradient)" />}
 
-                  {/* Line */}
+                  {          }
                   {pathD && (
                     <path
                       d={pathD}
@@ -267,7 +267,7 @@ export default function FundingImpactCard() {
                     />
                   )}
 
-                  {/* Data Points */}
+                  {                 }
                   {points.map((pt, i) => (
                     <g key={pt._id || i}>
                       <circle
@@ -285,7 +285,7 @@ export default function FundingImpactCard() {
                   ))}
                 </svg>
 
-                {/* Month X-Axis Labels */}
+                {                         }
                 <div className="flex justify-between px-2 mt-1 text-[10px] font-semibold text-[#64748B]">
                   {points.map((pt, i) => (
                     <span
@@ -302,7 +302,7 @@ export default function FundingImpactCard() {
         </>
       )}
 
-      {/* Footer */}
+      {            }
       <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-xs text-[#64748B]">
         <span>
           {lastUpdated ? `Last updated: ${lastUpdated}` : "Updated regularly"}

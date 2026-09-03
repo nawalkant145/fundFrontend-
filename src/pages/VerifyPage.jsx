@@ -22,8 +22,8 @@ export default function VerifyPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Separate EXPGLO email/mobile OTP screens during signup have been removed.
-    // Redirect directly to Identity Verification (Aadhaar / DigiLocker / PAN).
+                                                                                
+                                                                               
     navigate("/kyc", { replace: true });
   }, [navigate]);
 
@@ -37,16 +37,16 @@ export default function VerifyPage() {
     }
     setLoading(true);
     try {
-      // Verify OTP
+                   
       await authService.verifyPreRegisterOtp(email, emailOtp);
 
-      // Now create the account (email is verified)
+                                                   
       if (registerData && !user) {
         await register(registerData);
       }
 
-      // If phone provided, move to phone verification
-      // (useEffect will auto-send the OTP when user+phone are ready)
+                                                      
+                                                                     
       if (phone) {
         setStep(1);
         setPhoneCooldown(RESEND_SECONDS);

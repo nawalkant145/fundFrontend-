@@ -22,11 +22,7 @@ import { useSocket } from "../../context/SocketContext";
 import { videoService } from "../../services/videoService";
 import { isFollowing, follow as followUser, unfollow as unfollowUser } from "../../lib/auth";
 
-/**
- * Full-screen pitch preview modal.
- * Opens like an Instagram Reels overlay — click outside or press ✕ to close.
- * Accepts a pitch object directly (no routing needed).
- */
+                                                                                                                                                                                     
 export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitchUpdated }) {
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -37,7 +33,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
   const [saved, setSaved] = useState(false);
   const [saveCount, setSaveCount] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [activeSheet, setActiveSheet] = useState(null); // 'comments' | 'share'
+  const [activeSheet, setActiveSheet] = useState(null);                        
   const [following, setFollowing] = useState(false);
   const overlayRef = useRef(null);
 
@@ -46,7 +42,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
       ? pitch.founderId
       : {};
 
-  // Initialise like / save state from pitch object
+                                                   
   useEffect(() => {
     if (!pitch) return;
     const uid = user?._id;
@@ -67,20 +63,20 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
     setFollowing(founder?._id ? isFollowing(founder._id) : false);
   }, [pitch?._id]);
 
-  // Lock body scroll while open
+                                
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  // Close on Escape
+                    
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Socket listener for pitch engagement (likeCount, saveCount, commentCount)
+                                                                              
   useEffect(() => {
     if (!socket || !pitch?._id) return;
     const onEngagement = (data) => {
@@ -113,7 +109,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
     return () => socket.off("pitch:engagement", onEngagement);
   }, [socket, pitch?._id, pitch, likeCount, saveCount, onPitchUpdated]);
 
-  // Click outside (on dark backdrop) closes modal — but only if no sheet is open
+                                                                                 
   const handleOverlayClick = (e) => {
     if (activeSheet) return;
     if (e.target === overlayRef.current) onClose();
@@ -215,7 +211,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
         onClick={handleOverlayClick}
         className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-sm"
       >
-        {/* ── Main card ── */}
+        {                     }
         <motion.div
           key="pitch-preview-card"
           initial={{ scale: 0.92, opacity: 0, y: 32 }}
@@ -226,7 +222,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
           style={{ height: "min(88vh, 860px)" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Video container */}
+          {                     }
           <div className="relative flex-1 rounded-2xl overflow-hidden bg-black">
             <ShortsPlayer
               src={pitch.videoUrl}
@@ -235,10 +231,10 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
               active={!activeSheet}
             />
 
-            {/* Bottom gradient */}
+            {                     }
             <div className="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
-            {/* Top bar */}
+            {             }
             <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
               <span className="px-2.5 py-0.5 bg-[#F5B942]/90 text-[#0A1F14] text-[11px] font-black rounded-full uppercase tracking-wide">
                 {pitch.industry}
@@ -263,9 +259,9 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
               </div>
             </div>
 
-            {/* Bottom info */}
+            {                 }
             <div className="absolute bottom-0 left-0 right-0 pl-3 pr-16 pb-4 pt-2 z-10 pointer-events-none">
-              {/* Founder row */}
+              {                 }
               <div className="flex items-center gap-2 mb-2 pointer-events-auto">
                 <img
                   src={
@@ -300,12 +296,12 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
                 )}
               </div>
 
-              {/* Title */}
+              {           }
               <h3 className="font-black text-[15px] text-white leading-tight mb-0.5 pointer-events-auto line-clamp-2">
                 {pitch.title}
               </h3>
 
-              {/* Description */}
+              {                 }
               <div className="pointer-events-auto">
                 <p className={`text-[13px] text-gray-200 leading-snug ${expanded ? "" : "line-clamp-1"}`}>
                   {pitch.description}
@@ -320,7 +316,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
                 )}
               </div>
 
-              {/* Ask / stage pills */}
+              {                       }
               <div className="flex items-center gap-2 mt-2 flex-wrap pointer-events-auto">
                 <span className="px-2.5 py-1 bg-white/15 border border-white/30 rounded-full text-[11px] font-bold text-white flex items-center gap-1">
                   <HiCurrencyDollar className="w-3.5 h-3.5" />
@@ -333,9 +329,9 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
             </div>
           </div>
 
-          {/* ── Action rail (right of video) ── */}
+          {                                        }
           <div className="flex flex-col gap-5 items-center justify-end pb-6 pl-3">
-            {/* Like */}
+            {          }
             <button
               onClick={toggleLike}
               className="flex flex-col items-center gap-0.5"
@@ -347,7 +343,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
               <span className="text-white text-[11px] font-semibold drop-shadow">{likeCount}</span>
             </button>
 
-            {/* Comments */}
+            {              }
             <button
               onClick={() => setActiveSheet("comments")}
               className="flex flex-col items-center gap-0.5"
@@ -361,7 +357,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
               </span>
             </button>
 
-            {/* Save */}
+            {          }
             <button
               onClick={toggleSave}
               className="flex flex-col items-center gap-0.5"
@@ -373,7 +369,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
               <span className="text-white text-[11px] font-semibold drop-shadow">{saveCount}</span>
             </button>
 
-            {/* Share */}
+            {           }
             <button
               onClick={() => setActiveSheet("share")}
               className="flex flex-col items-center gap-0.5"
@@ -386,7 +382,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
           </div>
         </motion.div>
 
-        {/* Comments sheet */}
+        {                    }
         <CommentsPanel
           open={activeSheet === "comments"}
           onClose={() => setActiveSheet(null)}
@@ -410,7 +406,7 @@ export default function PitchPreviewModal({ pitch: initialPitch, onClose, onPitc
           }}
         />
 
-        {/* Share sheet */}
+        {                 }
         <ShareSheet
           open={activeSheet === "share"}
           onClose={() => setActiveSheet(null)}

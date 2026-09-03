@@ -21,10 +21,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { postService } from "../../services/postService";
 
-/**
- * Full-screen / popup overlay for viewing a post.
- * Allows liking, bookmarking, commenting, and sharing in a popup.
- */
+                                                                                                                                
 export default function PostPreviewModal({ post: initialPost, onClose, onPostUpdated }) {
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -35,7 +32,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
   const [saved, setSaved] = useState(false);
   const [saveCount, setSaveCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
-  const [activeSheet, setActiveSheet] = useState(null); // 'comments' | 'share'
+  const [activeSheet, setActiveSheet] = useState(null);                        
   const overlayRef = useRef(null);
 
   const author =
@@ -80,20 +77,20 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
     setCommentCount(post.commentCount || 0);
   }, [post?._id]);
 
-  // Lock body scroll while open
+                                
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  // Close on Escape
+                    
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Socket engagement listener
+                               
   useEffect(() => {
     if (!socket || !post?._id) return;
     const onEngagement = (data) => {
@@ -228,7 +225,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
           onClick={(e) => e.stopPropagation()}
           className="relative w-full max-w-4xl bg-white border border-[#1B5E3F]/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90dvh]"
         >
-          {/* Close button */}
+          {                  }
           <button
             onClick={onClose}
             className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-colors"
@@ -236,7 +233,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
             <HiX className="w-5 h-5" />
           </button>
 
-          {/* Left / Top: Media section */}
+          {                               }
           {images.length > 0 ? (
             <div className="relative w-full md:w-3/5 bg-black flex items-center justify-center min-h-[280px] md:min-h-[480px]">
               <img
@@ -245,7 +242,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
                 className="max-h-[50dvh] md:max-h-[85dvh] w-full object-contain"
               />
 
-              {/* Carousel navigation */}
+              {                         }
               {images.length > 1 && (
                 <>
                   <button
@@ -268,9 +265,9 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
             </div>
           ) : null}
 
-          {/* Right / Bottom: Post details & engagement */}
+          {                                               }
           <div className={`flex-1 flex flex-col ${images.length > 0 ? "w-full md:w-2/5" : "w-full"} overflow-hidden bg-white`}>
-            {/* Author header */}
+            {                   }
             <div className="p-4 border-b border-[#1B5E3F]/10 flex items-center gap-3">
               <img
                 src={
@@ -289,7 +286,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
               </div>
             </div>
 
-            {/* Caption & Content */}
+            {                       }
             <div className="p-4 flex-1 overflow-y-auto space-y-3 text-sm text-[#0A1F14]">
               {post.caption && <p className="leading-relaxed whitespace-pre-wrap">{post.caption}</p>}
 
@@ -316,7 +313,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
               )}
             </div>
 
-            {/* Engagement buttons */}
+            {                        }
             <div className="p-4 border-t border-[#1B5E3F]/10 bg-[#FAFAF7]/50 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -363,7 +360,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
           </div>
         </motion.div>
 
-        {/* Comments sheet */}
+        {                    }
         <CommentsPanel
           open={activeSheet === "comments"}
           onClose={() => setActiveSheet(null)}
@@ -381,7 +378,7 @@ export default function PostPreviewModal({ post: initialPost, onClose, onPostUpd
           }}
         />
 
-        {/* Share sheet */}
+        {                 }
         <ShareSheet
           open={activeSheet === "share"}
           onClose={() => setActiveSheet(null)}

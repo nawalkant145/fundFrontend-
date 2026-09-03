@@ -149,7 +149,7 @@ export default function DeckRequestsPage() {
         </div>
       )}
 
-      {/* Investor profile modal */}
+      {                            }
       <Modal
         open={!!viewing}
         onClose={() => setViewing(null)}

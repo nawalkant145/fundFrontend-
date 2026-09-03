@@ -22,11 +22,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 
-/**
- * Mobile bottom navigation bar.
- * 6 slots: 5 tab buttons + profile avatar button.
- * Uses flexible equal-width layout with icon + label.
- */
+                                                                                                                                                      
 const FOUNDER_TABS = [
   { to: "/app", label: "Feed", icon: HiHome, end: true },
   { to: "/app/pitch", label: "Pitch", icon: HiPlay },
@@ -70,9 +66,9 @@ export default function BottomBar({ mode }) {
 
   const unread = useNotifications().unreadCount;
 
-  // Immersive routes — the swipeable Pitch player. Here the bar floats as a
-  // translucent dark overlay on top of the video, exactly like Instagram
-  // Reels on mobile web.
+                                                                            
+                                                                         
+                         
   const immersive =
     location.pathname === "/app/pitch" || location.pathname === "/app/feed";
 

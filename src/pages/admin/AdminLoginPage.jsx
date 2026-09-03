@@ -10,11 +10,7 @@ import {
 
 import { useAuth } from "../../context/AuthContext";
 
-/**
- * Dedicated admin login — separate from the public /login page.
- * Lives at /admin/login. Only users with role "admin" are allowed through;
- * anyone else is rejected even with valid credentials.
- */
+                                                                                                                                                                                                                
 export default function AdminLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,7 +21,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Already logged in as admin → go straight to dashboard
+                                                          
   if (!loading && user?.role === "admin") {
     const dest = location.state?.from?.pathname || "/admin";
     return <Navigate to={dest} replace />;
@@ -39,7 +35,7 @@ export default function AdminLoginPage() {
     try {
       const data = await login({ identifier, password, remember: true, role: "admin" });
       if (data.user?.role !== "admin") {
-        // Not an admin — reject and clear the session
+                                                      
         await logout();
         setError("This account does not have admin access.");
         return;
@@ -56,7 +52,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0A1F14] relative overflow-hidden px-4">
-      {/* Ambient glows */}
+      {                   }
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#1B5E3F]/20 rounded-full blur-[160px]" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#F5B942]/10 rounded-full blur-[180px]" />
@@ -68,7 +64,7 @@ export default function AdminLoginPage() {
         className="relative w-full max-w-md"
       >
         <div className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-          {/* Header */}
+          {            }
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#F5B942]/15 border border-[#F5B942]/30 mb-4">
               <HiShieldCheck className="w-8 h-8 text-[#F5B942]" />
