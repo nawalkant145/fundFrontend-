@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiSearch,
@@ -20,11 +20,13 @@ import { useSearch } from "../../context/SearchContext";
 export default function TopBar({ onMenuClick, onRightSidebarClick }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const unreadCount = useNotifications().unreadCount;
   const { searchQuery, setSearchQuery } = useSearch();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const isInvestor = user?.role === "investor";
+  const isFeedPage = location.pathname === "/app" || location.pathname === "/app/" || location.pathname === "/app/feed";
 
   const handleLogout = async () => {
     await logout();
@@ -95,8 +97,8 @@ export default function TopBar({ onMenuClick, onRightSidebarClick }) {
           </motion.button>
         </Link>
 
-        {/* Mobile / Tablet: Soft Golden Dollar ($) Icon Button (< lg screens - Non-Investor Only) */}
-        {!isInvestor && (
+        {/* Mobile / Tablet: Soft Golden Dollar ($) Icon Button (< lg screens - Non-Investor Feed Page Only) */}
+        {!isInvestor && isFeedPage && (
           <motion.button
             onClick={onRightSidebarClick}
             whileHover={{ scale: 1.1 }}
